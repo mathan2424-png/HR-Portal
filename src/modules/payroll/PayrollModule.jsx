@@ -1,5 +1,5 @@
 import React from 'react';
-import { CreditCard, DollarSign, Download, ArrowUpRight } from 'lucide-react';
+import { CreditCard, IndianRupee, Download, ArrowUpRight } from 'lucide-react';
 import { StatCard } from '../../components/common/StatCard/StatCard';
 import { Table } from '../../components/common/Table/Table';
 import { Badge } from '../../components/common/Badge/Badge';
@@ -43,7 +43,6 @@ export const PayrollModule = () => {
       <div className="module-header">
         <div>
           <h1>Payroll & Compensation</h1>
-          <p>Manage monthly salary disbursements, tax deductions, bonuses, and payslips</p>
         </div>
         <button className="btn-add-primary">
           <ArrowUpRight size={16} /> Run Payroll
@@ -53,8 +52,8 @@ export const PayrollModule = () => {
       <div className="grid grid-cols-3 gap-4">
         <StatCard
           title="Monthly Net Payroll"
-          value="$485,000"
-          icon={DollarSign}
+          value="₹4,85,000"
+          icon={IndianRupee}
           trend="+2.8%"
           subtitle="vs last month"
           iconBg="var(--primary-light)"
@@ -62,7 +61,7 @@ export const PayrollModule = () => {
         />
         <StatCard
           title="Avg. Salary / Emp"
-          value="$6,250"
+          value="₹62,500"
           icon={CreditCard}
           subtitle="per month"
           iconBg="var(--color-info-bg)"
@@ -70,9 +69,9 @@ export const PayrollModule = () => {
         />
         <StatCard
           title="Benefits & Deductions"
-          value="$58,400"
+          value="₹58,400"
           icon={CreditCard}
-          subtitle="health, 401k, tax"
+          subtitle="health, EPF, tax"
           iconBg="var(--accent-purple)"
           iconColor="#fff"
         />

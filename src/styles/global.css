@@ -78,13 +78,19 @@ input, select, textarea {
   outline: none;
 }
 
-/* --- Global Table & Badge Hierarchy --- */
-th {
-  font-size: var(--font-size-body-sm);
+/* --- Global Table & Badge Hierarchy (Strict 13px Standard Across All Modules) --- */
+th,
+thead th,
+table th,
+table thead th {
+  font-size: 13px !important;
 }
 
-td {
-  font-size: 13.5px;
+td,
+tbody td,
+table td,
+table tbody td {
+  font-size: 13px !important;
 }
 
 /* --- Custom Scrollbar --- */
@@ -104,4 +110,66 @@ td {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* --- Global In-Page Form Section Headers (Sleek Slate Gray with Clean Border) --- */
+.inpage-section-header,
+.inpage-user-section-banner,
+.settings-section-header {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-left: 4px solid var(--primary) !important;
+  padding: 0.85rem 1.25rem !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  margin: -1.25rem -1.5rem 0.85rem -1.5rem !important;
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+/* --- Global Form Validation & Inline Red Error Messages --- */
+.has-error,
+input.has-error,
+select.has-error,
+textarea.has-error,
+.form-control-input.has-error,
+.role-input-control.has-error,
+.role-textarea-control.has-error,
+.input-error {
+  border-color: #ef4444 !important;
+  background-color: #fffafb !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+.field-error-text {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  color: #dc2626 !important;
+  font-size: 0.74rem !important;
+  font-weight: 600 !important;
+  margin-top: 0.32rem !important;
+  line-height: 1.25 !important;
+  animation: fieldErrorSlideDown 0.18s ease-out !important;
+}
+
+.field-error-text svg {
+  flex-shrink: 0 !important;
+}
+
+@keyframes fieldErrorSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

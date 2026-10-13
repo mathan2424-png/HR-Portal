@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Menu } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Menu, LogOut, Shield } from 'lucide-react';
 import { usePortal } from '../../context/PortalContext';
 import './Header.css';
 
 export const Header = () => {
-  const { toggleSidebar } = usePortal();
+  const { toggleSidebar, currentUser, logout } = usePortal();
+  const navigate = useNavigate();
   const [currentDateTime, setCurrentDateTime] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -33,6 +37,23 @@ export const Header = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    setMenuOpen(false);
+    if (logout) logout();
+    navigate('/login');
+  };
+
   return (
     <header className="portal-header">
       <div className="header-left">
@@ -50,8 +71,36 @@ export const Header = () => {
         <div className="header-datetime-text">
           {currentDateTime}
         </div>
-        <div className="header-avatar-circle" title="Administrator">
-          <span>A</span>
+
+        <div className="header-user-menu-wrapper" ref={menuRef}>
+          <div
+            className="header-avatar-circle"
+            title="Administrator Account"
+            onClick={() => setMenuOpen((prev) => !prev)}
+          >
+            <span>{currentUser?.avatarInitial || 'A'}</span>
+          </div>
+
+          {menuOpen && (
+            <div className="header-user-dropdown">
+              <div className="header-user-info-box">
+                <div className="header-user-dropdown-name">
+                  {currentUser?.name || 'Administrator'}
+                </div>
+                <div className="header-user-dropdown-email">
+                  {currentUser?.email || 'admin@hrms.com'}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="header-dropdown-logout-btn"
+                onClick={handleLogout}
+              >
+                <LogOut size={15} />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -55,7 +55,6 @@ export const LeavesModule = () => {
       <div className="module-header">
         <div>
           <h1>Leave Management</h1>
-          <p>Review leave applications, time-off balances, and vacation schedules</p>
         </div>
       </div>
 

@@ -10,9 +10,19 @@ import {
   Save,
   CheckCircle2,
 } from 'lucide-react';
+import { Toast } from '../../components/common/Toast/Toast';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import {
+  validateName,
+  validateNumber,
+  validateRequired,
+  sanitizeNameInput,
+  sanitizeNumberInput,
+} from '../../utils/validation';
 import './JobsModule.css';
 
 export const JobsModule = () => {
+  const [jobErrors, setJobErrors] = useState({});
   // STRICTLY and ONLY the 21 user-requested fields:
   // 1. Job ID, 2. Job Title, 3. Department, 4. Hiring Manager, 5. Recruiter,
   // 6. Number of Vacancies, 7. Job Category, 8. Employment Type,
@@ -87,7 +97,7 @@ export const JobsModule = () => {
       jobTitle: 'Senior Technical Recruiter',
       department: 'Human Resources & Talent',
       hiringManager: 'Abinaya R',
-      recruiter: 'Priya Anand',
+      recruiter: 'Nathiya  ',
       vacancies: 2,
       jobCategory: 'Human Resources',
       employmentType: 'Full-time',
@@ -145,7 +155,7 @@ export const JobsModule = () => {
       jobTitle: 'Enterprise Account Executive',
       department: 'Sales & Business Development',
       hiringManager: 'Muthuvel Pandian',
-      recruiter: 'Priya Anand',
+      recruiter: 'Nathiya  ',
       vacancies: 2,
       jobCategory: 'Sales & Marketing',
       employmentType: 'Full-time',
@@ -174,7 +184,7 @@ export const JobsModule = () => {
       jobTitle: 'Finance & Payroll Specialist',
       department: 'Finance & Accounts',
       hiringManager: 'Meera Nambiar',
-      recruiter: 'Priya Anand',
+      recruiter: 'Nathiya  ',
       vacancies: 1,
       jobCategory: 'Finance & Accounting',
       employmentType: 'Full-time',
@@ -238,13 +248,16 @@ export const JobsModule = () => {
 
   const [formData, setFormData] = useState(initialFormState);
 
-  // Toast
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage('');
-    }, 3500);
+  // Toast State
+  const [toast, setToast] = useState(null); // { message: string, type: 'success' | 'delete' | 'info' | 'warning' }
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
   };
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Filter Jobs
   const filteredJobs = jobs.filter((job) => {
@@ -264,12 +277,11 @@ export const JobsModule = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Counters
-  const totalCount = jobs.length;
-  const activeCount = jobs.filter((j) => j.jobStatus === 'Active').length;
-  const draftCount = jobs.filter((j) => j.jobStatus === 'Draft').length;
-  const pendingCount = jobs.filter((j) => j.jobStatus === 'Pending Approval').length;
-  const pausedCount = jobs.filter((j) => j.jobStatus === 'Paused').length;
+  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage) || 1;
+  const paginatedJobs = filteredJobs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Open Add
   const handleOpenAdd = () => {
@@ -286,48 +298,86 @@ export const JobsModule = () => {
       ...initialFormState,
       id: `REC-JOB-${Date.now()}`,
       jobId: `JOB-2026-${String(nextNum).padStart(3, '0')}`,
+      jobTitle: '',
+      department: 'Engineering & Technology',
+      hiringManager: 'Sundar Raman',
+      recruiter: 'Dhakshan S',
+      vacancies: 2,
+      jobCategory: 'Software Engineering / IT',
+      employmentType: 'Full-time',
+      minExperience: 3,
+      maxExperience: 7,
+      requiredSkills: 'React, TypeScript, Node.js',
+      preferredSkills: 'Next.js, Cloud Architecture',
+      qualification: 'B.E / B.Tech / MCA or equivalent',
+      minSalary: '₹16,00,000',
+      maxSalary: '₹26,00,000',
+      salaryVisibility: 'Visible to Candidates',
+      location: 'Chennai HQ Campus',
+      workMode: 'Hybrid',
+      noticePeriod: '30 Days',
+      jobDescription: 'Design, develop and scale enterprise web portals and APIs.',
+      benefits: 'Health Insurance, Annual Bonus, Flexible Hours',
+      priority: 'Medium',
+      targetJoiningDate: '2026-11-20',
+      jobStatus: 'Active',
       createdBy: `Admin User (${nowStr})`,
       updatedBy: `Admin User (${nowStr})`,
     });
+    setJobErrors({});
     setCurrentView('add');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Open Edit
   const handleOpenEdit = (job) => {
     setFormData({ ...job });
+    setJobErrors({});
     setCurrentView('edit');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Back to List
   const handleBackToList = () => {
+    setJobErrors({});
     setCurrentView('list');
     setFormData(initialFormState);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Save Job
   const handleSaveJob = (e) => {
     e.preventDefault();
 
-    if (!formData.jobTitle.trim()) {
-      alert('Please enter Job Title');
+    const errors = {};
+    const titleErr = validateRequired(formData.jobTitle, 'Job title');
+    if (titleErr) errors.jobTitle = titleErr;
+
+    const deptErr = validateRequired(formData.department, 'Department');
+    if (deptErr) errors.department = deptErr;
+
+    if (formData.hiringManager) {
+      const hmErr = validateName(formData.hiringManager, 'Hiring manager', true);
+      if (hmErr) errors.hiringManager = hmErr;
+    }
+
+    if (formData.recruiter) {
+      const recErr = validateName(formData.recruiter, 'Assigned recruiter', true);
+      if (recErr) errors.recruiter = recErr;
+    }
+
+    if (formData.vacancies) {
+      const vacErr = validateNumber(formData.vacancies, 'Number of vacancies', true, 1);
+      if (vacErr) errors.vacancies = vacErr;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setJobErrors(errors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!formData.department.trim()) {
-      alert('Please select Department');
-      return;
-    }
-    if (!formData.hiringManager.trim()) {
-      alert('Please enter Hiring Manager');
-      return;
-    }
-    if (!formData.recruiter.trim()) {
-      alert('Please enter Assigned Recruiter');
-      return;
-    }
-    if (!formData.location.trim()) {
-      alert('Please enter Job Location');
-      return;
-    }
+
+    setJobErrors({});
 
     const nowStr = new Date().toLocaleString('en-GB', {
       day: '2-digit',
@@ -346,14 +396,14 @@ export const JobsModule = () => {
         updatedBy: `Admin User (${nowStr})`,
       };
       setJobs([newJob, ...jobs]);
-      showToast(`Job "${newJob.jobTitle}" created successfully.`);
+      showToast(`Job "${newJob.jobTitle}" created successfully.`, 'success');
     } else if (currentView === 'edit') {
       const updatedJob = {
         ...formData,
         updatedBy: `Admin User (${nowStr})`,
       };
       setJobs(jobs.map((j) => (j.id === formData.id ? updatedJob : j)));
-      showToast(`Job "${formData.jobTitle}" updated successfully.`);
+      showToast(`Job "${formData.jobTitle}" updated successfully.`, 'success');
     }
 
     handleBackToList();
@@ -364,14 +414,14 @@ export const JobsModule = () => {
     setJobs(
       jobs.map((j) => (j.id === jobId ? { ...j, jobStatus: nextStatus } : j))
     );
-    showToast(`Job status updated to "${nextStatus}".`);
+    showToast(`Job status updated to "${nextStatus}".`, 'success');
   };
 
   // Delete Job
   const handleDeleteJob = (job) => {
     if (window.confirm(`Are you sure you want to delete job "${job.jobTitle} (${job.jobId})"?`)) {
       setJobs(jobs.filter((j) => j.id !== job.id));
-      showToast(`Job "${job.jobTitle}" deleted.`);
+      showToast(`Job "${job.jobTitle}" deleted successfully.`, 'delete');
     }
   };
 
@@ -411,45 +461,53 @@ export const JobsModule = () => {
 
   return (
     <div className="jobs-page-container">
+      {/* Floating Animated Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={3500}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* =========================================================================
           MODULE HEADER
           ========================================================================= */}
       <div className="jobs-page-header">
         {currentView === 'list' ? (
           <>
-            <div className="jobs-header-left">
+            <div>
               <h1 className="jobs-page-title">Jobs</h1>
-              
             </div>
             <button
               type="button"
               className="btn-add-job"
               onClick={handleOpenAdd}
             >
-              <Plus size={16} />
-              Create Job
+              <Plus size={16} strokeWidth={2.5} />
+              <span>Create Job</span>
             </button>
           </>
         ) : (
           <>
-            <div className="jobs-inpage-header-left">
-              <button
-                type="button"
-                className="btn-back-jobs"
-                onClick={handleBackToList}
-              >
-                <ArrowLeft size={16} />
-                Back to Job List
-              </button>
-              <div>
-                <h1 className="jobs-page-title">
-                  {currentView === 'add' ? 'Create New Job Requirement' : 'Edit Job Requirement'}
-                </h1>
-                <p className="jobs-subtitle">
-                  Configure job opening, candidate criteria, compensation and hiring parameters
-                </p>
-              </div>
+            <div>
+              <h1 className="jobs-page-title">
+                {currentView === 'add'
+                  ? 'Create New Job Requirement'
+                  : `Edit Job Requirement — ${formData.jobTitle}`}
+              </h1>
             </div>
+
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={handleBackToList}
+              title="Back to List"
+            >
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
+            </button>
           </>
         )}
       </div>
@@ -471,45 +529,39 @@ export const JobsModule = () => {
             ======================================================================= */}
         {currentView === 'list' && (
           <>
-            {/* Toolbar: Search, Status Filter & Count Chips */}
+            {/* Toolbar: Search (Left) + Status Filter (Right) */}
             <div className="jobs-toolbar">
-              <div className="jobs-toolbar-left">
-                <div className="jobs-search-box">
-                  <Search size={16} style={{ color: 'var(--text-muted)' }} />
-                  <input
-                    type="text"
-                    placeholder="Search by Job ID, Title, Department, Manager, Recruiter, Skills..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="jobs-search-input"
-                  />
-                </div>
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="jobs-filter-select"
-                >
-                  <option value="All">All Status</option>
-                  <option value="Active">Active Only</option>
-                  <option value="Pending Approval">Pending Approval</option>
-                  <option value="Draft">Draft</option>
-                  <option value="Paused">Paused</option>
-                  <option value="Closed">Closed</option>
-                  <option value="Filled">Filled</option>
-                  <option value="Expired">Expired</option>
-                </select>
+              <div className="jobs-search-box">
+                <Search size={16} style={{ color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="jobs-search-input"
+                />
               </div>
 
-              <div className="jobs-toolbar-stats">
-                <span className="jobs-stat-chip">Total: {totalCount}</span>
-                <span className="jobs-stat-chip active">Active: {activeCount}</span>
-                <span className="jobs-stat-chip draft">Draft: {draftCount}</span>
-                <span className="jobs-stat-chip" style={{ background: '#fef3c7', color: '#b45309', borderColor: '#fde68a' }}>
-                  Pending: {pendingCount}
-                </span>
-                <span className="jobs-stat-chip paused">Paused: {pausedCount}</span>
-              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="jobs-filter-select"
+              >
+                <option value="All">All Status</option>
+                <option value="Active">Active Only</option>
+                <option value="Pending Approval">Pending Approval</option>
+                <option value="Draft">Draft</option>
+                <option value="Paused">Paused</option>
+                <option value="Closed">Closed</option>
+                <option value="Filled">Filled</option>
+                <option value="Expired">Expired</option>
+              </select>
             </div>
 
             {/* Modern Data Table */}
@@ -544,133 +596,136 @@ export const JobsModule = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredJobs.map((job, index) => (
-                      <tr key={job.id}>
-                        {/* S.NO */}
-                        <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
-                          {index + 1}
-                        </td>
+                    paginatedJobs.map((job, index) => {
+                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                      return (
+                        <tr key={job.id}>
+                          {/* S.NO */}
+                          <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
+                            {serialNumber}
+                          </td>
 
-                        {/* Job Title & ID */}
-                        <td>
-                          <div className="job-title-cell">
-                            <span className="job-title-text">{job.jobTitle}</span>
-                            <span className="job-id-badge">{job.jobId}</span>
-                          </div>
-                        </td>
+                          {/* Job Title & ID */}
+                          <td>
+                            <div className="job-title-cell">
+                              <span className="job-title-text">{job.jobTitle}</span>
+                              <span className="job-id-badge">{job.jobId}</span>
+                            </div>
+                          </td>
 
-                        {/* Department */}
-                        <td>
-                          <span className="job-dept-text">{job.department}</span>
-                        </td>
+                          {/* Department */}
+                          <td>
+                            <span className="job-dept-text">{job.department}</span>
+                          </td>
 
-                        {/* Hiring Team */}
-                        <td>
-                          <div className="job-team-cell">
-                            <span className="job-hm-text">HM: {job.hiringManager}</span>
-                            <span className="job-recruiter-text">Rec: {job.recruiter}</span>
-                          </div>
-                        </td>
+                          {/* Hiring Team */}
+                          <td>
+                            <div className="job-team-cell">
+                              <span className="job-hm-text">HM: {job.hiringManager}</span>
+                              <span className="job-recruiter-text">Rec: {job.recruiter}</span>
+                            </div>
+                          </td>
 
-                        {/* Vacancies & Type */}
-                        <td>
-                          <div className="job-vacancies-cell">
-                            <span className="job-vacancies-badge">
-                              {job.vacancies} {job.vacancies > 1 ? 'Openings' : 'Opening'}
+                          {/* Vacancies & Type */}
+                          <td>
+                            <div className="job-vacancies-cell">
+                              <span className="job-vacancies-badge">
+                                {job.vacancies} {job.vacancies > 1 ? 'Openings' : 'Opening'}
+                              </span>
+                              <span className="job-type-sub">{job.employmentType}</span>
+                            </div>
+                          </td>
+
+                          {/* Location & Work Mode */}
+                          <td>
+                            <div className="job-location-cell">
+                              <span className="job-location-text">{job.location}</span>
+                              <span className="job-workmode-badge">{job.workMode}</span>
+                            </div>
+                          </td>
+
+                          {/* Experience & Salary */}
+                          <td>
+                            <div className="job-comp-cell">
+                              <span className="job-salary-text">
+                                {job.minSalary && job.maxSalary
+                                  ? `${job.minSalary} - ${job.maxSalary}`
+                                  : 'Competitive'}
+                              </span>
+                              <span className="job-exp-text">
+                                {job.minExperience} - {job.maxExperience} Yrs Exp
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Priority */}
+                          <td>
+                            <span className={`priority-pill ${getPriorityClass(job.priority)}`}>
+                              {job.priority}
                             </span>
-                            <span className="job-type-sub">{job.employmentType}</span>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Location & Work Mode */}
-                        <td>
-                          <div className="job-location-cell">
-                            <span className="job-location-text">{job.location}</span>
-                            <span className="job-workmode-badge">{job.workMode}</span>
-                          </div>
-                        </td>
+                          {/* Target Joining Date */}
+                          <td style={{ fontSize: '0.82rem', color: 'var(--text-main)', fontWeight: 600 }}>
+                            {job.targetJoiningDate || '—'}
+                          </td>
 
-                        {/* Experience & Salary */}
-                        <td>
-                          <div className="job-comp-cell">
-                            <span className="job-salary-text">
-                              {job.minSalary && job.maxSalary
-                                ? `${job.minSalary} - ${job.maxSalary}`
-                                : 'Competitive'}
+                          {/* Job Status */}
+                          <td>
+                            <span className={`job-status-pill ${getStatusClass(job.jobStatus)}`}>
+                              <span className="status-dot"></span>
+                              {job.jobStatus}
                             </span>
-                            <span className="job-exp-text">
-                              {job.minExperience} - {job.maxExperience} Yrs Exp
-                            </span>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Priority */}
-                        <td>
-                          <span className={`priority-pill ${getPriorityClass(job.priority)}`}>
-                            {job.priority}
-                          </span>
-                        </td>
+                          {/* Actions */}
+                          <td>
+                            <div className="job-row-actions" style={{ justifyContent: 'center' }}>
+                              <button
+                                type="button"
+                                className="action-icon-btn edit"
+                                title="Edit Job"
+                                onClick={() => handleOpenEdit(job)}
+                              >
+                                <Edit2 size={15} />
+                              </button>
 
-                        {/* Target Joining Date */}
-                        <td style={{ fontSize: '0.82rem', color: 'var(--text-main)', fontWeight: 600 }}>
-                          {job.targetJoiningDate || '—'}
-                        </td>
+                              {/* Quick Status Selector */}
+                              <select
+                                value={job.jobStatus}
+                                onChange={(e) => handleQuickStatusChange(job.id, e.target.value)}
+                                className="form-control-select"
+                                style={{
+                                  padding: '0.2rem 0.4rem',
+                                  fontSize: '0.75rem',
+                                  width: 'auto',
+                                  height: '30px',
+                                  borderRadius: '6px',
+                                }}
+                                title="Change Status"
+                              >
+                                <option value="Active">Active</option>
+                                <option value="Pending Approval">Pending</option>
+                                <option value="Draft">Draft</option>
+                                <option value="Paused">Paused</option>
+                                <option value="Closed">Closed</option>
+                                <option value="Filled">Filled</option>
+                                <option value="Expired">Expired</option>
+                              </select>
 
-                        {/* Job Status */}
-                        <td>
-                          <span className={`job-status-pill ${getStatusClass(job.jobStatus)}`}>
-                            <span className="status-dot"></span>
-                            {job.jobStatus}
-                          </span>
-                        </td>
-
-                        {/* Actions */}
-                        <td>
-                          <div className="job-row-actions" style={{ justifyContent: 'center' }}>
-                            <button
-                              type="button"
-                              className="action-icon-btn edit"
-                              title="Edit Job"
-                              onClick={() => handleOpenEdit(job)}
-                            >
-                              <Edit2 size={15} />
-                            </button>
-
-                            {/* Quick Status Selector */}
-                            <select
-                              value={job.jobStatus}
-                              onChange={(e) => handleQuickStatusChange(job.id, e.target.value)}
-                              className="form-control-select"
-                              style={{
-                                padding: '0.2rem 0.4rem',
-                                fontSize: '0.75rem',
-                                width: 'auto',
-                                height: '30px',
-                                borderRadius: '6px',
-                              }}
-                              title="Change Status"
-                            >
-                              <option value="Active">Active</option>
-                              <option value="Pending Approval">Pending</option>
-                              <option value="Draft">Draft</option>
-                              <option value="Paused">Paused</option>
-                              <option value="Closed">Closed</option>
-                              <option value="Filled">Filled</option>
-                              <option value="Expired">Expired</option>
-                            </select>
-
-                            <button
-                              type="button"
-                              className="action-icon-btn delete"
-                              title="Delete Job"
-                              onClick={() => handleDeleteJob(job)}
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              <button
+                                type="button"
+                                className="action-icon-btn delete"
+                                title="Delete Job"
+                                onClick={() => handleDeleteJob(job)}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -679,17 +734,36 @@ export const JobsModule = () => {
             {/* Pagination Footer */}
             <div className="jobs-table-footer">
               <div>
-                Showing 1 to {filteredJobs.length} of {jobs.length} Entries
+                Showing {filteredJobs.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(currentPage * itemsPerPage, filteredJobs.length)} of{' '}
+                {filteredJobs.length} Entries
               </div>
 
               <div className="jobs-pagination-controls">
-                <button type="button" className="btn-jobs-page" disabled>
+                <button
+                  type="button"
+                  className="btn-jobs-page"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                >
                   <ChevronLeft size={14} />
                 </button>
-                <button type="button" className="btn-jobs-page active">
-                  1
-                </button>
-                <button type="button" className="btn-jobs-page" disabled>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`btn-jobs-page ${currentPage === page ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="btn-jobs-page"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                >
                   <ChevronRight size={14} />
                 </button>
               </div>
@@ -706,6 +780,7 @@ export const JobsModule = () => {
             id="inpage-job-form"
             onSubmit={handleSaveJob}
             className="inpage-job-form"
+            noValidate
           >
             {/* SECTION 1: JOB IDENTITY & ROLE OVERVIEW */}
             <div className="inpage-section-box">
@@ -731,13 +806,14 @@ export const JobsModule = () => {
                   <input
                     type="text"
                     value={formData.jobTitle}
-                    onChange={(e) =>
-                      setFormData({ ...formData, jobTitle: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, jobTitle: e.target.value });
+                      if (jobErrors.jobTitle) setJobErrors((prev) => ({ ...prev, jobTitle: null }));
+                    }}
                     placeholder="e.g. Senior Frontend Engineer"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${jobErrors.jobTitle ? 'has-error' : ''}`}
                   />
+                  <FieldError error={jobErrors.jobTitle} />
                 </div>
 
                 {/* 7. Job Category */}
@@ -751,7 +827,6 @@ export const JobsModule = () => {
                     }
                     placeholder="e.g. Software Engineering / IT"
                     className="form-control-input"
-                    required
                   />
                 </div>
               </div>
@@ -769,11 +844,11 @@ export const JobsModule = () => {
                   <label>Department (Hiring Department) *</label>
                   <select
                     value={formData.department}
-                    onChange={(e) =>
-                      setFormData({ ...formData, department: e.target.value })
-                    }
-                    className="form-control-select"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, department: e.target.value });
+                      if (jobErrors.department) setJobErrors((prev) => ({ ...prev, department: null }));
+                    }}
+                    className={`form-control-select ${jobErrors.department ? 'has-error' : ''}`}
                   >
                     <option value="Engineering & Technology">Engineering & Technology</option>
                     <option value="Human Resources & Talent">Human Resources & Talent</option>
@@ -782,6 +857,7 @@ export const JobsModule = () => {
                     <option value="Finance & Accounts">Finance & Accounts</option>
                     <option value="Customer Success & Support">Customer Success & Support</option>
                   </select>
+                  <FieldError error={jobErrors.department} />
                 </div>
 
                 {/* 4. Hiring Manager */}
@@ -790,13 +866,15 @@ export const JobsModule = () => {
                   <input
                     type="text"
                     value={formData.hiringManager}
-                    onChange={(e) =>
-                      setFormData({ ...formData, hiringManager: e.target.value })
-                    }
-                    placeholder="e.g. Sundar Raman"
-                    className="form-control-input"
-                    required
+                    onChange={(e) => {
+                      const clean = sanitizeNameInput(e.target.value);
+                      setFormData({ ...formData, hiringManager: clean });
+                      if (jobErrors.hiringManager) setJobErrors((prev) => ({ ...prev, hiringManager: null }));
+                    }}
+                    placeholder="e.g. Sundar Raman (letters only)"
+                    className={`form-control-input ${jobErrors.hiringManager ? 'has-error' : ''}`}
                   />
+                  <FieldError error={jobErrors.hiringManager} />
                 </div>
 
                 {/* 5. Recruiter */}
@@ -805,13 +883,15 @@ export const JobsModule = () => {
                   <input
                     type="text"
                     value={formData.recruiter}
-                    onChange={(e) =>
-                      setFormData({ ...formData, recruiter: e.target.value })
-                    }
-                    placeholder="e.g. Dhakshan S"
-                    className="form-control-input"
-                    required
+                    onChange={(e) => {
+                      const clean = sanitizeNameInput(e.target.value);
+                      setFormData({ ...formData, recruiter: clean });
+                      if (jobErrors.recruiter) setJobErrors((prev) => ({ ...prev, recruiter: null }));
+                    }}
+                    placeholder="e.g. Dhakshan S (letters only)"
+                    className={`form-control-input ${jobErrors.recruiter ? 'has-error' : ''}`}
                   />
+                  <FieldError error={jobErrors.recruiter} />
                 </div>
               </div>
             </div>
@@ -860,15 +940,17 @@ export const JobsModule = () => {
                 <div className="form-field-group">
                   <label>Number of Vacancies *</label>
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
                     value={formData.vacancies}
-                    onChange={(e) =>
-                      setFormData({ ...formData, vacancies: parseInt(e.target.value) || 1 })
-                    }
-                    className="form-control-input"
-                    required
+                    onChange={(e) => {
+                      const clean = sanitizeNumberInput(e.target.value);
+                      setFormData({ ...formData, vacancies: clean });
+                      if (jobErrors.vacancies) setJobErrors((prev) => ({ ...prev, vacancies: null }));
+                    }}
+                    placeholder="e.g. 5 (digits only)"
+                    className={`form-control-input ${jobErrors.vacancies ? 'has-error' : ''}`}
                   />
+                  <FieldError error={jobErrors.vacancies} />
                 </div>
               </div>
 
@@ -879,13 +961,14 @@ export const JobsModule = () => {
                   <input
                     type="text"
                     value={formData.location}
-                    onChange={(e) =>
-                      setFormData({ ...formData, location: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, location: e.target.value });
+                      if (jobErrors.location) setJobErrors((prev) => ({ ...prev, location: null }));
+                    }}
                     placeholder="e.g. Chennai HQ Campus"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${jobErrors.location ? 'has-error' : ''}`}
                   />
+                  <FieldError error={jobErrors.location} />
                 </div>
 
                 {/* 19. Target Joining Date */}
@@ -1158,17 +1241,17 @@ export const JobsModule = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel-job"
+                className="btn-cancel-action"
                 onClick={handleBackToList}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-save-job"
+                className="btn-save-header-action"
               >
                 <Save size={16} />
-                {currentView === 'add' ? 'Save & Post Job' : 'Save Changes'}
+                <span>{currentView === 'add' ? 'Save & Post Job' : 'Save Changes'}</span>
               </button>
             </div>
           </form>

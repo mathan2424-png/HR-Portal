@@ -18,6 +18,18 @@ import {
   Save,
 } from 'lucide-react';
 import defaultLogo from '../../assets/logo.png';
+import { Toast } from '../../components/common/Toast/Toast';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import {
+  validateEmail,
+  validateName,
+  validatePhone,
+  validateNumber,
+  validateRequired,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  sanitizeNumberInput,
+} from '../../utils/validation';
 import './CompanyProfile.css';
 
 // Initial Mock Companies strictly conforming to user requirements (Tamil Companies & Details)
@@ -137,7 +149,7 @@ const INITIAL_COMPANIES = [
     website: 'https://www.pandianglobal.com',
     companyEmail: 'contact@pandianglobal.com',
     companyMobile: '+91 94432 55667',
-    contactPerson: 'Murugan K',
+    contactPerson: 'Rithesh K',
     contactDesignation: 'Head of People Strategy',
     registeredAddress: 'Collectorate Junction, Palayamkottai',
     city: 'Tirunelveli',
@@ -163,6 +175,11 @@ export const CompanyProfile = () => {
   const [currentView, setCurrentView] = useState('list');
   const [isVerifyingGst, setIsVerifyingGst] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
 
   // Active form data
   const defaultForm = {
@@ -192,6 +209,11 @@ export const CompanyProfile = () => {
   };
 
   const [formData, setFormData] = useState(defaultForm);
+  const [formErrors, setFormErrors] = useState({});
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Filtered List for Table
   const filteredCompanies = useMemo(() => {
@@ -209,6 +231,12 @@ export const CompanyProfile = () => {
     });
   }, [companies, searchTerm, selectedStatus]);
 
+  const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage) || 1;
+  const paginatedCompanies = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredCompanies.slice(start, start + itemsPerPage);
+  }, [filteredCompanies, currentPage, itemsPerPage]);
+
   // Open Add Company Form (Switches view in the same card)
   const handleOpenAddForm = () => {
     const nextNum = companies.length + 1;
@@ -216,11 +244,28 @@ export const CompanyProfile = () => {
     setFormData({
       ...defaultForm,
       companyId: newId,
+      companyName: '',
+      contactPerson: 'Sundar Raman',
+      contactDesignation: 'Director',
+      companyEmail: 'contact@enterprise.com',
+      companyMobile: '+91 98401 23456',
+      industry: 'Information Technology',
+      companySize: '51-200 Employees',
+      website: 'https://www.company.com',
+      aboutCompany: 'Leading enterprise solutions and digital transformation partner.',
+      registeredAddress: 'Tidel Park, 4th Floor, CSIR Road, Taramani',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      pincode: '600113',
+      gstNumber: `33AABCT${String(1000 + nextNum)}D1ZM`,
+      gstLegalName: 'NEW ENTERPRISE TECH PRIVATE LIMITED',
       registrationDate: '12-Oct-2026',
       lastUpdated: 'Just now',
-      gstVerificationDate: 'Pending Verification',
-      gstVerification: 'Not Found',
+      gstVerificationDate: '12-Oct-2026 10:30 AM',
+      gstVerification: 'Valid',
+      companyStatus: 'Active',
     });
+    setFormErrors({});
     setCurrentView('add');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -228,6 +273,7 @@ export const CompanyProfile = () => {
   // Open Edit Form (Switches view in the same card)
   const handleOpenEditForm = (company) => {
     setFormData({ ...company });
+    setFormErrors({});
     setCurrentView('edit');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -235,6 +281,7 @@ export const CompanyProfile = () => {
   // Open Quick View Form (Switches view in the same card)
   const handleOpenViewForm = (company) => {
     setFormData({ ...company });
+    setFormErrors({});
     setCurrentView('view');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -242,13 +289,32 @@ export const CompanyProfile = () => {
   // Switch back to List View
   const handleBackToList = () => {
     setCurrentView('list');
+    setFormErrors({});
     setSaveSuccessMessage('');
   };
 
-  // Handle Form Change
+  // Handle Form Change with Active Input Sanitization
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let sanitizedValue = value;
+
+    // Strictly enforce: Name fields can only accept letters (blocks typing numbers)
+    if (name === 'contactPerson' || name === 'city' || name === 'state') {
+      sanitizedValue = sanitizeNameInput(value);
+    }
+    // Strictly enforce: Number/Mobile fields can only accept digits
+    else if (name === 'companyMobile') {
+      sanitizedValue = sanitizePhoneInput(value);
+    }
+    // Strictly enforce: Pincode can only accept digits (max 6)
+    else if (name === 'pincode') {
+      sanitizedValue = sanitizeNumberInput(value).slice(0, 6);
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: sanitizedValue }));
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   // Handle Logo Upload
@@ -313,9 +379,60 @@ export const CompanyProfile = () => {
     }, 450);
   };
 
-  // Save Company Handler
+  // Save Company Handler with Strict Custom Validations
   const handleSaveCompany = (e) => {
     e.preventDefault();
+
+    const errors = {};
+
+    // 1. Company Name validation (Required)
+    const nameErr = validateRequired(formData.companyName, 'Company name');
+    if (nameErr) errors.companyName = nameErr;
+
+    // 2. Contact Person validation (Name field: Strings only, no numbers allowed)
+    if (formData.contactPerson) {
+      const contactErr = validateName(formData.contactPerson, 'Contact person', false);
+      if (contactErr) errors.contactPerson = contactErr;
+    }
+
+    // 3. Email validation (Mandatory '@' and valid domain format)
+    if (formData.companyEmail) {
+      const emailErr = validateEmail(formData.companyEmail, 'Company email', false);
+      if (emailErr) errors.companyEmail = emailErr;
+    }
+
+    // 4. Mobile validation (Number field: Numbers only)
+    if (formData.companyMobile) {
+      const mobileErr = validatePhone(formData.companyMobile, 'Company mobile', false);
+      if (mobileErr) errors.companyMobile = mobileErr;
+    }
+
+    // 5. City validation (Strings only)
+    if (formData.city) {
+      const cityErr = validateName(formData.city, 'City', false);
+      if (cityErr) errors.city = cityErr;
+    }
+
+    // 6. State validation (Strings only)
+    if (formData.state) {
+      const stateErr = validateName(formData.state, 'State', false);
+      if (stateErr) errors.state = stateErr;
+    }
+
+    // 7. Pincode validation (Numbers only: 6 digits)
+    if (formData.pincode) {
+      const pinErr = validateNumber(formData.pincode, 'Pincode', false, 6, 6);
+      if (pinErr) errors.pincode = pinErr;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      showToast('Please fix the errors indicated below.', 'warning');
+      window.scrollTo({ top: 120, behavior: 'smooth' });
+      return;
+    }
+
+    setFormErrors({});
     const now = '12-Oct-2026 01:09 PM';
 
     if (currentView === 'add') {
@@ -324,19 +441,18 @@ export const CompanyProfile = () => {
         lastUpdated: now,
       };
       setCompanies((prev) => [newRecord, ...prev]);
+      showToast(`Company "${newRecord.companyName}" added successfully!`, 'success');
     } else {
       setCompanies((prev) =>
         prev.map((item) =>
           item.companyId === formData.companyId ? { ...formData, lastUpdated: now } : item
         )
       );
+      showToast(`Company "${formData.companyName}" updated successfully!`, 'success');
     }
 
-    setSaveSuccessMessage('Company details saved successfully!');
-    setTimeout(() => {
-      setSaveSuccessMessage('');
-      setCurrentView('list');
-    }, 600);
+    setCurrentView('list');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Toggle Company Status (Active <-> Suspended)
@@ -354,13 +470,25 @@ export const CompanyProfile = () => {
 
   // Delete Company
   const handleDeleteCompany = (companyId) => {
-    if (window.confirm('Are you sure you want to delete this company account?')) {
+    const comp = companies.find((c) => c.companyId === companyId);
+    if (window.confirm(`Are you sure you want to delete company "${comp?.companyName || companyId}"?`)) {
       setCompanies((prev) => prev.filter((c) => c.companyId !== companyId));
+      showToast(`Company "${comp?.companyName || companyId}" deleted.`, 'delete');
     }
   };
 
   return (
     <div className="company-details-page animate-fade-in">
+      {/* Floating Animated Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={3500}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* 1. Page Header */}
       <div className="companies-header-row">
         {currentView === 'list' ? (
@@ -379,16 +507,7 @@ export const CompanyProfile = () => {
           </>
         ) : (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-              <button
-                type="button"
-                className="btn-back-to-list"
-                onClick={handleBackToList}
-                title="Back to Companies List"
-              >
-                <ArrowLeft size={16} strokeWidth={2.5} />
-                <span>Back to List</span>
-              </button>
+            <div>
               <h1 className="companies-main-title">
                 {currentView === 'add'
                   ? 'Add Company Details'
@@ -398,25 +517,15 @@ export const CompanyProfile = () => {
               </h1>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <button
-                type="button"
-                className="btn-cancel-action"
-                onClick={handleBackToList}
-              >
-                {currentView === 'view' ? 'Back to List' : 'Cancel'}
-              </button>
-              {(currentView === 'edit' || currentView === 'add') && (
-                <button
-                  type="submit"
-                  form="inpage-company-form"
-                  className="btn-save-header-action"
-                >
-                  <Save size={16} />
-                  <span>{currentView === 'add' ? 'Add Company' : 'Save Changes'}</span>
-                </button>
-              )}
-            </div>
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={handleBackToList}
+              title="Back to Companies List"
+            >
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
+            </button>
           </>
         )}
       </div>
@@ -435,39 +544,38 @@ export const CompanyProfile = () => {
             ========================================================================= */}
         {currentView === 'list' && (
           <>
-            {/* Toolbar: Search + Status Filter + Total Count */}
+            {/* Toolbar: Search (Left) + Status Filter (Right) */}
             <div className="companies-toolbar">
-              <div className="toolbar-left-group">
-                {/* Search Input Box */}
-                <div className="company-search-input">
-                  <Search size={16} color="var(--text-muted)" />
-                  <input
-                    type="text"
-                    placeholder="Search Company, ID, GSTIN, Contact..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                {/* Company Status Filter */}
-                <select
-                  className="toolbar-filter-select"
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                >
-                  <option value="ALL">All Company Statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Suspended">Suspended</option>
-                  <option value="Blocked">Blocked</option>
-                  <option value="Closed">Closed</option>
-                </select>
+              {/* Left: Search Input Box */}
+              <div className="company-search-input">
+                <Search size={16} color="var(--text-muted)" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                />
               </div>
 
-              {/* Right: Total Count Label (Matches Reference UI) */}
-              <div className="companies-total-label">
-                Total : {filteredCompanies.length} Companies
-              </div>
+              {/* Right: Company Status Filter */}
+              <select
+                className="toolbar-filter-select"
+                value={selectedStatus}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="ALL">All Company Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Suspended">Suspended</option>
+                <option value="Blocked">Blocked</option>
+                <option value="Closed">Closed</option>
+              </select>
             </div>
 
             {/* Companies List Table (Solid Primary Banner Header + Clean Rows) */}
@@ -493,10 +601,12 @@ export const CompanyProfile = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredCompanies.map((company, index) => (
-                      <tr key={company.companyId}>
-                        {/* S.NO */}
-                        <td style={{ fontWeight: 600 }}>{index + 1}</td>
+                    paginatedCompanies.map((company, index) => {
+                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                      return (
+                        <tr key={company.companyId}>
+                          {/* S.NO */}
+                          <td style={{ fontWeight: 600 }}>{serialNumber}</td>
 
                         {/* COMPANY (Logo + Name + ID) */}
                         <td style={{ whiteSpace: 'nowrap' }}>
@@ -650,8 +760,9 @@ export const CompanyProfile = () => {
                             </button>
                           </div>
                         </td>
-                      </tr>
-                    ))
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -660,16 +771,35 @@ export const CompanyProfile = () => {
             {/* Pagination Footer */}
             <div className="companies-pagination-row">
               <div className="pagination-entries-count">
-                Showing 1 to {filteredCompanies.length} of {companies.length} entries
+                Showing {filteredCompanies.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(currentPage * itemsPerPage, filteredCompanies.length)} of{' '}
+                {filteredCompanies.length} entries
               </div>
               <div className="pagination-controls">
-                <button type="button" className="pagination-nav-btn disabled" disabled>
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${currentPage === 1 ? 'disabled' : ''}`}
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                >
                   <ChevronLeft size={16} />
                 </button>
-                <button type="button" className="pagination-page-btn active">
-                  1
-                </button>
-                <button type="button" className="pagination-nav-btn disabled" disabled>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-btn ${currentPage === page ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -685,6 +815,7 @@ export const CompanyProfile = () => {
             id="inpage-company-form"
             onSubmit={handleSaveCompany}
             className="inpage-company-form"
+            noValidate
           >
             {/* SECTION 1: Company & Business Identity */}
             <div className="inpage-section-box">
@@ -738,10 +869,10 @@ export const CompanyProfile = () => {
                     value={formData.companyName}
                     onChange={handleInputChange}
                     readOnly={currentView === 'view'}
-                    required
                     placeholder="Enter company name"
-                    className="form-control-input"
+                    className={`form-control-input ${formErrors.companyName ? 'has-error' : ''}`}
                   />
+                  <FieldError error={formErrors.companyName} />
                 </div>
 
                 {/* Industry */}
@@ -821,10 +952,10 @@ export const CompanyProfile = () => {
                     value={formData.contactPerson}
                     onChange={handleInputChange}
                     readOnly={currentView === 'view'}
-                    required
-                    placeholder="Primary contact name"
-                    className="form-control-input"
+                    placeholder="Primary contact name (letters only)"
+                    className={`form-control-input ${formErrors.contactPerson ? 'has-error' : ''}`}
                   />
+                  <FieldError error={formErrors.contactPerson} />
                 </div>
 
                 {/* Contact Designation */}
@@ -839,10 +970,10 @@ export const CompanyProfile = () => {
                     value={formData.companyEmail}
                     onChange={handleInputChange}
                     readOnly={currentView === 'view'}
-                    required
                     placeholder="official@company.com"
-                    className="form-control-input"
+                    className={`form-control-input ${formErrors.companyEmail ? 'has-error' : ''}`}
                   />
+                  <FieldError error={formErrors.companyEmail} />
                 </div>
 
                 {/* Company Mobile */}
@@ -854,10 +985,10 @@ export const CompanyProfile = () => {
                     value={formData.companyMobile}
                     onChange={handleInputChange}
                     readOnly={currentView === 'view'}
-                    required
-                    placeholder="+91 98765 43210"
-                    className="form-control-input"
+                    placeholder="+91 98765 43210 (digits only)"
+                    className={`form-control-input ${formErrors.companyMobile ? 'has-error' : ''}`}
                   />
+                  <FieldError error={formErrors.companyMobile} />
                 </div>
               </div>
 
@@ -871,10 +1002,10 @@ export const CompanyProfile = () => {
                     value={formData.registeredAddress}
                     onChange={handleInputChange}
                     readOnly={currentView === 'view'}
-                    required
                     placeholder="Street, Building, Area"
-                    className="form-control-input"
+                    className={`form-control-input ${formErrors.registeredAddress ? 'has-error' : ''}`}
                   />
+                  <FieldError error={formErrors.registeredAddress} />
                 </div>
 
                 {/* City */}
@@ -886,37 +1017,41 @@ export const CompanyProfile = () => {
                     value={formData.city}
                     onChange={handleInputChange}
                     readOnly={currentView === 'view'}
-                    required
-                    placeholder="City name"
-                    className="form-control-input"
+                    placeholder="City name (letters only)"
+                    className={`form-control-input ${formErrors.city ? 'has-error' : ''}`}
                   />
+                  <FieldError error={formErrors.city} />
                 </div>
 
                 {/* State / Pincode */}
                 <div className="form-field-group">
                   <label>State & Pincode *</label>
                   <div style={{ display: 'flex', gap: '0.45rem' }}>
-                    <input
-                      type="text"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      readOnly={currentView === 'view'}
-                      placeholder="State"
-                      required
-                      className="form-control-input"
-                    />
-                    <input
-                      type="text"
-                      name="pincode"
-                      value={formData.pincode}
-                      onChange={handleInputChange}
-                      readOnly={currentView === 'view'}
-                      placeholder="Pincode"
-                      required
-                      style={{ width: '95px' }}
-                      className="form-control-input"
-                    />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <input
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        readOnly={currentView === 'view'}
+                        placeholder="State"
+                        className={`form-control-input ${formErrors.state ? 'has-error' : ''}`}
+                      />
+                      <FieldError error={formErrors.state} />
+                    </div>
+                    <div style={{ width: '105px', display: 'flex', flexDirection: 'column' }}>
+                      <input
+                        type="text"
+                        name="pincode"
+                        value={formData.pincode}
+                        onChange={handleInputChange}
+                        readOnly={currentView === 'view'}
+                        placeholder="6-digit PIN"
+                        style={{ width: '100%' }}
+                        className={`form-control-input ${formErrors.pincode ? 'has-error' : ''}`}
+                      />
+                      <FieldError error={formErrors.pincode} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -967,43 +1102,6 @@ export const CompanyProfile = () => {
                     </span>
                   </div>
                 </div>
-              </div>
-
-              <div className="inpage-grid-2col" style={{ marginTop: '1rem' }}>
-                {/* GST Legal Name */}
-                <div className="form-field-group">
-                  <label>GST Legal Name (from verification)</label>
-                  <input
-                    type="text"
-                    name="gstLegalName"
-                    value={formData.gstLegalName}
-                    readOnly
-                    className="form-control-input readonly"
-                  />
-                </div>
-
-                {/* GST Business Status */}
-                <div className="form-field-group">
-                  <label>GST Business Status</label>
-                  <input
-                    type="text"
-                    name="gstBusinessStatus"
-                    value={formData.gstBusinessStatus}
-                    readOnly
-                    className="form-control-input readonly"
-                  />
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: '0.65rem',
-                  fontSize: '0.78rem',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                Latest GST Verification Date:{' '}
-                <strong>{formData.gstVerificationDate || 'Not verified yet'}</strong>
               </div>
             </div>
 

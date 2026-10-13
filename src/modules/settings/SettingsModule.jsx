@@ -30,7 +30,6 @@ export const SettingsModule = () => {
       <div className="module-header">
         <div>
           <h1>Settings & Customization</h1>
-          <p>Configure company profile, security policies, and design color tokens</p>
         </div>
         <button className="btn-add-primary" onClick={handleSave}>
           {saved ? <Check size={16} /> : <Save size={16} />}

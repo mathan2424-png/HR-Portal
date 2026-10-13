@@ -12,9 +12,16 @@ import {
   FileText,
   Download,
 } from 'lucide-react';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import {
+  validateName,
+  validateRequired,
+  sanitizeNameInput,
+} from '../../utils/validation';
 import './OffersHiringModule.css';
 
 export const OffersHiringModule = () => {
+  const [errors, setErrors] = useState({});
   // STRICTLY and ONLY the 12 user-requested fields:
   // 1. Offer ID: Unique offer reference.
   // 2. Candidate: Selected candidate.
@@ -32,13 +39,13 @@ export const OffersHiringModule = () => {
   const [offers, setOffers] = useState([
     {
       id: 'OFR-2026-001',
-      candidate: 'Priya Dharshini (CAN-1042)',
+      candidate: 'Nathiya  Dharshini (CAN-1042)',
       job: 'Senior Frontend Engineer (JOB-2026-001)',
       designation: 'Staff Software Engineer - Frontend',
       salaryCtc: '₹28,50,000 / Annum (₹28.5 LPA)',
       joiningDate: '01-Nov-2026',
       offerValidUntil: '22-Oct-2026',
-      offerDocument: 'Offer_Letter_Priya_Dharshini_OFR001.pdf',
+      offerDocument: 'Offer_Letter_Nathiya _Dharshini_OFR001.pdf',
       offerStatus: 'Accepted',
       joiningStatus: 'Pending',
       actualJoiningDate: '',
@@ -142,7 +149,7 @@ export const OffersHiringModule = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
 
   // Form State (Strictly the 12 requested fields)
   const initialFormState = {
@@ -175,47 +182,70 @@ export const OffersHiringModule = () => {
     setFormData({
       ...initialFormState,
       id: generatedId,
+      candidate: '',
+      job: 'JOB-2026-001 (Senior Frontend Engineer)',
+      designation: 'Senior Frontend Engineer',
+      salaryCtc: '₹22,00,000',
       joiningDate: '01-Nov-2026',
       offerValidUntil: '25-Oct-2026',
       offerDocument: `Offer_Letter_${generatedId}.pdf`,
+      offerStatus: 'Offer Sent',
     });
     setEditingId(null);
+    setErrors({});
     setCurrentView('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenEdit = (item) => {
     setFormData({ ...item });
+    setErrors({});
     setEditingId(item.id);
     setCurrentView('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelForm = () => {
+    setErrors({});
     setCurrentView('list');
     setEditingId(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let sanitized = value;
+    if (field === 'candidate') {
+      sanitized = sanitizeNameInput(value);
+    }
+    setFormData((prev) => ({ ...prev, [field]: sanitized }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
   };
 
   const handleSaveOffer = (e) => {
     e.preventDefault();
-    if (!formData.candidate.trim()) {
-      alert('Please enter Selected Candidate.');
+    const newErrors = {};
+
+    const candErr = validateName(formData.candidate, 'Selected candidate', true);
+    if (candErr) newErrors.candidate = candErr;
+
+    const jobErr = validateRequired(formData.job, 'Related job');
+    if (jobErr) newErrors.job = jobErr;
+
+    const desigErr = validateRequired(formData.designation, 'Offered position');
+    if (desigErr) newErrors.designation = desigErr;
+
+    const salErr = validateRequired(formData.salaryCtc, 'Salary / CTC');
+    if (salErr) newErrors.salaryCtc = salErr;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!formData.job.trim()) {
-      alert('Please enter Related Job.');
-      return;
-    }
-    if (!formData.designation.trim()) {
-      alert('Please enter Offered Designation.');
-      return;
-    }
-    if (!formData.salaryCtc.trim()) {
-      alert('Please specify Salary / CTC.');
-      return;
-    }
+
+    setErrors({});
 
     if (editingId) {
       setOffers((prev) =>
@@ -310,33 +340,36 @@ export const OffersHiringModule = () => {
       <div className="offers-page-header">
         {currentView === 'list' ? (
           <>
-            <div className="offers-header-left">
+            <div>
               <h1 className="offers-page-title">Offers & Hiring</h1>
-             
             </div>
             <button
               className="btn-add-offer"
               onClick={handleOpenAdd}
               id="btn-generate-offer"
             >
-              <Plus size={16} />
+              <Plus size={16} strokeWidth={2.5} />
               <span>Generate Offer</span>
             </button>
           </>
         ) : (
-          <div className="offers-inpage-header-left">
+          <>
+            <div>
+              <h1 className="offers-page-title">
+                {editingId ? `Edit Offer: ${formData.id}` : 'Generate Candidate Offer'}
+              </h1>
+            </div>
+
             <button
               type="button"
-              className="btn-back-offers"
+              className="btn-back-to-list"
               onClick={handleCancelForm}
+              title="Back to List"
             >
-              <ArrowLeft size={16} />
-              <span>Back to Offers List</span>
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
             </button>
-            <h1 className="offers-page-title">
-              {editingId ? `Edit Offer: ${formData.id}` : 'Generate Candidate Offer'}
-            </h1>
-          </div>
+          </>
         )}
       </div>
 
@@ -344,23 +377,23 @@ export const OffersHiringModule = () => {
       <div className="offers-main-card">
         {currentView === 'list' ? (
           <>
-            {/* Toolbar & Filters */}
+            {/* Toolbar: Search (Left) + Filters (Right) */}
             <div className="offers-toolbar">
-              <div className="offers-toolbar-left">
-                <div className="offers-search-box">
-                  <Search size={16} className="text-muted" />
-                  <input
-                    type="text"
-                    placeholder="Search candidate, job, designation, offer ID..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="offers-search-input"
-                  />
-                </div>
+              <div className="offers-search-box">
+                <Search size={16} className="text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="offers-search-input"
+                />
+              </div>
 
+              <div className="offers-toolbar-right">
                 <select
                   value={offerStatusFilter}
                   onChange={(e) => {
@@ -391,25 +424,6 @@ export const OffersHiringModule = () => {
                   <option value="Joined">Joined</option>
                   <option value="Not Joined">Not Joined</option>
                 </select>
-              </div>
-
-              {/* Quick Stat Chips */}
-              <div className="offers-toolbar-stats">
-                <span className="offers-stat-chip">
-                  Total: {offers.length}
-                </span>
-                <span className="offers-stat-chip sent">
-                  Sent: {offers.filter((o) => o.offerStatus === 'Sent').length}
-                </span>
-                <span className="offers-stat-chip accepted">
-                  Accepted: {offers.filter((o) => o.offerStatus === 'Accepted').length}
-                </span>
-                <span className="offers-stat-chip joined">
-                  Joined: {offers.filter((o) => o.joiningStatus === 'Joined').length}
-                </span>
-                <span className="offers-stat-chip declined">
-                  Declined: {offers.filter((o) => o.offerStatus === 'Declined').length}
-                </span>
               </div>
             </div>
 
@@ -593,7 +607,7 @@ export const OffersHiringModule = () => {
           /* =====================================================================
              IN-PAGE FORM: Strictly the 12 requested fields (NO MODAL POPUP)
              ===================================================================== */
-          <form onSubmit={handleSaveOffer} className="inpage-offer-form">
+          <form onSubmit={handleSaveOffer} className="inpage-offer-form" noValidate>
             {/* Section 1: Offer Identity & Candidate Details */}
             <div className="inpage-section-box">
               <div className="inpage-section-header">
@@ -616,12 +630,12 @@ export const OffersHiringModule = () => {
                   <label>Selected Candidate *</label>
                   <input
                     type="text"
-                    className="form-control-input"
-                    placeholder="e.g. Priya Sharma (CAN-1042)"
+                    className={`form-control-input ${errors.candidate ? 'has-error' : ''}`}
+                    placeholder="e.g. Nathiya Sharma (letters only)"
                     value={formData.candidate}
                     onChange={(e) => handleInputChange('candidate', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.candidate} />
                 </div>
 
                 {/* 3. Job */}
@@ -629,12 +643,12 @@ export const OffersHiringModule = () => {
                   <label>Related Job *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.job ? 'has-error' : ''}`}
                     placeholder="e.g. Senior Frontend Engineer (JOB-2026-001)"
                     value={formData.job}
                     onChange={(e) => handleInputChange('job', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.job} />
                 </div>
 
                 {/* 4. Designation */}
@@ -642,12 +656,12 @@ export const OffersHiringModule = () => {
                   <label>Offered Position / Designation *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.designation ? 'has-error' : ''}`}
                     placeholder="e.g. Staff Software Engineer - Frontend"
                     value={formData.designation}
                     onChange={(e) => handleInputChange('designation', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.designation} />
                 </div>
               </div>
             </div>
@@ -663,12 +677,12 @@ export const OffersHiringModule = () => {
                   <label>Salary / CTC *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.salaryCtc ? 'has-error' : ''}`}
                     placeholder="e.g. ₹28,50,000 / Annum (₹28.5 LPA)"
                     value={formData.salaryCtc}
                     onChange={(e) => handleInputChange('salaryCtc', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.salaryCtc} />
                 </div>
 
                 {/* 6. Joining Date */}
@@ -703,7 +717,7 @@ export const OffersHiringModule = () => {
                   <input
                     type="text"
                     className="form-control-input"
-                    placeholder="e.g. Offer_Letter_Priya_Sharma.pdf"
+                    placeholder="e.g. Offer_Letter_Nathiya _Sharma.pdf"
                     value={formData.offerDocument}
                     onChange={(e) => handleInputChange('offerDocument', e.target.value)}
                     required
@@ -779,14 +793,14 @@ export const OffersHiringModule = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel-offer"
+                className="btn-cancel-action"
                 onClick={handleCancelForm}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-save-offer"
+                className="btn-save-header-action"
                 id="btn-save-offer"
               >
                 <Save size={16} />

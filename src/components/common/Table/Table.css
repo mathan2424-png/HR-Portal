@@ -10,14 +10,14 @@
   width: 100%;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 13px;
 }
 
 .custom-table th {
-  background-color: var(--bg-app);
-  color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 0.78rem;
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 13px !important;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 0.85rem 1.25rem;
@@ -30,6 +30,7 @@
   border-bottom: 1px solid var(--border-light);
   color: var(--text-main);
   vertical-align: middle;
+  font-size: 13px !important;
 }
 
 .custom-table tr:last-child td {

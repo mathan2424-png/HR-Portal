@@ -56,9 +56,6 @@ export const Dashboard = () => {
               <span>Verified Account</span>
             </span>
           </div>
-          <p className="dashboard-sub-heading">
-            Get a quick view of the company's recruitment pipeline and account activity.
-          </p>
         </div>
 
         <div className="dashboard-header-actions">

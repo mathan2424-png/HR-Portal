@@ -11,6 +11,12 @@ import {
   CheckCircle2,
   Download,
 } from 'lucide-react';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import {
+  validateName,
+  validateRequired,
+  sanitizeNameInput,
+} from '../../utils/validation';
 import './AuditLogModule.css';
 
 export const AuditLogModule = () => {
@@ -38,7 +44,7 @@ export const AuditLogModule = () => {
       user: 'Abinaya R (Senior HR Manager)',
       module: 'Offers & Hiring',
       action: 'Approve',
-      record: 'Staff Software Engineer Offer (OFR-2026-001 - Priya Sharma)',
+      record: 'Staff Software Engineer Offer (OFR-2026-001 - Nathiya  Sharma)',
       dateTime: '12-Oct-2026 04:45 PM',
       reason: 'Candidate cleared technical and managerial rounds with highest evaluation ratings.',
     },
@@ -101,7 +107,7 @@ export const AuditLogModule = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
 
   // Form State (strictly the 7 requested fields)
   const initialFormState = {
@@ -115,6 +121,7 @@ export const AuditLogModule = () => {
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -126,45 +133,73 @@ export const AuditLogModule = () => {
   const handleOpenAdd = () => {
     const nextNum = auditLogs.length + 1;
     const generatedId = `AUD-2026-${String(nextNum).padStart(3, '0')}`;
+    setErrors({});
     setFormData({
       ...initialFormState,
       id: generatedId,
-      user: 'Rajeshwaran K (Company Admin)',
+      user: 'Rajeshwaran K',
+      module: 'Jobs & Requirements',
+      action: 'Created',
+      record: 'JOB-2026-009 (Lead Engineer)',
+      reason: 'New recruitment requirement approved by management',
       dateTime: '12-Oct-2026 05:45 PM',
     });
     setEditingId(null);
     setCurrentView('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenEdit = (item) => {
+    setErrors({});
     setFormData({ ...item });
     setEditingId(item.id);
     setCurrentView('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelForm = () => {
+    setErrors({});
     setCurrentView('list');
     setEditingId(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let sanitized = value;
+    if (field === 'user') {
+      sanitized = sanitizeNameInput(value);
+    }
+    setFormData((prev) => ({ ...prev, [field]: sanitized }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
   };
 
   const handleSaveAudit = (e) => {
     e.preventDefault();
-    if (!formData.user.trim()) {
-      alert('Please enter User who performed the action.');
+    const newErrors = {};
+
+    if (formData.user) {
+      const userErr = validateName(formData.user, 'Company user', true);
+      if (userErr) newErrors.user = userErr;
+    }
+
+    const recErr = validateRequired(formData.record, 'Affected record');
+    if (recErr) newErrors.record = recErr;
+
+    const dtErr = validateRequired(formData.dateTime, 'Date & time');
+    if (dtErr) newErrors.dateTime = dtErr;
+
+    const reasonErr = validateRequired(formData.reason, 'Reason for action');
+    if (reasonErr) newErrors.reason = reasonErr;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!formData.record.trim()) {
-      alert('Please enter Affected Record.');
-      return;
-    }
-    if (!formData.reason.trim()) {
-      alert('Please provide Reason for this action.');
-      return;
-    }
+
+    setErrors({});
 
     if (editingId) {
       setAuditLogs((prev) =>
@@ -252,7 +287,6 @@ export const AuditLogModule = () => {
           <>
             <div className="audit-header-left">
               <h1 className="audit-page-title">Company Audit Log</h1>
-              1
             </div>
             <div className="audit-header-actions">
               <button
@@ -274,19 +308,23 @@ export const AuditLogModule = () => {
             </div>
           </>
         ) : (
-          <div className="audit-inpage-header-left">
+          <>
+            <div>
+              <h1 className="audit-page-title">
+                {editingId ? `Edit Audit Record: ${formData.id}` : 'Create Audit Record Entry'}
+              </h1>
+            </div>
+
             <button
               type="button"
-              className="btn-back-audit"
+              className="btn-back-to-list"
               onClick={handleCancelForm}
+              title="Back to List"
             >
-              <ArrowLeft size={16} />
-              <span>Back to Audit Log</span>
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
             </button>
-            <h1 className="audit-page-title">
-              {editingId ? `Edit Audit Record: ${formData.id}` : 'Create Audit Record Entry'}
-            </h1>
-          </div>
+          </>
         )}
       </div>
 
@@ -294,23 +332,23 @@ export const AuditLogModule = () => {
       <div className="audit-main-card">
         {currentView === 'list' ? (
           <>
-            {/* Toolbar & Filters */}
+            {/* Toolbar: Search (Left) + Filters (Right) */}
             <div className="audit-toolbar">
-              <div className="audit-toolbar-left">
-                <div className="audit-search-box">
-                  <Search size={16} className="text-muted" />
-                  <input
-                    type="text"
-                    placeholder="Search user, module, action, record, ID..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="audit-search-input"
-                  />
-                </div>
+              <div className="audit-search-box">
+                <Search size={16} className="text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="audit-search-input"
+                />
+              </div>
 
+              <div className="audit-toolbar-right">
                 <select
                   value={moduleFilter}
                   onChange={(e) => {
@@ -344,25 +382,6 @@ export const AuditLogModule = () => {
                   <option value="Approve">Approve</option>
                   <option value="Delete">Delete</option>
                 </select>
-              </div>
-
-              {/* Quick Stat Chips */}
-              <div className="audit-toolbar-stats">
-                <span className="audit-stat-chip">
-                  Total: {auditLogs.length}
-                </span>
-                <span className="audit-stat-chip create">
-                  Creates: {auditLogs.filter((a) => a.action === 'Create').length}
-                </span>
-                <span className="audit-stat-chip edit">
-                  Edits: {auditLogs.filter((a) => a.action === 'Edit').length}
-                </span>
-                <span className="audit-stat-chip approve">
-                  Approvals: {auditLogs.filter((a) => a.action === 'Approve' || a.action === 'Publish').length}
-                </span>
-                <span className="audit-stat-chip delete">
-                  Deletions: {auditLogs.filter((a) => a.action === 'Delete').length}
-                </span>
               </div>
             </div>
 
@@ -513,7 +532,7 @@ export const AuditLogModule = () => {
           /* =====================================================================
              IN-PAGE FORM: Strictly the 7 requested fields (NO MODAL POPUP)
              ===================================================================== */
-          <form onSubmit={handleSaveAudit} className="inpage-audit-form">
+          <form onSubmit={handleSaveAudit} className="inpage-audit-form" noValidate>
             {/* Section 1: Audit Identifier, User & Affected Target */}
             <div className="inpage-section-box">
               <div className="inpage-section-header">
@@ -536,12 +555,12 @@ export const AuditLogModule = () => {
                   <label>Company User (Who performed the action) *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.user ? 'has-error' : ''}`}
                     placeholder="e.g. Rajeshwaran K (Company Admin)"
                     value={formData.user}
                     onChange={(e) => handleInputChange('user', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.user} />
                 </div>
 
                 {/* 3. Module */}
@@ -594,12 +613,12 @@ export const AuditLogModule = () => {
                   <label>Affected Record (Job / Candidate / Interview / Offer / etc.) *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.record ? 'has-error' : ''}`}
                     placeholder="e.g. Senior Frontend Engineer (JOB-2026-001)"
                     value={formData.record}
                     onChange={(e) => handleInputChange('record', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.record} />
                 </div>
 
                 {/* 6. Date & Time */}
@@ -607,12 +626,12 @@ export const AuditLogModule = () => {
                   <label>Date & Time (Action timestamp) *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.dateTime ? 'has-error' : ''}`}
                     placeholder="e.g. 12-Oct-2026 05:45 PM"
                     value={formData.dateTime}
                     onChange={(e) => handleInputChange('dateTime', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.dateTime} />
                 </div>
               </div>
 
@@ -620,13 +639,13 @@ export const AuditLogModule = () => {
               <div className="form-field-group" style={{ marginTop: '0.25rem' }}>
                 <label>Reason for Important Action *</label>
                 <textarea
-                  className="form-control-textarea"
-                  rows="3"
+                  className={`form-control-textarea ${errors.reason ? 'has-error' : ''}`}
+                  rows={3}
                   placeholder="Explain justification, authorization notes, approval details, or change reason..."
                   value={formData.reason}
                   onChange={(e) => handleInputChange('reason', e.target.value)}
-                  required
                 />
+                <FieldError error={errors.reason} />
               </div>
             </div>
 
@@ -634,14 +653,14 @@ export const AuditLogModule = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel-audit"
+                className="btn-cancel-action"
                 onClick={handleCancelForm}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-save-audit"
+                className="btn-save-header-action"
                 id="btn-save-audit"
               >
                 <Save size={16} />

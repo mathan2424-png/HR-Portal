@@ -101,7 +101,7 @@ export const RecruitmentReportsModule = () => {
     { id: 'REC-REP-01', recruiter: 'Abinaya R', workload: 8, candidatesScreened: 48, interviewsSet: 22, offersReleased: 5, hired: 4, performance: '94% (Top Performer)' },
     { id: 'REC-REP-02', recruiter: 'Kavitha Sundaram', workload: 6, candidatesScreened: 36, interviewsSet: 18, offersReleased: 4, hired: 3, performance: '90% (Exceeds Goal)' },
     { id: 'REC-REP-03', recruiter: 'Karthik Raja', workload: 5, candidatesScreened: 28, interviewsSet: 14, offersReleased: 3, hired: 2, performance: '86% (On Target)' },
-    { id: 'REC-REP-04', recruiter: 'Priya Nair', workload: 5, candidatesScreened: 24, interviewsSet: 10, offersReleased: 2, hired: 2, performance: '85% (On Target)' },
+    { id: 'REC-REP-04', recruiter: 'Nathiya  Nair', workload: 5, candidatesScreened: 24, interviewsSet: 10, offersReleased: 2, hired: 2, performance: '85% (On Target)' },
   ];
 
   // 8. Time to Hire Report Data
@@ -136,7 +136,7 @@ export const RecruitmentReportsModule = () => {
       <div className="reports-page-header">
         <div className="reports-header-left">
           <h1 className="reports-page-title">Recruitment Reports</h1>
-          
+
         </div>
 
         <div className="reports-header-actions">

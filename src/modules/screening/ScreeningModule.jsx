@@ -13,9 +13,18 @@ import {
   AlertCircle,
   XCircle,
 } from 'lucide-react';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import {
+  validateName,
+  validateNumber,
+  validateRequired,
+  sanitizeNameInput,
+  sanitizeNumberInput,
+} from '../../utils/validation';
 import './ScreeningModule.css';
 
 export const ScreeningModule = () => {
+  const [errors, setErrors] = useState({});
   // STRICTLY and ONLY the 12 user-requested fields:
   // 1. Screening Name: Screening name.
   // 2. Job: Related job.
@@ -172,6 +181,10 @@ export const ScreeningModule = () => {
     }, 3500);
   };
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Filter Screenings
   const filteredScreenings = screenings.filter((item) => {
     const term = searchTerm.toLowerCase();
@@ -191,12 +204,11 @@ export const ScreeningModule = () => {
     return matchesSearch && matchesStatus && matchesResult;
   });
 
-  // Counters
-  const totalCount = screenings.length;
-  const qualifiedCount = screenings.filter((s) => s.result === 'Qualified').length;
-  const reviewCount = screenings.filter((s) => s.result === 'Review Required').length;
-  const pendingCount = screenings.filter((s) => s.screeningStatus === 'Pending').length;
-  const completedCount = screenings.filter((s) => s.screeningStatus === 'Completed').length;
+  const totalPages = Math.ceil(filteredScreenings.length / itemsPerPage) || 1;
+  const paginatedScreenings = filteredScreenings.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Open Add
   const handleOpenAdd = () => {
@@ -211,39 +223,68 @@ export const ScreeningModule = () => {
     setFormData({
       ...initialFormState,
       id: `SCRN-${Date.now()}`,
+      screeningName: '',
+      job: 'JOB-2026-001 (Senior Frontend Engineer)',
+      questions: 'Technical Architecture & Coding (5 Questions)',
+      candidateAnswer: 'Candidate solved React hooks problem and explained SSR tradeoffs.',
+      reviewedBy: 'Sundar Raman',
+      score: 85,
+      screeningStatus: 'Completed',
+      result: 'Shortlisted',
       reviewDate: nowStr,
     });
+    setErrors({});
     setCurrentView('add');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Open Edit
   const handleOpenEdit = (item) => {
     setFormData({ ...item });
+    setErrors({});
     setCurrentView('edit');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Back to list
   const handleBackToList = () => {
+    setErrors({});
     setCurrentView('list');
     setFormData(initialFormState);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Save Screening
   const handleSaveScreening = (e) => {
     e.preventDefault();
 
-    if (!formData.screeningName.trim()) {
-      alert('Please enter Screening Name');
+    const newErrors = {};
+    const nameErr = validateRequired(formData.screeningName, 'Screening name');
+    if (nameErr) newErrors.screeningName = nameErr;
+
+    const jobErr = validateRequired(formData.job, 'Related job');
+    if (jobErr) newErrors.job = jobErr;
+
+    const qErr = validateRequired(formData.questions, 'Screening questions');
+    if (qErr) newErrors.questions = qErr;
+
+    if (formData.reviewedBy) {
+      const revErr = validateName(formData.reviewedBy, 'Reviewed by', true);
+      if (revErr) newErrors.reviewedBy = revErr;
+    }
+
+    if (formData.score !== undefined && formData.score !== '') {
+      const scoreErr = validateNumber(formData.score, 'Candidate score', true);
+      if (scoreErr) newErrors.score = scoreErr;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!formData.job.trim()) {
-      alert('Please select related Job');
-      return;
-    }
-    if (!formData.questions.trim()) {
-      alert('Please enter screening question');
-      return;
-    }
+
+    setErrors({});
 
     const nowStr = new Date().toLocaleString('en-GB', {
       day: '2-digit',
@@ -311,40 +352,38 @@ export const ScreeningModule = () => {
       <div className="screening-page-header">
         {currentView === 'list' ? (
           <>
-            <div className="screening-header-left">
+            <div>
               <h1 className="screening-page-title">Screening</h1>
-             
             </div>
             <button
               type="button"
               className="btn-add-screening"
               onClick={handleOpenAdd}
             >
-              <Plus size={16} />
-              Add Screening Assessment
+              <Plus size={16} strokeWidth={2.5} />
+              <span>Add Screening Assessment</span>
             </button>
           </>
         ) : (
-          <div className="screening-inpage-header-left">
-            <button
-              type="button"
-              className="btn-back-screening"
-              onClick={handleBackToList}
-            >
-              <ArrowLeft size={16} />
-              Back to Screening List
-            </button>
+          <>
             <div>
               <h1 className="screening-page-title">
                 {currentView === 'add'
                   ? 'Create Screening Assessment'
                   : 'Review Candidate Screening Response'}
               </h1>
-              <p className="screening-subtitle">
-                Configure screening questions, evaluation criteria, and review candidate submitted answers
-              </p>
             </div>
-          </div>
+
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={handleBackToList}
+              title="Back to List"
+            >
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
+            </button>
+          </>
         )}
       </div>
 
@@ -365,23 +404,29 @@ export const ScreeningModule = () => {
             ======================================================================= */}
         {currentView === 'list' && (
           <>
-            {/* Toolbar: Search, Filters & Counters */}
+            {/* Toolbar: Search (Left) + Filters (Right) */}
             <div className="screening-toolbar">
-              <div className="screening-toolbar-left">
-                <div className="screening-search-box">
-                  <Search size={16} style={{ color: 'var(--text-muted)' }} />
-                  <input
-                    type="text"
-                    placeholder="Search screening name, job, questions, reviewer..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="screening-search-input"
-                  />
-                </div>
+              <div className="screening-search-box">
+                <Search size={16} style={{ color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="screening-search-input"
+                />
+              </div>
 
+              <div className="screening-toolbar-right">
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="screening-filter-select"
                 >
                   <option value="All">All Status</option>
@@ -393,7 +438,10 @@ export const ScreeningModule = () => {
 
                 <select
                   value={resultFilter}
-                  onChange={(e) => setResultFilter(e.target.value)}
+                  onChange={(e) => {
+                    setResultFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="screening-filter-select"
                 >
                   <option value="All">All Results</option>
@@ -401,14 +449,6 @@ export const ScreeningModule = () => {
                   <option value="Review Required">Review Required</option>
                   <option value="Not Qualified">Not Qualified</option>
                 </select>
-              </div>
-
-              <div className="screening-toolbar-stats">
-                <span className="screening-stat-chip">Total: {totalCount}</span>
-                <span className="screening-stat-chip qualified">Qualified: {qualifiedCount}</span>
-                <span className="screening-stat-chip review">Review Req: {reviewCount}</span>
-                <span className="screening-stat-chip pending">Pending: {pendingCount}</span>
-                <span className="screening-stat-chip completed">Completed: {completedCount}</span>
               </div>
             </div>
 
@@ -446,12 +486,14 @@ export const ScreeningModule = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredScreenings.map((item, index) => (
-                      <tr key={item.id}>
-                        {/* S.NO */}
-                        <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
-                          {index + 1}
-                        </td>
+                    paginatedScreenings.map((item, index) => {
+                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                      return (
+                        <tr key={item.id}>
+                          {/* S.NO */}
+                          <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
+                            {serialNumber}
+                          </td>
 
                         {/* 1. Screening Name */}
                         <td>
@@ -525,12 +567,12 @@ export const ScreeningModule = () => {
                         </td>
 
                         {/* 11. Reviewed By */}
-                        <td style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.84rem' }}>
+                        <td style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '13px' }}>
                           {item.reviewedBy}
                         </td>
 
                         {/* 12. Review Date */}
-                        <td style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>
+                        <td style={{ fontSize: '13px', color: 'var(--text-main)' }}>
                           {item.reviewDate || '—'}
                         </td>
 
@@ -556,8 +598,9 @@ export const ScreeningModule = () => {
                             </button>
                           </div>
                         </td>
-                      </tr>
-                    ))
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -566,17 +609,36 @@ export const ScreeningModule = () => {
             {/* Pagination Footer */}
             <div className="screening-table-footer">
               <div>
-                Showing 1 to {filteredScreenings.length} of {screenings.length} Entries
+                Showing {filteredScreenings.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(currentPage * itemsPerPage, filteredScreenings.length)} of{' '}
+                {filteredScreenings.length} Entries
               </div>
 
               <div className="screening-pagination-controls">
-                <button type="button" className="btn-screening-page" disabled>
+                <button
+                  type="button"
+                  className="btn-screening-page"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                >
                   <ChevronLeft size={14} />
                 </button>
-                <button type="button" className="btn-screening-page active">
-                  1
-                </button>
-                <button type="button" className="btn-screening-page" disabled>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`btn-screening-page ${currentPage === page ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="btn-screening-page"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                >
                   <ChevronRight size={14} />
                 </button>
               </div>
@@ -593,6 +655,7 @@ export const ScreeningModule = () => {
             id="inpage-screening-form"
             onSubmit={handleSaveScreening}
             className="inpage-screening-form"
+            noValidate
           >
             {/* SECTION 1: SCREENING SETUP & JOB ASSOCIATION */}
             <div className="inpage-section-box">
@@ -607,11 +670,14 @@ export const ScreeningModule = () => {
                   <input
                     type="text"
                     value={formData.screeningName}
-                    onChange={(e) => setFormData({ ...formData, screeningName: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, screeningName: e.target.value });
+                      if (errors.screeningName) setErrors((prev) => ({ ...prev, screeningName: null }));
+                    }}
                     placeholder="e.g. Frontend Core Competency & React Architecture"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${errors.screeningName ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.screeningName} />
                 </div>
 
                 {/* 2. Job */}
@@ -619,9 +685,11 @@ export const ScreeningModule = () => {
                   <label>Related Job Opening *</label>
                   <select
                     value={formData.job}
-                    onChange={(e) => setFormData({ ...formData, job: e.target.value })}
-                    className="form-control-select"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, job: e.target.value });
+                      if (errors.job) setErrors((prev) => ({ ...prev, job: null }));
+                    }}
+                    className={`form-control-select ${errors.job ? 'has-error' : ''}`}
                   >
                     <option value="Senior Frontend Engineer (JOB-2026-001)">Senior Frontend Engineer (JOB-2026-001)</option>
                     <option value="Lead Product Designer (JOB-2026-002)">Lead Product Designer (JOB-2026-002)</option>
@@ -630,6 +698,7 @@ export const ScreeningModule = () => {
                     <option value="Enterprise Account Executive (JOB-2026-005)">Enterprise Account Executive (JOB-2026-005)</option>
                     <option value="Finance & Payroll Specialist (JOB-2026-006)">Finance & Payroll Specialist (JOB-2026-006)</option>
                   </select>
+                  <FieldError error={errors.job} />
                 </div>
 
                 {/* 7. Pass Criteria */}
@@ -641,7 +710,6 @@ export const ScreeningModule = () => {
                     onChange={(e) => setFormData({ ...formData, passCriteria: e.target.value })}
                     placeholder="e.g. Min Score: 75% & All Mandatory Questions Validated"
                     className="form-control-input"
-                    required
                   />
                 </div>
               </div>
@@ -658,12 +726,15 @@ export const ScreeningModule = () => {
                 <label>Screening Questions *</label>
                 <textarea
                   value={formData.questions}
-                  onChange={(e) => setFormData({ ...formData, questions: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, questions: e.target.value });
+                    if (errors.questions) setErrors((prev) => ({ ...prev, questions: null }));
+                  }}
                   placeholder="Enter the technical or screening question asked to candidates..."
-                  className="form-control-textarea"
+                  className={`form-control-textarea ${errors.questions ? 'has-error' : ''}`}
                   rows={3}
-                  required
                 />
+                <FieldError error={errors.questions} />
               </div>
 
               <div className="inpage-grid-2col">
@@ -720,16 +791,17 @@ export const ScreeningModule = () => {
                 <div className="form-field-group">
                   <label>Candidate Score (out of 100) *</label>
                   <input
-                    type="number"
-                    min="0"
-                    max="100"
+                    type="text"
                     value={formData.score}
-                    onChange={(e) =>
-                      setFormData({ ...formData, score: parseInt(e.target.value) || 0 })
-                    }
-                    className="form-control-input"
-                    required
+                    onChange={(e) => {
+                      const clean = sanitizeNumberInput(e.target.value).slice(0, 3);
+                      setFormData({ ...formData, score: clean });
+                      if (errors.score) setErrors((prev) => ({ ...prev, score: null }));
+                    }}
+                    placeholder="e.g. 85 (digits only)"
+                    className={`form-control-input ${errors.score ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.score} />
                 </div>
 
                 {/* 9. Screening Status */}
@@ -776,11 +848,15 @@ export const ScreeningModule = () => {
                   <input
                     type="text"
                     value={formData.reviewedBy}
-                    onChange={(e) => setFormData({ ...formData, reviewedBy: e.target.value })}
-                    placeholder="e.g. Sundar Raman (Engineering Lead)"
-                    className="form-control-input"
-                    required
+                    onChange={(e) => {
+                      const clean = sanitizeNameInput(e.target.value);
+                      setFormData({ ...formData, reviewedBy: clean });
+                      if (errors.reviewedBy) setErrors((prev) => ({ ...prev, reviewedBy: null }));
+                    }}
+                    placeholder="e.g. Sundar Raman (letters only)"
+                    className={`form-control-input ${errors.reviewedBy ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.reviewedBy} />
                 </div>
 
                 {/* 12. Review Date */}
@@ -801,17 +877,17 @@ export const ScreeningModule = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel-screening"
+                className="btn-cancel-action"
                 onClick={handleBackToList}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-save-screening"
+                className="btn-save-header-action"
               >
                 <Save size={16} />
-                {currentView === 'add' ? 'Save Assessment' : 'Update Evaluation'}
+                <span>{currentView === 'add' ? 'Save Assessment' : 'Update Evaluation'}</span>
               </button>
             </div>
           </form>

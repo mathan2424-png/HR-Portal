@@ -30,7 +30,6 @@ export const AttendanceModule = () => {
       <div className="module-header">
         <div>
           <h1>Attendance & Timesheet</h1>
-          <p>Monitor daily attendance, check-ins, late entries, and overtime hours</p>
         </div>
       </div>
 

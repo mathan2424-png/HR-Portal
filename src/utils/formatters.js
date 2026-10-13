@@ -13,9 +13,9 @@ export const formatDate = (dateString, options = {}) => {
   });
 };
 
-export const formatCurrency = (amount, currency = 'USD') => {
+export const formatCurrency = (amount, currency = 'INR') => {
   if (amount === undefined || amount === null) return '-';
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: currency,
     maximumFractionDigits: 0,

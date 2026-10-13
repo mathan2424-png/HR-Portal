@@ -76,7 +76,6 @@ export const EmployeesModule = () => {
       <div className="module-header">
         <div className="module-title-box">
           <h1>Employee Directory</h1>
-          <p>Manage all company personnel, roles, and profiles</p>
         </div>
         <button className="btn-add-primary">
           <Plus size={16} />
@@ -90,7 +89,7 @@ export const EmployeesModule = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="Search by name, role or ID..."
+            placeholder="Search..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

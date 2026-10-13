@@ -1,6 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from '../components/layout/Layout';
+import { LoginPage } from '../modules/auth/LoginPage';
+import { usePortal } from '../context/PortalContext';
 import { Dashboard } from '../modules/dashboard/Dashboard';
 import { CompanyProfile } from '../modules/company-profile/CompanyProfile';
 import { SubscriptionBilling } from '../modules/subscription/SubscriptionBilling';
@@ -17,12 +19,28 @@ import { RecruitmentReportsModule } from '../modules/recruitment-reports/Recruit
 import { NotificationsModule } from '../modules/notifications/NotificationsModule';
 import { CompanySettingsModule } from '../modules/settings/CompanySettingsModule';
 import { AuditLogModule } from '../modules/audit-log/AuditLogModule';
+import { MastersModule } from '../modules/masters/MastersModule';
+
+const ProtectedLayout = () => {
+  const { isAuthenticated } = usePortal();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return <Layout />;
+};
 
 export const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      {/* Standalone Authentication Routes */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signin" element={<LoginPage />} />
+
+      {/* Protected Portal Layout */}
+      <Route path="/" element={<ProtectedLayout />}>
         <Route index element={<Dashboard />} />
+        <Route path="masters" element={<MastersModule />} />
+        <Route path="taxonomy" element={<MastersModule />} />
         <Route path="company-profile" element={<CompanyProfile />} />
         <Route path="company-details" element={<CompanyProfile />} />
         <Route path="jobs" element={<JobsModule />} />

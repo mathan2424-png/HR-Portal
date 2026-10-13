@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   Sparkles,
 } from 'lucide-react';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import { validateRequired } from '../../utils/validation';
 import './CandidateMatching.css';
 
 export const CandidateMatching = () => {
@@ -128,6 +130,10 @@ export const CandidateMatching = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [toastMessage, setToastMessage] = useState('');
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Form State
   const initialFormState = {
     id: '',
@@ -146,6 +152,7 @@ export const CandidateMatching = () => {
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
 
   // Toast
   const showToast = (msg) => {
@@ -171,12 +178,12 @@ export const CandidateMatching = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Counters
-  const totalCount = alerts.length;
-  const sentCount = alerts.filter((a) => a.alertStatus === 'Sent').length;
-  const scheduledCount = alerts.filter((a) => a.alertStatus === 'Scheduled').length;
-  const draftCount = alerts.filter((a) => a.alertStatus === 'Draft').length;
-  const totalCredits = alerts.reduce((acc, curr) => acc + (curr.creditsUsed || 0), 0);
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredAlerts.length / itemsPerPage) || 1;
+  const paginatedAlerts = filteredAlerts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Open Add Form
   const handleOpenAdd = () => {
@@ -188,42 +195,66 @@ export const CandidateMatching = () => {
       minute: '2-digit',
       hour12: true,
     });
+    setErrors({});
     setFormData({
       ...initialFormState,
       id: `MATCH-ALT-${Date.now()}`,
+      candidateReference: 'CAN-2026-001',
+      job: 'JOB-2026-001 (Senior Frontend Engineer)',
+      matchScore: '94%',
+      skillsMatch: '95% (React, TypeScript, Redux)',
+      experienceMatch: '6 Years vs 4-8 Req (Exact Match)',
+      locationMatch: 'Chennai HQ Campus (Exact Match)',
+      salaryMatch: '₹22,00,000 (Within Budget)',
+      alertChannel: 'Email & WhatsApp',
+      availability: '15 Days Notice',
+      notes: 'Top tier candidate with matching skillsets.',
+      alertStatus: 'Active',
       alertDate: nowStr,
     });
     setCurrentView('add');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Open Edit Form
   const handleOpenEdit = (item) => {
+    setErrors({});
     setFormData({ ...item });
     setCurrentView('edit');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Back to list
   const handleBackToList = () => {
+    setErrors({});
     setCurrentView('list');
     setFormData(initialFormState);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Save Alert
   const handleSaveAlert = (e) => {
     e.preventDefault();
+    const newErrors = {};
 
-    if (!formData.job.trim()) {
-      alert('Please select a Job');
+    const jobErr = validateRequired(formData.job, 'Job');
+    if (jobErr) newErrors.job = jobErr;
+    const skillsErr = validateRequired(formData.skillsMatch, 'Skills match');
+    if (skillsErr) newErrors.skillsMatch = skillsErr;
+    const expErr = validateRequired(formData.experienceMatch, 'Experience match');
+    if (expErr) newErrors.experienceMatch = expErr;
+    const locErr = validateRequired(formData.locationMatch, 'Location match');
+    if (locErr) newErrors.locationMatch = locErr;
+    const salErr = validateRequired(formData.salaryMatch, 'Salary match');
+    if (salErr) newErrors.salaryMatch = salErr;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!formData.skillsMatch.trim()) {
-      alert('Please specify Skills Match criteria');
-      return;
-    }
-    if (!formData.locationMatch.trim()) {
-      alert('Please specify Location Match criteria');
-      return;
-    }
+
+    setErrors({});
 
     const nowStr = new Date().toLocaleString('en-GB', {
       day: '2-digit',
@@ -317,40 +348,38 @@ export const CandidateMatching = () => {
       <div className="matching-page-header">
         {currentView === 'list' ? (
           <>
-            <div className="matching-header-left">
+            <div>
               <h1 className="matching-page-title">Candidate Matching & Alerts</h1>
-              
             </div>
             <button
               type="button"
               className="btn-add-matching"
               onClick={handleOpenAdd}
             >
-              <Plus size={16} />
-              Create Matching Alert
+              <Plus size={16} strokeWidth={2.5} />
+              <span>Create Matching Alert</span>
             </button>
           </>
         ) : (
-          <div className="matching-inpage-header-left">
-            <button
-              type="button"
-              className="btn-back-matching"
-              onClick={handleBackToList}
-            >
-              <ArrowLeft size={16} />
-              Back to Alerts List
-            </button>
+          <>
             <div>
               <h1 className="matching-page-title">
                 {currentView === 'add'
                   ? 'Create Candidate Matching Alert'
                   : 'Edit Matching Alert Configuration'}
               </h1>
-              <p className="matching-subtitle">
-                Configure job matching parameters and candidate dispatch channel
-              </p>
             </div>
-          </div>
+
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={handleBackToList}
+              title="Back to List"
+            >
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
+            </button>
+          </>
         )}
       </div>
 
@@ -371,40 +400,36 @@ export const CandidateMatching = () => {
             ======================================================================= */}
         {currentView === 'list' && (
           <>
-            {/* Toolbar: Search, Status Filter & Count Chips */}
+            {/* Toolbar: Search (Left) + Status Filter (Right) */}
             <div className="matching-toolbar">
-              <div className="matching-toolbar-left">
-                <div className="matching-search-box">
-                  <Search size={16} style={{ color: 'var(--text-muted)' }} />
-                  <input
-                    type="text"
-                    placeholder="Search by Job, skills, location, channel or availability..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="matching-search-input"
-                  />
-                </div>
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="matching-filter-select"
-                >
-                  <option value="All">All Status</option>
-                  <option value="Sent">Sent</option>
-                  <option value="Scheduled">Scheduled</option>
-                  <option value="Draft">Draft</option>
-                  <option value="Failed">Failed</option>
-                </select>
+              <div className="matching-search-box">
+                <Search size={16} style={{ color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="matching-search-input"
+                />
               </div>
 
-              <div className="matching-toolbar-stats">
-                <span className="matching-stat-chip">Total: {totalCount}</span>
-                <span className="matching-stat-chip sent">Sent: {sentCount}</span>
-                <span className="matching-stat-chip scheduled">Scheduled: {scheduledCount}</span>
-                <span className="matching-stat-chip draft">Draft: {draftCount}</span>
-                <span className="matching-stat-chip credits">Credits Used: {totalCredits}</span>
-              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="matching-filter-select"
+              >
+                <option value="All">All Status</option>
+                <option value="Sent">Sent</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Draft">Draft</option>
+                <option value="Failed">Failed</option>
+              </select>
             </div>
 
             {/* Modern Data Table */}
@@ -442,11 +467,13 @@ export const CandidateMatching = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredAlerts.map((item, index) => (
+                    paginatedAlerts.map((item, index) => {
+                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                      return (
                       <tr key={item.id}>
                         {/* S.NO */}
                         <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
-                          {index + 1}
+                          {serialNumber}
                         </td>
 
                         {/* 1. Job: Selected job */}
@@ -567,30 +594,52 @@ export const CandidateMatching = () => {
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="matching-table-footer">
+            <div>
+              Showing {filteredAlerts.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+              {Math.min(currentPage * itemsPerPage, filteredAlerts.length)} of{' '}
+              {filteredAlerts.length} Entries
             </div>
 
-            {/* Pagination Footer */}
-            <div className="matching-table-footer">
-              <div>
-                Showing 1 to {filteredAlerts.length} of {alerts.length} Entries
-              </div>
-
-              <div className="matching-pagination-controls">
-                <button type="button" className="btn-matching-page" disabled>
-                  <ChevronLeft size={14} />
+            <div className="matching-pagination-controls">
+              <button
+                type="button"
+                className="btn-matching-page"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                title="Previous Page"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  className={`btn-matching-page ${currentPage === page ? 'active' : ''}`}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
                 </button>
-                <button type="button" className="btn-matching-page active">
-                  1
-                </button>
-                <button type="button" className="btn-matching-page" disabled>
-                  <ChevronRight size={14} />
-                </button>
-              </div>
+              ))}
+              <button
+                type="button"
+                className="btn-matching-page"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                title="Next Page"
+              >
+                <ChevronRight size={14} />
+              </button>
             </div>
+          </div>
           </>
         )}
 
@@ -603,6 +652,7 @@ export const CandidateMatching = () => {
             id="inpage-matching-form"
             onSubmit={handleSaveAlert}
             className="inpage-matching-form"
+            noValidate
           >
             {/* SECTION 1: JOB SELECTION & MATCH CRITERIA */}
             <div className="inpage-section-box">
@@ -616,9 +666,11 @@ export const CandidateMatching = () => {
                   <label>Selected Job *</label>
                   <select
                     value={formData.job}
-                    onChange={(e) => setFormData({ ...formData, job: e.target.value })}
-                    className="form-control-select"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, job: e.target.value });
+                      if (errors.job) setErrors({ ...errors, job: null });
+                    }}
+                    className={`form-control-select ${errors.job ? 'has-error' : ''}`}
                   >
                     <option value="Senior Frontend Engineer (JOB-2026-001)">Senior Frontend Engineer (JOB-2026-001)</option>
                     <option value="Lead Product Designer (JOB-2026-002)">Lead Product Designer (JOB-2026-002)</option>
@@ -627,6 +679,7 @@ export const CandidateMatching = () => {
                     <option value="Enterprise Account Executive (JOB-2026-005)">Enterprise Account Executive (JOB-2026-005)</option>
                     <option value="Finance & Payroll Specialist (JOB-2026-006)">Finance & Payroll Specialist (JOB-2026-006)</option>
                   </select>
+                  <FieldError error={errors.job} />
                 </div>
 
                 {/* 2. Match Score */}
@@ -642,7 +695,6 @@ export const CandidateMatching = () => {
                         setFormData({ ...formData, matchScore: parseInt(e.target.value) || 75 })
                       }
                       className="form-control-input"
-                      required
                     />
                     <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>
                       {formData.matchScore}% Target
@@ -666,7 +718,6 @@ export const CandidateMatching = () => {
                       });
                     }}
                     className="form-control-input"
-                    required
                   />
                 </div>
               </div>
@@ -685,13 +736,14 @@ export const CandidateMatching = () => {
                   <input
                     type="text"
                     value={formData.skillsMatch}
-                    onChange={(e) =>
-                      setFormData({ ...formData, skillsMatch: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, skillsMatch: e.target.value });
+                      if (errors.skillsMatch) setErrors({ ...errors, skillsMatch: null });
+                    }}
                     placeholder="e.g. React.js, TypeScript, Next.js, Redux (4/5 Matched)"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${errors.skillsMatch ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.skillsMatch} />
                 </div>
 
                 {/* 4. Experience Match */}
@@ -700,13 +752,14 @@ export const CandidateMatching = () => {
                   <input
                     type="text"
                     value={formData.experienceMatch}
-                    onChange={(e) =>
-                      setFormData({ ...formData, experienceMatch: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, experienceMatch: e.target.value });
+                      if (errors.experienceMatch) setErrors({ ...errors, experienceMatch: null });
+                    }}
                     placeholder="e.g. 5.5 Yrs (Required: 4 - 8 Yrs)"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${errors.experienceMatch ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.experienceMatch} />
                 </div>
               </div>
 
@@ -717,13 +770,14 @@ export const CandidateMatching = () => {
                   <input
                     type="text"
                     value={formData.locationMatch}
-                    onChange={(e) =>
-                      setFormData({ ...formData, locationMatch: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, locationMatch: e.target.value });
+                      if (errors.locationMatch) setErrors({ ...errors, locationMatch: null });
+                    }}
                     placeholder="e.g. Chennai HQ Campus (Exact Match)"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${errors.locationMatch ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.locationMatch} />
                 </div>
 
                 {/* 6. Salary Match */}
@@ -732,13 +786,14 @@ export const CandidateMatching = () => {
                   <input
                     type="text"
                     value={formData.salaryMatch}
-                    onChange={(e) =>
-                      setFormData({ ...formData, salaryMatch: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, salaryMatch: e.target.value });
+                      if (errors.salaryMatch) setErrors({ ...errors, salaryMatch: null });
+                    }}
                     placeholder="e.g. ₹22,00,000 vs ₹18-28 LPA (Within Budget)"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${errors.salaryMatch ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.salaryMatch} />
                 </div>
 
                 {/* 7. Availability */}
@@ -835,17 +890,17 @@ export const CandidateMatching = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel-matching"
+                className="btn-cancel-action"
                 onClick={handleBackToList}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-save-matching"
+                className="btn-save-header-action"
               >
                 <Save size={16} />
-                {currentView === 'add' ? 'Save & Schedule Alert' : 'Update Alert Configuration'}
+                <span>{currentView === 'add' ? 'Save & Schedule Alert' : 'Save Changes'}</span>
               </button>
             </div>
           </form>

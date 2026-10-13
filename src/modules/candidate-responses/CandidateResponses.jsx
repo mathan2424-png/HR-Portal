@@ -13,6 +13,12 @@ import {
   CheckCircle2,
   FileText,
 } from 'lucide-react';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import {
+  validateName,
+  validateRequired,
+  sanitizeNameInput,
+} from '../../utils/validation';
 import './CandidateResponses.css';
 
 export const CandidateResponses = () => {
@@ -80,7 +86,7 @@ export const CandidateResponses = () => {
       responseDate: '11-Oct-2026 11:30 AM',
       matchScore: 85,
       recruitmentStage: 'Offer',
-      assignedRecruiter: 'Priya Anand',
+      assignedRecruiter: 'Nathiya  ',
       resumeAccess: 'Unlocked',
       notes: 'Final leadership round completed with Abinaya R. Offer rolled out for ₹14.5 LPA, awaiting acceptance.',
       tags: ['Tech Sourcing', 'Fast Joiner'],
@@ -94,7 +100,7 @@ export const CandidateResponses = () => {
       responseDate: '10-Oct-2026 02:40 PM',
       matchScore: 78,
       recruitmentStage: 'Interested',
-      assignedRecruiter: 'Priya Anand',
+      assignedRecruiter: 'Nathiya  ',
       resumeAccess: 'Locked',
       notes: 'Currently leading an active deal cycle, open to exploring opportunities next quarter (January 2027).',
       tags: ['Enterprise Sales', 'Q1 Pipeline'],
@@ -122,7 +128,7 @@ export const CandidateResponses = () => {
       responseDate: '08-Oct-2026 10:00 AM',
       matchScore: 72,
       recruitmentStage: 'Matched',
-      assignedRecruiter: 'Priya Anand',
+      assignedRecruiter: 'Nathiya  ',
       resumeAccess: 'Locked',
       notes: 'Alert delivered via email, candidate has not viewed or responded yet.',
       tags: ['Follow Up'],
@@ -136,6 +142,10 @@ export const CandidateResponses = () => {
   const [responseFilter, setResponseFilter] = useState('All');
   const [stageFilter, setStageFilter] = useState('All');
   const [toastMessage, setToastMessage] = useState('');
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Form State
   const initialFormState = {
@@ -154,6 +164,18 @@ export const CandidateResponses = () => {
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
+
+  const handleFieldChange = (field, val) => {
+    let sanitized = val;
+    if (field === 'candidate' || field === 'assignedRecruiter') {
+      sanitized = sanitizeNameInput(val);
+    }
+    setFormData((prev) => ({ ...prev, [field]: sanitized }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
 
   // Toast
   const showToast = (msg) => {
@@ -182,12 +204,12 @@ export const CandidateResponses = () => {
     return matchesSearch && matchesResponse && matchesStage;
   });
 
-  // Counters
-  const totalCount = responses.length;
-  const interestedCount = responses.filter((r) => r.response === 'Interested').length;
-  const screeningCount = responses.filter((r) => ['Screening', 'Shortlisted', 'Interview'].includes(r.recruitmentStage)).length;
-  const offerHiredCount = responses.filter((r) => ['Offer', 'Hired'].includes(r.recruitmentStage)).length;
-  const unlockedCount = responses.filter((r) => r.resumeAccess === 'Unlocked').length;
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredResponses.length / itemsPerPage) || 1;
+  const paginatedResponses = filteredResponses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Open Add
   const handleOpenAdd = () => {
@@ -199,45 +221,66 @@ export const CandidateResponses = () => {
       minute: '2-digit',
       hour12: true,
     });
+    setErrors({});
     setFormData({
       ...initialFormState,
       id: `RESP-${Date.now()}`,
+      candidate: '',
+      job: 'JOB-2026-001 (Senior Frontend Engineer)',
+      assignedRecruiter: 'Dhakshan S',
+      recruitmentStage: 'Screening',
+      response: 'Interested',
+      contactChannel: 'Email & WhatsApp',
+      notes: 'Candidate confirmed interest and sent updated resume.',
+      tags: 'React, Immediate Joiner',
       responseDate: nowStr,
     });
     setCurrentView('add');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Open Edit
   const handleOpenEdit = (item) => {
+    setErrors({});
     setFormData({
       ...item,
       tags: Array.isArray(item.tags) ? item.tags.join(', ') : item.tags,
     });
     setCurrentView('edit');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Back to list
   const handleBackToList = () => {
+    setErrors({});
     setCurrentView('list');
     setFormData(initialFormState);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Save Response
   const handleSaveResponse = (e) => {
     e.preventDefault();
+    const newErrors = {};
 
-    if (!formData.candidate.trim()) {
-      alert('Please enter Candidate reference/profile');
+    const candErr = validateName(formData.candidate, 'Candidate name', true);
+    if (candErr) newErrors.candidate = candErr;
+
+    const jobErr = validateRequired(formData.job, 'Related job');
+    if (jobErr) newErrors.job = jobErr;
+
+    if (formData.assignedRecruiter) {
+      const recErr = validateName(formData.assignedRecruiter, 'Assigned recruiter', true);
+      if (recErr) newErrors.assignedRecruiter = recErr;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!formData.job.trim()) {
-      alert('Please select related Job');
-      return;
-    }
-    if (!formData.assignedRecruiter.trim()) {
-      alert('Please assign a Recruiter');
-      return;
-    }
+
+    setErrors({});
 
     const nowStr = new Date().toLocaleString('en-GB', {
       day: '2-digit',
@@ -350,40 +393,38 @@ export const CandidateResponses = () => {
       <div className="responses-page-header">
         {currentView === 'list' ? (
           <>
-            <div className="responses-header-left">
+            <div>
               <h1 className="responses-page-title">Candidate Responses</h1>
-
             </div>
             <button
               type="button"
               className="btn-add-response"
               onClick={handleOpenAdd}
             >
-              <Plus size={16} />
-              Add Candidate Response
+              <Plus size={16} strokeWidth={2.5} />
+              <span>Add Candidate Response</span>
             </button>
           </>
         ) : (
-          <div className="responses-inpage-header-left">
-            <button
-              type="button"
-              className="btn-back-responses"
-              onClick={handleBackToList}
-            >
-              <ArrowLeft size={16} />
-              Back to Responses List
-            </button>
+          <>
             <div>
               <h1 className="responses-page-title">
                 {currentView === 'add'
                   ? 'Record Candidate Response'
                   : 'Edit Candidate Response & Evaluation'}
               </h1>
-              <p className="responses-subtitle">
-                Update candidate engagement status, recruitment stage, notes and evaluation tags
-              </p>
             </div>
-          </div>
+
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={handleBackToList}
+              title="Back to List"
+            >
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
+            </button>
+          </>
         )}
       </div>
 
@@ -404,23 +445,29 @@ export const CandidateResponses = () => {
             ======================================================================= */}
         {currentView === 'list' && (
           <>
-            {/* Toolbar: Search, Filters & Counters */}
+            {/* Toolbar: Search (Left) + Filters (Right) */}
             <div className="responses-toolbar">
-              <div className="responses-toolbar-left">
-                <div className="responses-search-box">
-                  <Search size={16} style={{ color: 'var(--text-muted)' }} />
-                  <input
-                    type="text"
-                    placeholder="Search candidate, job, recruiter, tags or notes..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="responses-search-input"
-                  />
-                </div>
+              <div className="responses-search-box">
+                <Search size={16} style={{ color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="responses-search-input"
+                />
+              </div>
 
+              <div className="responses-toolbar-right">
                 <select
                   value={responseFilter}
-                  onChange={(e) => setResponseFilter(e.target.value)}
+                  onChange={(e) => {
+                    setResponseFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="responses-filter-select"
                 >
                   <option value="All">All Responses</option>
@@ -432,7 +479,10 @@ export const CandidateResponses = () => {
 
                 <select
                   value={stageFilter}
-                  onChange={(e) => setStageFilter(e.target.value)}
+                  onChange={(e) => {
+                    setStageFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="responses-filter-select"
                 >
                   <option value="All">All Stages</option>
@@ -444,16 +494,6 @@ export const CandidateResponses = () => {
                   <option value="Offer">Offer</option>
                   <option value="Hired">Hired</option>
                 </select>
-              </div>
-
-              <div className="responses-toolbar-stats">
-                <span className="responses-stat-chip">Total: {totalCount}</span>
-                <span className="responses-stat-chip interested">Interested: {interestedCount}</span>
-                <span className="responses-stat-chip screening">Active Pipeline: {screeningCount}</span>
-                <span className="responses-stat-chip offers">Offers: {offerHiredCount}</span>
-                <span className="responses-stat-chip" style={{ background: '#ecfdf5', color: '#065f46', borderColor: '#a7f3d0' }}>
-                  Resumes Unlocked: {unlockedCount}
-                </span>
               </div>
             </div>
 
@@ -490,162 +530,183 @@ export const CandidateResponses = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredResponses.map((item, index) => (
-                      <tr key={item.id}>
-                        {/* S.NO */}
-                        <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
-                          {index + 1}
-                        </td>
+                    paginatedResponses.map((item, index) => {
+                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                      return (
+                        <tr key={item.id}>
+                          {/* S.NO */}
+                          <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
+                            {serialNumber}
+                          </td>
 
-                        {/* 1. Candidate: Profile/Reference */}
-                        <td>
-                          <div className="cand-profile-cell">
-                            <div className="cand-avatar">
-                              {item.candidate.charAt(0).toUpperCase()}
+                          {/* 1. Candidate: Profile/Reference */}
+                          <td>
+                            <div className="cand-profile-cell">
+                              <div className="cand-name-box">
+                                <span className="cand-name-text">{item.candidate.split(' (')[0]}</span>
+                                <span className="cand-id-badge">
+                                  {item.candidate.includes('(') ? item.candidate.split('(')[1].replace(')', '') : 'CAN'}
+                                </span>
+                              </div>
                             </div>
-                            <div className="cand-name-box">
-                              <span className="cand-name-text">{item.candidate.split(' (')[0]}</span>
-                              <span className="cand-id-badge">
-                                {item.candidate.includes('(') ? item.candidate.split('(')[1].replace(')', '') : 'CAN'}
+                          </td>
+
+                          {/* 2. Job: Related Job */}
+                          <td>
+                            <div className="cand-job-cell">
+                              <span className="cand-job-title">{item.job.split(' (')[0]}</span>
+                              <span className="cand-job-id">
+                                {item.job.includes('(') ? item.job.split('(')[1].replace(')', '') : item.job}
                               </span>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* 2. Job: Related Job */}
-                        <td>
-                          <div className="cand-job-cell">
-                            <span className="cand-job-title">{item.job.split(' (')[0]}</span>
-                            <span className="cand-job-id">
-                              {item.job.includes('(') ? item.job.split('(')[1].replace(')', '') : item.job}
+                          {/* 3. Response */}
+                          <td>
+                            <span className={`response-pill ${getResponsePillClass(item.response)}`}>
+                              {item.response}
                             </span>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* 3. Response */}
-                        <td>
-                          <span className={`response-pill ${getResponsePillClass(item.response)}`}>
-                            {item.response}
-                          </span>
-                        </td>
+                          {/* 5. Match Score */}
+                          <td>
+                            <span className={`resp-score-pill ${getScoreClass(item.matchScore)}`}>
+                              {item.matchScore}%
+                            </span>
+                          </td>
 
-                        {/* 5. Match Score */}
-                        <td>
-                          <span className={`resp-score-pill ${getScoreClass(item.matchScore)}`}>
-                            {item.matchScore}%
-                          </span>
-                        </td>
+                          {/* 6. Recruitment Stage */}
+                          <td>
+                            <span className={`stage-pill ${getStageClass(item.recruitmentStage)}`}>
+                              {item.recruitmentStage}
+                            </span>
+                          </td>
 
-                        {/* 6. Recruitment Stage */}
-                        <td>
-                          <span className={`stage-pill ${getStageClass(item.recruitmentStage)}`}>
-                            {item.recruitmentStage}
-                          </span>
-                        </td>
+                          {/* 7. Assigned Recruiter */}
+                          <td style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.84rem' }}>
+                            {item.assignedRecruiter}
+                          </td>
 
-                        {/* 7. Assigned Recruiter */}
-                        <td style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.84rem' }}>
-                          {item.assignedRecruiter}
-                        </td>
+                          {/* 8. Resume Access */}
+                          <td>
+                            <span className={`resume-access-pill ${item.resumeAccess === 'Unlocked' ? 'unlocked' : 'locked'}`}>
+                              {item.resumeAccess === 'Unlocked' ? (
+                                <>
+                                  <Unlock size={12} />
+                                  Unlocked
+                                </>
+                              ) : (
+                                <>
+                                  <Lock size={12} />
+                                  Locked
+                                </>
+                              )}
+                            </span>
+                          </td>
 
-                        {/* 8. Resume Access */}
-                        <td>
-                          <span className={`resume-access-pill ${item.resumeAccess === 'Unlocked' ? 'unlocked' : 'locked'}`}>
-                            {item.resumeAccess === 'Unlocked' ? (
-                              <>
-                                <Unlock size={12} />
-                                Unlocked
-                              </>
-                            ) : (
-                              <>
-                                <Lock size={12} />
-                                Locked
-                              </>
-                            )}
-                          </span>
-                        </td>
+                          {/* 10. Tags */}
+                          <td>
+                            <div>
+                              {Array.isArray(item.tags)
+                                ? item.tags.map((tag) => (
+                                  <span key={tag} className="tag-chip">
+                                    #{tag}
+                                  </span>
+                                ))
+                                : <span className="tag-chip">#{item.tags}</span>}
+                            </div>
+                          </td>
 
-                        {/* 10. Tags */}
-                        <td>
-                          <div>
-                            {Array.isArray(item.tags)
-                              ? item.tags.map((tag) => (
-                                <span key={tag} className="tag-chip">
-                                  #{tag}
-                                </span>
-                              ))
-                              : <span className="tag-chip">#{item.tags}</span>}
-                          </div>
-                        </td>
+                          {/* 4. Response Date */}
+                          <td style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>
+                            {item.responseDate || '—'}
+                          </td>
 
-                        {/* 4. Response Date */}
-                        <td style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>
-                          {item.responseDate || '—'}
-                        </td>
+                          {/* 11. Outcome */}
+                          <td>
+                            <span className={`outcome-pill ${getOutcomeClass(item.outcome)}`}>
+                              {item.outcome}
+                            </span>
+                          </td>
 
-                        {/* 11. Outcome */}
-                        <td>
-                          <span className={`outcome-pill ${getOutcomeClass(item.outcome)}`}>
-                            {item.outcome}
-                          </span>
-                        </td>
+                          {/* Actions */}
+                          <td>
+                            <div className="resp-row-actions" style={{ justifyContent: 'center' }}>
+                              <button
+                                type="button"
+                                className="action-icon-btn edit"
+                                title="Edit Evaluation"
+                                onClick={() => handleOpenEdit(item)}
+                              >
+                                <Edit2 size={15} />
+                              </button>
 
-                        {/* Actions */}
-                        <td>
-                          <div className="resp-row-actions" style={{ justifyContent: 'center' }}>
-                            <button
-                              type="button"
-                              className="action-icon-btn edit"
-                              title="Edit Evaluation"
-                              onClick={() => handleOpenEdit(item)}
-                            >
-                              <Edit2 size={15} />
-                            </button>
+                              <button
+                                type="button"
+                                className="action-icon-btn resume-toggle"
+                                title={item.resumeAccess === 'Unlocked' ? 'Lock Resume' : 'Unlock Resume'}
+                                onClick={() => handleToggleResume(item)}
+                              >
+                                <FileText size={15} />
+                              </button>
 
-                            <button
-                              type="button"
-                              className="action-icon-btn resume-toggle"
-                              title={item.resumeAccess === 'Unlocked' ? 'Lock Resume' : 'Unlock Resume'}
-                              onClick={() => handleToggleResume(item)}
-                            >
-                              <FileText size={15} />
-                            </button>
+                              <button
+                                type="button"
+                                className="action-icon-btn delete"
+                                title="Delete Record"
+                                onClick={() => handleDeleteResponse(item)}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
 
-                            <button
-                              type="button"
-                              className="action-icon-btn delete"
-                              title="Delete Record"
-                              onClick={() => handleDeleteResponse(item)}
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+          {/* Pagination Footer */}
+          <div className="responses-table-footer">
+            <div>
+              Showing {filteredResponses.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+              {Math.min(currentPage * itemsPerPage, filteredResponses.length)} of{' '}
+              {filteredResponses.length} Entries
             </div>
 
-            {/* Pagination Footer */}
-            <div className="responses-table-footer">
-              <div>
-                Showing 1 to {filteredResponses.length} of {responses.length} Entries
-              </div>
-
-              <div className="responses-pagination-controls">
-                <button type="button" className="btn-responses-page" disabled>
-                  <ChevronLeft size={14} />
+            <div className="responses-pagination-controls">
+              <button
+                type="button"
+                className="btn-responses-page"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                title="Previous Page"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  className={`btn-responses-page ${currentPage === page ? 'active' : ''}`}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
                 </button>
-                <button type="button" className="btn-responses-page active">
-                  1
-                </button>
-                <button type="button" className="btn-responses-page" disabled>
-                  <ChevronRight size={14} />
-                </button>
-              </div>
+              ))}
+              <button
+                type="button"
+                className="btn-responses-page"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                title="Next Page"
+              >
+                <ChevronRight size={14} />
+              </button>
             </div>
+          </div>
           </>
         )}
 
@@ -658,6 +719,7 @@ export const CandidateResponses = () => {
             id="inpage-response-form"
             onSubmit={handleSaveResponse}
             className="inpage-response-form"
+            noValidate
           >
             {/* SECTION 1: CANDIDATE PROFILE & JOB ASSOCIATION */}
             <div className="inpage-section-box">
@@ -672,11 +734,11 @@ export const CandidateResponses = () => {
                   <input
                     type="text"
                     value={formData.candidate}
-                    onChange={(e) => setFormData({ ...formData, candidate: e.target.value })}
-                    placeholder="e.g. Rajesh Kumar (CAN-8021)"
-                    className="form-control-input"
-                    required
+                    onChange={(e) => handleFieldChange('candidate', e.target.value)}
+                    placeholder="e.g. Rajesh Kumar (letters only)"
+                    className={`form-control-input ${errors.candidate ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.candidate} />
                 </div>
 
                 {/* 2. Job */}
@@ -684,9 +746,11 @@ export const CandidateResponses = () => {
                   <label>Related Job Opening *</label>
                   <select
                     value={formData.job}
-                    onChange={(e) => setFormData({ ...formData, job: e.target.value })}
-                    className="form-control-select"
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, job: e.target.value });
+                      if (errors.job) setErrors({ ...errors, job: null });
+                    }}
+                    className={`form-control-select ${errors.job ? 'has-error' : ''}`}
                   >
                     <option value="Senior Frontend Engineer (JOB-2026-001)">Senior Frontend Engineer (JOB-2026-001)</option>
                     <option value="Lead Product Designer (JOB-2026-002)">Lead Product Designer (JOB-2026-002)</option>
@@ -695,6 +759,7 @@ export const CandidateResponses = () => {
                     <option value="Enterprise Account Executive (JOB-2026-005)">Enterprise Account Executive (JOB-2026-005)</option>
                     <option value="Finance & Payroll Specialist (JOB-2026-006)">Finance & Payroll Specialist (JOB-2026-006)</option>
                   </select>
+                  <FieldError error={errors.job} />
                 </div>
 
                 {/* 5. Match Score */}
@@ -709,7 +774,6 @@ export const CandidateResponses = () => {
                       setFormData({ ...formData, matchScore: parseInt(e.target.value) || 0 })
                     }
                     className="form-control-input"
-                    required
                   />
                 </div>
               </div>
@@ -797,11 +861,11 @@ export const CandidateResponses = () => {
                   <input
                     type="text"
                     value={formData.assignedRecruiter}
-                    onChange={(e) => setFormData({ ...formData, assignedRecruiter: e.target.value })}
-                    placeholder="e.g. Dhakshan S"
-                    className="form-control-input"
-                    required
+                    onChange={(e) => handleFieldChange('assignedRecruiter', e.target.value)}
+                    placeholder="e.g. Dhakshan S (letters only)"
+                    className={`form-control-input ${errors.assignedRecruiter ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.assignedRecruiter} />
                 </div>
 
                 {/* 8. Resume Access */}
@@ -854,17 +918,17 @@ export const CandidateResponses = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel-response"
+                className="btn-cancel-action"
                 onClick={handleBackToList}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-save-response"
+                className="btn-save-header-action"
               >
                 <Save size={16} />
-                {currentView === 'add' ? 'Save Response' : 'Update Evaluation'}
+                <span>{currentView === 'add' ? 'Save Response' : 'Update Evaluation'}</span>
               </button>
             </div>
           </form>

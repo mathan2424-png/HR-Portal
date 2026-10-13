@@ -12,6 +12,8 @@ import {
   MailCheck,
   MailOpen,
 } from 'lucide-react';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import { validateRequired } from '../../utils/validation';
 import './NotificationsModule.css';
 
 export const NotificationsModule = () => {
@@ -29,7 +31,7 @@ export const NotificationsModule = () => {
       id: 'NTF-2026-001',
       notificationType: 'Interview',
       title: 'Interview Accepted by Candidate',
-      message: 'Priya Sharma (CAN-1042) accepted Technical Round interview invitation for 14-Oct-2026 at 10:30 AM IST.',
+      message: 'Nathiya  Sharma (CAN-1042) accepted Technical Round interview invitation for 14-Oct-2026 at 10:30 AM IST.',
       dateTime: '12-Oct-2026 05:15 PM',
       readStatus: 'Unread',
       recipient: 'Sundar Raman (Eng Lead)',
@@ -102,7 +104,7 @@ export const NotificationsModule = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
 
   // Form State (strictly the 7 requested fields)
   const initialFormState = {
@@ -116,6 +118,7 @@ export const NotificationsModule = () => {
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -127,45 +130,68 @@ export const NotificationsModule = () => {
   const handleOpenAdd = () => {
     const nextNum = notifications.length + 1;
     const generatedId = `NTF-2026-${String(nextNum).padStart(3, '0')}`;
+    setErrors({});
     setFormData({
       ...initialFormState,
       id: generatedId,
-      dateTime: '12-Oct-2026 05:40 PM',
+      title: '',
       recipient: 'Abinaya R (Senior HR Manager)',
+      notificationType: 'Recruitment',
+      channel: 'In-App & Email',
+      dateTime: '12-Oct-2026 05:40 PM',
+      message: 'Candidate application reviewed and scheduled for next round.',
+      readStatus: 'Unread',
     });
     setEditingId(null);
     setCurrentView('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenEdit = (item) => {
+    setErrors({});
     setFormData({ ...item });
     setEditingId(item.id);
     setCurrentView('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelForm = () => {
+    setErrors({});
     setCurrentView('list');
     setEditingId(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
   };
 
   const handleSaveNotification = (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      alert('Please enter Notification Title.');
+    const newErrors = {};
+
+    const recErr = validateRequired(formData.recipient, 'Recipient (Company User)');
+    if (recErr) newErrors.recipient = recErr;
+
+    const titleErr = validateRequired(formData.title, 'Notification title');
+    if (titleErr) newErrors.title = titleErr;
+
+    const dtErr = validateRequired(formData.dateTime, 'Date / Time');
+    if (dtErr) newErrors.dateTime = dtErr;
+
+    const msgErr = validateRequired(formData.message, 'Notification message');
+    if (msgErr) newErrors.message = msgErr;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!formData.message.trim()) {
-      alert('Please enter Notification Message.');
-      return;
-    }
-    if (!formData.recipient.trim()) {
-      alert('Please specify Recipient user.');
-      return;
-    }
+
+    setErrors({});
 
     if (editingId) {
       setNotifications((prev) =>
@@ -265,9 +291,8 @@ export const NotificationsModule = () => {
       <div className="notifications-page-header">
         {currentView === 'list' ? (
           <>
-            <div className="notifications-header-left">
+            <div>
               <h1 className="notifications-page-title">Notifications</h1>
-              
             </div>
             <div className="notifications-header-actions">
               {unreadCount > 0 && (
@@ -285,25 +310,29 @@ export const NotificationsModule = () => {
                 onClick={handleOpenAdd}
                 id="btn-create-notification"
               >
-                <Plus size={16} />
+                <Plus size={16} strokeWidth={2.5} />
                 <span>Create Notification</span>
               </button>
             </div>
           </>
         ) : (
-          <div className="notifications-inpage-header-left">
+          <>
+            <div>
+              <h1 className="notifications-page-title">
+                {editingId ? `Edit Notification: ${formData.id}` : 'Create Notification Dispatch'}
+              </h1>
+            </div>
+
             <button
               type="button"
-              className="btn-back-notifications"
+              className="btn-back-to-list"
               onClick={handleCancelForm}
+              title="Back to List"
             >
-              <ArrowLeft size={16} />
-              <span>Back to Notifications</span>
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
             </button>
-            <h1 className="notifications-page-title">
-              {editingId ? `Edit Notification: ${formData.id}` : 'Create Notification Dispatch'}
-            </h1>
-          </div>
+          </>
         )}
       </div>
 
@@ -311,23 +340,23 @@ export const NotificationsModule = () => {
       <div className="notifications-main-card">
         {currentView === 'list' ? (
           <>
-            {/* Toolbar & Filters */}
+            {/* Toolbar: Search (Left) + Filters (Right) */}
             <div className="notifications-toolbar">
-              <div className="notifications-toolbar-left">
-                <div className="notifications-search-box">
-                  <Search size={16} className="text-muted" />
-                  <input
-                    type="text"
-                    placeholder="Search title, message, recipient, ID..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="notifications-search-input"
-                  />
-                </div>
+              <div className="notifications-search-box">
+                <Search size={16} className="text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="notifications-search-input"
+                />
+              </div>
 
+              <div className="notifications-toolbar-right">
                 <select
                   value={typeFilter}
                   onChange={(e) => {
@@ -356,22 +385,6 @@ export const NotificationsModule = () => {
                   <option value="Unread">Unread</option>
                   <option value="Read">Read</option>
                 </select>
-              </div>
-
-              {/* Quick Stat Chips */}
-              <div className="notifications-toolbar-stats">
-                <span className="notifications-stat-chip">
-                  Total: {notifications.length}
-                </span>
-                <span className="notifications-stat-chip unread">
-                  Unread: {unreadCount}
-                </span>
-                <span className="notifications-stat-chip candidate">
-                  Candidate: {notifications.filter((n) => n.notificationType === 'Candidate response').length}
-                </span>
-                <span className="notifications-stat-chip payment">
-                  Billing: {notifications.filter((n) => n.notificationType === 'Subscription' || n.notificationType === 'Payment').length}
-                </span>
               </div>
             </div>
 
@@ -536,7 +549,7 @@ export const NotificationsModule = () => {
           /* =====================================================================
              IN-PAGE FORM: Strictly the 7 requested fields (NO MODAL POPUP)
              ===================================================================== */
-          <form onSubmit={handleSaveNotification} className="inpage-notification-form">
+          <form onSubmit={handleSaveNotification} className="inpage-notification-form" noValidate>
             {/* Section 1: Notification Details & Recipient */}
             <div className="inpage-section-box">
               <div className="inpage-section-header">
@@ -575,12 +588,12 @@ export const NotificationsModule = () => {
                   <label>Recipient (Company User) *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.recipient ? 'has-error' : ''}`}
                     placeholder="e.g. Abinaya R (Senior HR Manager) or All Admins"
                     value={formData.recipient}
                     onChange={(e) => handleInputChange('recipient', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.recipient} />
                 </div>
 
                 {/* 6. Read Status */}
@@ -609,12 +622,12 @@ export const NotificationsModule = () => {
                   <label>Notification Title *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.title ? 'has-error' : ''}`}
                     placeholder="e.g. Candidate Interview Accepted"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.title} />
                 </div>
 
                 {/* 5. Date / Time */}
@@ -622,12 +635,12 @@ export const NotificationsModule = () => {
                   <label>Date / Time *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.dateTime ? 'has-error' : ''}`}
                     placeholder="e.g. 12-Oct-2026 05:40 PM"
                     value={formData.dateTime}
                     onChange={(e) => handleInputChange('dateTime', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.dateTime} />
                 </div>
               </div>
 
@@ -635,13 +648,13 @@ export const NotificationsModule = () => {
               <div className="form-field-group" style={{ marginTop: '0.25rem' }}>
                 <label>Notification Message *</label>
                 <textarea
-                  className="form-control-textarea"
-                  rows="3"
+                  className={`form-control-textarea ${errors.message ? 'has-error' : ''}`}
+                  rows={3}
                   placeholder="Enter full notification message content..."
                   value={formData.message}
                   onChange={(e) => handleInputChange('message', e.target.value)}
-                  required
                 />
+                <FieldError error={errors.message} />
               </div>
             </div>
 
@@ -649,14 +662,14 @@ export const NotificationsModule = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel-notification"
+                className="btn-cancel-action"
                 onClick={handleCancelForm}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-save-notification"
+                className="btn-save-header-action"
                 id="btn-save-notification"
               >
                 <Save size={16} />

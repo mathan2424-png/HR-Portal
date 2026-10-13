@@ -8,6 +8,7 @@ import {
   Shield,
   History,
 } from 'lucide-react';
+import { FieldError } from '../../components/common/FieldError/FieldError';
 import './CompanySettingsModule.css';
 
 export const CompanySettingsModule = () => {
@@ -162,8 +163,37 @@ export const CompanySettingsModule = () => {
     }, 3500);
   };
 
+  const [errors, setErrors] = useState({});
+
   const handleSaveAll = (e) => {
     e.preventDefault();
+    const newErrors = {};
+
+    if (securityData.newPassword) {
+      if (securityData.newPassword.length < 8) {
+        newErrors.newPassword = 'Password must be at least 8 characters long';
+      }
+      if (securityData.newPassword !== securityData.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
+      return;
+    }
+
+    setErrors({});
+    if (securityData.newPassword) {
+      setSecurityData({
+        ...securityData,
+        currentPassword: '••••••••••••',
+        newPassword: '',
+        confirmPassword: '',
+        lastPasswordChange: 'Just now (Updated)',
+      });
+    }
     showToast('Company preferences and security settings saved successfully!');
   };
 
@@ -243,7 +273,7 @@ export const CompanySettingsModule = () => {
           </button>
         </div>
 
-        <form onSubmit={handleSaveAll} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <form onSubmit={handleSaveAll} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* SECTION 1: Company Preferences */}
           {(activeTab === 'preferences' || activeTab === 'all') && (
             <div className="settings-section-box">

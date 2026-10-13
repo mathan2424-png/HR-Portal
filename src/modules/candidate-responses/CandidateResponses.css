@@ -66,33 +66,68 @@
   transform: translateY(-1px);
 }
 
-/* In-Page Header Controls */
-.responses-inpage-header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  flex-wrap: wrap;
-}
-
-.btn-back-responses {
+/* Back to List Button (Matches Standard Structure) */
+.btn-back-to-list {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.52rem 0.95rem;
+  gap: 0.45rem;
+  padding: 0.55rem 1.15rem;
   background: #ffffff;
-  color: var(--text-main);
+  color: #1e293b;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 0.84rem;
+  font-size: 14px;
   font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.btn-back-to-list:hover {
+  background: var(--bg-app);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+/* Save / Header Action Button */
+.btn-save-header-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.35rem;
+  background-color: var(--primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 2px 6px var(--primary-glow);
+}
+
+.btn-save-header-action:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Cancel Action Button */
+.btn-cancel-action {
+  padding: 0.58rem 1.25rem;
+  background: transparent;
+  color: #475569;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
-.btn-back-responses:hover {
-  background: var(--bg-app);
-  border-color: var(--primary);
-  color: var(--primary);
+.btn-cancel-action:hover {
+  background: #f1f5f9;
+  color: var(--text-main);
 }
 
 /* Toast Alert */
@@ -158,9 +193,9 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.48rem 0.85rem;
+  width: 280px;
   min-width: 280px;
-  max-width: 420px;
-  width: 100%;
+  max-width: 280px;
   transition: all var(--transition-fast);
 }
 
@@ -179,6 +214,12 @@
   width: 100%;
 }
 
+.responses-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .responses-filter-select {
   padding: 0.48rem 0.85rem;
   background: #ffffff;
@@ -193,42 +234,6 @@
 
 .responses-filter-select:focus {
   border-color: var(--primary);
-}
-
-.responses-toolbar-stats {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-}
-
-.responses-stat-chip {
-  padding: 0.3rem 0.65rem;
-  border-radius: 20px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  background: var(--bg-app);
-  color: var(--text-muted);
-  border: 1px solid var(--border-color);
-  white-space: nowrap;
-}
-
-.responses-stat-chip.interested {
-  background: #ecfdf5;
-  color: #065f46;
-  border-color: #a7f3d0;
-}
-
-.responses-stat-chip.screening {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
-}
-
-.responses-stat-chip.offers {
-  background: #fdf4ff;
-  color: #86198f;
-  border-color: #f5d0fe;
 }
 
 /* Modern Data Table */
@@ -255,8 +260,8 @@
   color: #ffffff !important;
   font-weight: 800;
   text-transform: uppercase;
-  font-size: 0.74rem;
-  letter-spacing: 0.05em;
+  font-size: 13px !important;
+  letter-spacing: 0.04em;
   padding: 0.95rem 1rem;
   border: none;
   white-space: nowrap;
@@ -287,6 +292,7 @@
   padding: 0.85rem 1rem;
   vertical-align: middle;
   color: var(--text-main);
+  font-size: 13px;
   white-space: nowrap; /* PREVENTS WRAPPING */
 }
 
@@ -296,21 +302,6 @@
   align-items: center;
   gap: 0.6rem;
   white-space: nowrap;
-}
-
-.cand-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #eff6ff;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.8rem;
-  border: 1px solid #bfdbfe;
-  flex-shrink: 0;
 }
 
 .cand-name-box {
@@ -323,12 +314,12 @@
 .cand-name-text {
   font-weight: 700;
   color: var(--text-main);
-  font-size: 0.88rem;
+  font-size: 13px;
   white-space: nowrap;
 }
 
 .cand-id-badge {
-  font-size: 0.72rem;
+  font-size: 13px;
   font-weight: 700;
   color: #475569;
   background: #f1f5f9;
@@ -350,12 +341,12 @@
 .cand-job-title {
   font-weight: 600;
   color: var(--text-main);
-  font-size: 0.85rem;
+  font-size: 13px;
   white-space: nowrap;
 }
 
 .cand-job-id {
-  font-size: 0.72rem;
+  font-size: 13px;
   font-weight: 700;
   color: var(--primary);
   background: var(--primary-light);
@@ -373,7 +364,7 @@
   gap: 0.35rem;
   padding: 0.26rem 0.7rem;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -410,7 +401,7 @@
   padding: 0.22rem 0.55rem;
   border-radius: 12px;
   font-weight: 800;
-  font-size: 0.78rem;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -438,7 +429,7 @@
   align-items: center;
   padding: 0.25rem 0.65rem;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -492,7 +483,7 @@
   gap: 0.35rem;
   padding: 0.22rem 0.6rem;
   border-radius: 6px;
-  font-size: 0.74rem;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -514,7 +505,7 @@
   display: inline-block;
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
-  font-size: 0.72rem;
+  font-size: 13px;
   font-weight: 600;
   background: #f8fafc;
   color: #475569;
@@ -529,7 +520,7 @@
   align-items: center;
   padding: 0.22rem 0.65rem;
   border-radius: 12px;
-  font-size: 0.74rem;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -694,17 +685,17 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
-/* SECTION HEADER BANNER: SOLID BLUE BACKGROUND WITH PURE WHITE TEXT */
 .inpage-section-header {
-  background: var(--primary) !important;
-  color: #ffffff !important;
-  padding: 0.65rem 1.15rem;
-  border-radius: 6px;
-  font-size: 0.78rem;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  padding: 0.8rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  margin: -1.25rem -1.5rem 0.5rem -1.5rem;
+  margin: -1.25rem -1.5rem 0.75rem -1.5rem;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
 }

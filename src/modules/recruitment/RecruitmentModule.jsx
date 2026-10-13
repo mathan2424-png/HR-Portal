@@ -29,7 +29,6 @@ export const RecruitmentModule = () => {
       <div className="module-header">
         <div>
           <h1>Recruitment & Talent Acquisition</h1>
-          <p>Track job openings, applicant pipelines, and hiring progression</p>
         </div>
         <button className="btn-add-primary">
           <Plus size={16} /> Post New Job

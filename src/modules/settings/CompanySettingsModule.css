@@ -123,17 +123,17 @@
   border-color: #bfdbfe;
 }
 
-/* SECTION HEADER BANNER: SOLID BLUE BACKGROUND WITH PURE WHITE TEXT */
 .settings-section-header {
-  background: var(--primary) !important;
-  color: #ffffff !important;
-  padding: 0.65rem 1.15rem;
-  border-radius: 6px;
-  font-size: 0.78rem;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  padding: 0.8rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  margin: -1.25rem -1.5rem 0.5rem -1.5rem;
+  margin: -1.25rem -1.5rem 0.75rem -1.5rem;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
   display: flex;
@@ -142,7 +142,7 @@
 }
 
 .settings-section-header span {
-  color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 /* In-Page Section Box */
@@ -279,7 +279,7 @@
   color: #ffffff !important;
   font-weight: 800;
   text-transform: uppercase;
-  font-size: 0.74rem;
+  font-size: 13px !important;
   letter-spacing: 0.05em;
   padding: 0.95rem 1rem;
   border: none;
@@ -312,6 +312,7 @@
   vertical-align: middle;
   color: var(--text-main);
   white-space: nowrap; /* PREVENTS WRAPPING */
+  font-size: 13px;
 }
 
 /* Status Badges */
@@ -321,7 +322,7 @@
   gap: 0.35rem;
   padding: 0.2rem 0.6rem;
   border-radius: 20px;
-  font-size: 0.74rem;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }

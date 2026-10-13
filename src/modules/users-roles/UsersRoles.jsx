@@ -15,11 +15,25 @@ import {
   ArrowLeft,
   Save,
   CheckCircle2,
+  Users,
+  RotateCcw,
   Check,
 } from 'lucide-react';
+import { Toast } from '../../components/common/Toast/Toast';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import {
+  validateEmail,
+  validateName,
+  validatePhone,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+} from '../../utils/validation';
 import './UsersRoles.css';
 
 export const UsersRoles = () => {
+  const [userErrors, setUserErrors] = useState({});
+  const [roleErrors, setRoleErrors] = useState({});
+
   // 1. Defined System Roles matching Image 1 & 2
   const [systemRoles, setSystemRoles] = useState([
     {
@@ -207,7 +221,7 @@ export const UsersRoles = () => {
     {
       userId: 'USR-008',
       employeeName: 'Rithesh K',
-      email: 'Rithesh.k@company.com',
+      email: 'murugan.k@company.com',
       mobile: '+91 98940 33445',
       employeeId: 'EMP-5042',
       designation: 'Systems Auditor',
@@ -230,18 +244,17 @@ export const UsersRoles = () => {
   const [currentView, setCurrentView] = useState('list');
   const [editingUserId, setEditingUserId] = useState(null);
 
-  // Modal State for Image 2 "Add Role"
-  const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
-
-  // Add Role Form State (Image 2)
+  // Add Role Form State (In-Page View)
   const initialNewRoleState = {
     name: '',
     description: '',
     permissions: {
       Dashboard: { view: true, add: false, edit: false, delete: false },
-      'Roles Permissions': { view: true, add: false, edit: false, delete: false },
+      'Roles & Permissions': { view: true, add: false, edit: false, delete: false },
       'Admin Users': { view: true, add: true, edit: false, delete: false },
-      'Business Regions': { view: true, add: false, edit: false, delete: false },
+      'Company Details': { view: true, add: false, edit: true, delete: false },
+      'Departments & Branches': { view: true, add: true, edit: true, delete: false },
+      'Masters & Taxonomy': { view: true, add: true, edit: true, delete: false },
       'Jobs & Requirements': { view: true, add: true, edit: true, delete: false },
       'Candidate Matching': { view: true, add: true, edit: false, delete: false },
       'Candidate Responses': { view: true, add: true, edit: true, delete: false },
@@ -249,7 +262,9 @@ export const UsersRoles = () => {
       'Interviews & Scheduling': { view: true, add: true, edit: true, delete: false },
       'Offers & Hiring': { view: true, add: false, edit: false, delete: false },
       'Recruitment Reports': { view: true, add: false, edit: false, delete: false },
+      'Notifications': { view: true, add: true, edit: true, delete: false },
       'Company Settings': { view: false, add: false, edit: false, delete: false },
+      'Company Audit Log': { view: true, add: false, edit: false, delete: false },
     },
   };
   const [newRoleForm, setNewRoleForm] = useState(initialNewRoleState);
@@ -273,26 +288,23 @@ export const UsersRoles = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage('');
-    }, 3500);
+  // Toast Notification State
+  const [toast, setToast] = useState(null); // { message: string, type: 'success' | 'delete' | 'info' | 'warning' }
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
   };
 
-  // Open Image 2 "Add Role" Modal
+  // Open In-Page "Add Role" View (Hides table, shows Add Role form)
   const handleOpenCreateRole = () => {
     setNewRoleForm(initialNewRoleState);
-    setIsAddRoleModalOpen(true);
+    setCurrentView('add-role');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCloseCreateRole = () => {
-    setIsAddRoleModalOpen(false);
-  };
-
-  // Toggle single permission circle in Image 2 matrix
+  // Toggle single permission circle in matrix
   const handleTogglePermission = (moduleName, permType) => {
     setNewRoleForm((prev) => {
       const currentVal = prev.permissions[moduleName]?.[permType] || false;
@@ -328,13 +340,46 @@ export const UsersRoles = () => {
     });
   };
 
-  // Save new role from Image 2
+  // Presets: Select All, View Only, Clear All
+  const handlePresetSelectAll = () => {
+    setNewRoleForm((prev) => {
+      const updated = {};
+      Object.keys(prev.permissions).forEach((mod) => {
+        updated[mod] = { view: true, add: true, edit: true, delete: true };
+      });
+      return { ...prev, permissions: updated };
+    });
+  };
+
+  const handlePresetViewOnly = () => {
+    setNewRoleForm((prev) => {
+      const updated = {};
+      Object.keys(prev.permissions).forEach((mod) => {
+        updated[mod] = { view: true, add: false, edit: false, delete: false };
+      });
+      return { ...prev, permissions: updated };
+    });
+  };
+
+  const handlePresetClearAll = () => {
+    setNewRoleForm((prev) => {
+      const updated = {};
+      Object.keys(prev.permissions).forEach((mod) => {
+        updated[mod] = { view: false, add: false, edit: false, delete: false };
+      });
+      return { ...prev, permissions: updated };
+    });
+  };
+
+  // Save new role from in-page view
   const handleSaveRole = (e) => {
     e.preventDefault();
-    if (!newRoleForm.name.trim()) {
-      alert('Please enter Role Name.');
+    const roleNameErr = validateRequired(newRoleForm.name, 'Role name');
+    if (roleNameErr) {
+      setRoleErrors({ name: roleNameErr });
       return;
     }
+    setRoleErrors({});
 
     const nextIdNum = systemRoles.length + 1;
     const roleId = `ROLE-0${nextIdNum}`;
@@ -361,8 +406,9 @@ export const UsersRoles = () => {
     };
 
     setSystemRoles((prev) => [...prev, createdRole]);
-    setIsAddRoleModalOpen(false);
+    setCurrentView('list');
     showToast(`Role "${createdRole.name}" (${createdRole.id}) created successfully!`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // User In-Page Form Handlers
@@ -372,48 +418,72 @@ export const UsersRoles = () => {
       ...initialUserFormData,
       userId: `USR-00${nextIdNumber}`,
       employeeId: `EMP-${4000 + nextIdNumber}`,
+      employeeName: '',
+      email: 'newuser@company.com',
+      mobile: '+91 98401 23456',
       role: systemRoles[0]?.name || 'Super Admin',
+      designation: 'HR Specialist',
+      department: 'Talent Acquisition',
+      branch: 'Chennai HQ',
     });
+    setUserErrors({});
     setEditingUserId(null);
     setCurrentView('add-user');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenEditUser = (user) => {
     setUserFormData({ ...user });
+    setUserErrors({});
     setEditingUserId(user.userId);
     setCurrentView('edit-user');
   };
 
   const handleOpenViewUser = (user) => {
     setUserFormData({ ...user });
+    setUserErrors({});
     setEditingUserId(user.userId);
     setCurrentView('view-user');
   };
 
   const handleBackToList = () => {
+    setUserErrors({});
+    setRoleErrors({});
     setCurrentView('list');
     setEditingUserId(null);
   };
 
   const handleSaveUser = (e) => {
     e.preventDefault();
-    if (!userFormData.employeeName.trim()) {
-      alert('Please enter Full Name.');
+    const errors = {};
+
+    const nameErr = validateName(userFormData.employeeName, 'Full name', true);
+    if (nameErr) errors.employeeName = nameErr;
+
+    const emailErr = validateEmail(userFormData.email, 'Work email', true);
+    if (emailErr) errors.email = emailErr;
+
+    if (userFormData.mobile && userFormData.mobile.trim()) {
+      const mobileErr = validatePhone(userFormData.mobile, 'Work mobile', false);
+      if (mobileErr) errors.mobile = mobileErr;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setUserErrors(errors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!userFormData.email.trim()) {
-      alert('Please enter Work Email.');
-      return;
-    }
+
+    setUserErrors({});
 
     if (editingUserId) {
       setUsers((prev) =>
         prev.map((u) => (u.userId === editingUserId ? { ...userFormData } : u))
       );
-      showToast(`User "${userFormData.employeeName}" updated successfully!`);
+      showToast(`User "${userFormData.employeeName}" updated successfully!`, 'success');
     } else {
       setUsers((prev) => [userFormData, ...prev]);
-      showToast(`User "${userFormData.employeeName}" added successfully!`);
+      showToast(`User "${userFormData.employeeName}" added successfully!`, 'success');
     }
 
     setCurrentView('list');
@@ -423,7 +493,7 @@ export const UsersRoles = () => {
   const handleDeleteUser = (userId, name) => {
     if (window.confirm(`Are you sure you want to remove user "${name}" (${userId})?`)) {
       setUsers((prev) => prev.filter((u) => u.userId !== userId));
-      showToast(`User "${userId}" removed.`);
+      showToast(`User "${name}" (${userId}) deleted successfully.`, 'delete');
     }
   };
 
@@ -469,32 +539,35 @@ export const UsersRoles = () => {
 
   return (
     <div className="users-roles-page">
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div className="inpage-success-banner">
-          <CheckCircle2 size={18} />
-          <span>{toastMessage}</span>
-        </div>
+      {/* Floating Animated Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={3500}
+          onClose={() => setToast(null)}
+        />
       )}
 
-      {/* Header matching Image 1 */}
+      {/* Header */}
       <div className="users-page-header">
         <div className="users-header-left">
-          {/* Breadcrumb matching Image 1 */}
-          <div className="users-breadcrumb">
-            <span className="breadcrumb-home-icon">
-              <Home size={15} />
-            </span>
-            <span className="breadcrumb-sep">&gt;</span>
-            <span className="breadcrumb-current">Roles & Permissions</span>
-          </div>
-          <h1 className="users-page-title">Roles & Permissions</h1>
-
+          <h1 className="users-page-title">
+            {currentView === 'add-role'
+              ? 'Add Role'
+              : currentView === 'add-user'
+                ? 'Add User'
+                : currentView === 'edit-user'
+                  ? 'Edit User'
+                  : currentView === 'view-user'
+                    ? 'User Details'
+                    : 'Roles & Permissions'}
+          </h1>
         </div>
 
         {currentView === 'list' ? (
           <div className="users-header-actions">
-            {/* 1. SEPARATE "Create Role" BUTTON (Opens Image 2 UI) */}
+            {/* 1. SEPARATE "Create Role" BUTTON */}
             <button
               type="button"
               className="btn-create-role-header"
@@ -505,7 +578,7 @@ export const UsersRoles = () => {
               <span>Create Role</span>
             </button>
 
-            {/* 2. "+ Add User" BUTTON */}
+            {/* 2. "Add User" BUTTON */}
             <button
               type="button"
               className="btn-add-user-header"
@@ -513,14 +586,15 @@ export const UsersRoles = () => {
               id="btn-add-user"
             >
               <Plus size={16} />
-              <span>+ Add User</span>
+              <span>Add User</span>
             </button>
           </div>
         ) : (
           <button
             type="button"
-            className="btn-create-role-header"
+            className="btn-back-to-list"
             onClick={handleBackToList}
+            title="Back to Users & Roles"
           >
             <ArrowLeft size={16} />
             <span>Back to Users & Roles</span>
@@ -528,28 +602,42 @@ export const UsersRoles = () => {
         )}
       </div>
 
-      {currentView === 'list' ? (
+      {currentView === 'list' && (
         <>
           {/* =====================================================================
-             SECTION: Defined System Roles (N) matching Image 1
+             SECTION: Defined System Roles (Compact, Clean Minimal UI)
              ===================================================================== */}
           <div className="defined-roles-card">
             <div className="defined-roles-header">
               <div className="defined-roles-title-box">
-                <ShieldCheck size={20} />
+                <ShieldCheck size={16} />
                 <span className="defined-roles-title">
                   Defined System Roles ({systemRoles.length})
                 </span>
               </div>
-              <span className="defined-roles-subtext">
-                Administrators must belong to an active role before system assignment.
-              </span>
+
+              {activeCardRoleFilter && (
+                <button
+                  type="button"
+                  className="btn-clear-role-filter"
+                  onClick={() => {
+                    setActiveCardRoleFilter(null);
+                    setSelectedRoleFilter('All Roles');
+                    setCurrentPage(1);
+                  }}
+                  title="Clear role filter"
+                >
+                  <RotateCcw size={11} />
+                  <span>Filtered: <strong>{activeCardRoleFilter}</strong> (Reset)</span>
+                </button>
+              )}
             </div>
 
             {/* Roles Cards Grid */}
             <div className="roles-cards-grid">
               {systemRoles.map((role) => {
                 const isSelected = activeCardRoleFilter === role.name;
+
                 return (
                   <div
                     key={role.id}
@@ -564,15 +652,14 @@ export const UsersRoles = () => {
                       }
                       setCurrentPage(1);
                     }}
-                    title={`Click to filter users by ${role.name}`}
+                    title={`Filter by ${role.name}`}
                   >
-                    <div>
-                      <div className="role-card-top-row">
-                        <span className="role-card-name">{role.name}</span>
-                        <span className="role-card-code">{role.id}</span>
-                      </div>
-                      <p className="role-card-desc">{role.description}</p>
+                    <div className="role-card-top-row">
+                      <span className="role-card-name">{role.name}</span>
+                      <span className="role-card-code">{role.id}</span>
                     </div>
+
+                    <p className="role-card-desc">{role.description}</p>
 
                     <div className="role-card-chips-row">
                       {role.chips.map((chip, idx) => (
@@ -597,7 +684,7 @@ export const UsersRoles = () => {
                 <Search size={16} className="text-muted" />
                 <input
                   type="text"
-                  placeholder="Search by User ID, name, email, or role..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -764,10 +851,213 @@ export const UsersRoles = () => {
             </div>
           </div>
         </>
-      ) : (
-        /* =====================================================================
-           IN-PAGE USER ADD / EDIT / VIEW FORM (Clean, NO permissions clutter!)
-           ===================================================================== */
+      )}
+
+      {/* =====================================================================
+         VIEW 2: DEDICATED IN-PAGE "ADD ROLE" VIEW (Table & Cards are Hidden!)
+         ===================================================================== */}
+      {currentView === 'add-role' && (
+        <div className="inpage-role-card">
+          <form onSubmit={handleSaveRole} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Role Details */}
+            <div className="role-details-grid">
+              <div className="role-form-group">
+                <label>Role Name *</label>
+                <input
+                  type="text"
+                  className={`role-input-control ${roleErrors.name ? 'has-error' : ''}`}
+                  placeholder="Enter role name (letters only)"
+                  value={newRoleForm.name}
+                  onChange={(e) => {
+                    const clean = sanitizeNameInput(e.target.value);
+                    setNewRoleForm({ ...newRoleForm, name: clean });
+                    if (roleErrors.name) setRoleErrors({});
+                  }}
+                  autoFocus
+                />
+                <FieldError error={roleErrors.name} />
+              </div>
+
+              <div className="role-form-group">
+                <label>Description</label>
+                <textarea
+                  className="role-textarea-control"
+                  placeholder="Describe this role and its responsibilities..."
+                  rows="2"
+                  value={newRoleForm.description}
+                  onChange={(e) => setNewRoleForm({ ...newRoleForm, description: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Section Banner with Presets */}
+            <div className="role-section-banner">
+              <div className="role-section-banner-left">
+                <Lock size={16} />
+                <span>ROLE PERMISSIONS MATRIX</span>
+              </div>
+              <div className="role-preset-actions">
+                <button
+                  type="button"
+                  className="role-preset-btn"
+                  onClick={handlePresetSelectAll}
+                  title="Select all View, Add, Edit, Delete permissions"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  className="role-preset-btn"
+                  onClick={handlePresetViewOnly}
+                  title="Set View only for all modules"
+                >
+                  View Only
+                </button>
+                <button
+                  type="button"
+                  className="role-preset-btn"
+                  onClick={handlePresetClearAll}
+                  title="Deselect all permissions"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+
+            {/* Permissions Matrix Full Table */}
+            <div className="inpage-permissions-wrapper">
+              <table className="inpage-permissions-table">
+                <thead>
+                  <tr>
+                    <th>MODULE'S</th>
+                    <th>
+                      <div
+                        className="perm-th-col"
+                        onClick={() => handleToggleAllColumn('view')}
+                        title="Click to toggle all VIEW permissions"
+                      >
+                        <span>VIEW</span>
+                        <div className="perm-circle-checkbox">
+                          {Object.values(newRoleForm.permissions).every((m) => m.view) && (
+                            <span className="perm-circle-dot" />
+                          )}
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div
+                        className="perm-th-col"
+                        onClick={() => handleToggleAllColumn('add')}
+                        title="Click to toggle all ADD permissions"
+                      >
+                        <span>ADD</span>
+                        <div className="perm-circle-checkbox">
+                          {Object.values(newRoleForm.permissions).every((m) => m.add) && (
+                            <span className="perm-circle-dot" />
+                          )}
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div
+                        className="perm-th-col"
+                        onClick={() => handleToggleAllColumn('edit')}
+                        title="Click to toggle all EDIT permissions"
+                      >
+                        <span>EDIT</span>
+                        <div className="perm-circle-checkbox">
+                          {Object.values(newRoleForm.permissions).every((m) => m.edit) && (
+                            <span className="perm-circle-dot" />
+                          )}
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div
+                        className="perm-th-col"
+                        onClick={() => handleToggleAllColumn('delete')}
+                        title="Click to toggle all DELETE permissions"
+                      >
+                        <span>DELETE</span>
+                        <div className="perm-circle-checkbox">
+                          {Object.values(newRoleForm.permissions).every((m) => m.delete) && (
+                            <span className="perm-circle-dot" />
+                          )}
+                        </div>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(newRoleForm.permissions).map((moduleName) => {
+                    const rowPerms = newRoleForm.permissions[moduleName];
+                    return (
+                      <tr key={moduleName}>
+                        <td>{moduleName}</td>
+                        <td>
+                          <div
+                            className={`perm-circle-checkbox ${rowPerms.view ? 'checked' : ''}`}
+                            onClick={() => handleTogglePermission(moduleName, 'view')}
+                          >
+                            {rowPerms.view && <Check size={13} strokeWidth={3} />}
+                          </div>
+                        </td>
+                        <td>
+                          <div
+                            className={`perm-circle-checkbox ${rowPerms.add ? 'checked' : ''}`}
+                            onClick={() => handleTogglePermission(moduleName, 'add')}
+                          >
+                            {rowPerms.add && <Check size={13} strokeWidth={3} />}
+                          </div>
+                        </td>
+                        <td>
+                          <div
+                            className={`perm-circle-checkbox ${rowPerms.edit ? 'checked' : ''}`}
+                            onClick={() => handleTogglePermission(moduleName, 'edit')}
+                          >
+                            {rowPerms.edit && <Check size={13} strokeWidth={3} />}
+                          </div>
+                        </td>
+                        <td>
+                          <div
+                            className={`perm-circle-checkbox ${rowPerms.delete ? 'checked' : ''}`}
+                            onClick={() => handleTogglePermission(moduleName, 'delete')}
+                          >
+                            {rowPerms.delete && <Check size={13} strokeWidth={3} />}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="inpage-role-footer">
+              <button
+                type="button"
+                className="btn-role-cancel"
+                onClick={handleBackToList}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn-role-submit"
+              >
+                <Shield size={16} />
+                <span>Create Role</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* =====================================================================
+         VIEW 3: IN-PAGE USER ADD / EDIT / VIEW FORM
+         ===================================================================== */}
+      {(currentView === 'add-user' || currentView === 'edit-user' || currentView === 'view-user') && (
         <div className="inpage-user-form-card">
           <div className="inpage-user-section-banner">
             {currentView === 'add-user'
@@ -777,7 +1067,7 @@ export const UsersRoles = () => {
                 : `VIEW USER PROFILE: ${userFormData.employeeName} (${userFormData.userId})`}
           </div>
 
-          <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <form onSubmit={handleSaveUser} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div className="inpage-user-grid-3col">
               {/* User ID */}
               <div className="role-form-group">
@@ -796,13 +1086,17 @@ export const UsersRoles = () => {
                 <label>Full Name *</label>
                 <input
                   type="text"
-                  className="role-input-control"
-                  placeholder="e.g. Saravanan S"
+                  className={`role-input-control ${userErrors.employeeName ? 'has-error' : ''}`}
+                  placeholder="e.g. Saravanan S (letters only)"
                   value={userFormData.employeeName}
-                  onChange={(e) => setUserFormData({ ...userFormData, employeeName: e.target.value })}
+                  onChange={(e) => {
+                    const clean = sanitizeNameInput(e.target.value);
+                    setUserFormData({ ...userFormData, employeeName: clean });
+                    if (userErrors.employeeName) setUserErrors((prev) => ({ ...prev, employeeName: null }));
+                  }}
                   disabled={currentView === 'view-user'}
-                  required
                 />
+                <FieldError error={userErrors.employeeName} />
               </div>
 
               {/* Email */}
@@ -810,13 +1104,16 @@ export const UsersRoles = () => {
                 <label>Work Email *</label>
                 <input
                   type="email"
-                  className="role-input-control"
+                  className={`role-input-control ${userErrors.email ? 'has-error' : ''}`}
                   placeholder="e.g. saravanan.admin@company.com"
                   value={userFormData.email}
-                  onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                  onChange={(e) => {
+                    setUserFormData({ ...userFormData, email: e.target.value });
+                    if (userErrors.email) setUserErrors((prev) => ({ ...prev, email: null }));
+                  }}
                   disabled={currentView === 'view-user'}
-                  required
                 />
+                <FieldError error={userErrors.email} />
               </div>
             </div>
 
@@ -826,12 +1123,17 @@ export const UsersRoles = () => {
                 <label>Work Mobile</label>
                 <input
                   type="text"
-                  className="role-input-control"
-                  placeholder="e.g. +91 98401 23456"
+                  className={`role-input-control ${userErrors.mobile ? 'has-error' : ''}`}
+                  placeholder="e.g. +91 98401 23456 (digits only)"
                   value={userFormData.mobile}
-                  onChange={(e) => setUserFormData({ ...userFormData, mobile: e.target.value })}
+                  onChange={(e) => {
+                    const clean = sanitizePhoneInput(e.target.value);
+                    setUserFormData({ ...userFormData, mobile: clean });
+                    if (userErrors.mobile) setUserErrors((prev) => ({ ...prev, mobile: null }));
+                  }}
                   disabled={currentView === 'view-user'}
                 />
+                <FieldError error={userErrors.mobile} />
               </div>
 
               {/* Employee ID */}
@@ -957,199 +1259,6 @@ export const UsersRoles = () => {
               )}
             </div>
           </form>
-        </div>
-      )}
-
-      {/* =====================================================================
-         IMAGE 2 MODAL: "Add Role" with ROLE PERMISSIONS MATRIX
-         ===================================================================== */}
-      {isAddRoleModalOpen && (
-        <div className="modal-backdrop-overlay" onClick={handleCloseCreateRole}>
-          <div
-            className="add-role-modal-container"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="add-role-modal-header">
-              <div>
-                <h2 className="add-role-modal-title">Add Role</h2>
-                <div className="add-role-modal-subtitle">
-                  Create a new user role and configure its permissions
-                </div>
-              </div>
-              <button
-                type="button"
-                className="btn-close-modal"
-                onClick={handleCloseCreateRole}
-                title="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Form Body */}
-            <form onSubmit={handleSaveRole}>
-              <div className="add-role-modal-body">
-                {/* Role Name */}
-                <div className="role-form-group">
-                  <label>Role Name</label>
-                  <input
-                    type="text"
-                    className="role-input-control"
-                    placeholder="Enter role name"
-                    value={newRoleForm.name}
-                    onChange={(e) => setNewRoleForm({ ...newRoleForm, name: e.target.value })}
-                    required
-                    autoFocus
-                  />
-                </div>
-
-                {/* Description */}
-                <div className="role-form-group">
-                  <label>Description</label>
-                  <textarea
-                    className="role-textarea-control"
-                    placeholder="Describe this role"
-                    rows="3"
-                    value={newRoleForm.description}
-                    onChange={(e) => setNewRoleForm({ ...newRoleForm, description: e.target.value })}
-                  />
-                </div>
-
-                {/* ROLE PERMISSIONS Banner matching Image 2 */}
-                <div className="role-permissions-banner">
-                  <Lock size={16} />
-                  <span>ROLE PERMISSIONS</span>
-                </div>
-
-                {/* Permissions Matrix Table matching Image 2 */}
-                <div className="permissions-matrix-wrapper">
-                  <table className="permissions-matrix-table">
-                    <thead>
-                      <tr>
-                        <th>MODULE'S</th>
-                        <th>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                            <span>VIEW</span>
-                            <div
-                              className="perm-circle-checkbox"
-                              onClick={() => handleToggleAllColumn('view')}
-                              title="Toggle all View"
-                            >
-                              {Object.values(newRoleForm.permissions).every((m) => m.view) && (
-                                <span className="perm-circle-dot"></span>
-                              )}
-                            </div>
-                          </div>
-                        </th>
-                        <th>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                            <span>ADD</span>
-                            <div
-                              className="perm-circle-checkbox"
-                              onClick={() => handleToggleAllColumn('add')}
-                              title="Toggle all Add"
-                            >
-                              {Object.values(newRoleForm.permissions).every((m) => m.add) && (
-                                <span className="perm-circle-dot"></span>
-                              )}
-                            </div>
-                          </div>
-                        </th>
-                        <th>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                            <span>EDIT</span>
-                            <div
-                              className="perm-circle-checkbox"
-                              onClick={() => handleToggleAllColumn('edit')}
-                              title="Toggle all Edit"
-                            >
-                              {Object.values(newRoleForm.permissions).every((m) => m.edit) && (
-                                <span className="perm-circle-dot"></span>
-                              )}
-                            </div>
-                          </div>
-                        </th>
-                        <th>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                            <span>DELETE</span>
-                            <div
-                              className="perm-circle-checkbox"
-                              onClick={() => handleToggleAllColumn('delete')}
-                              title="Toggle all Delete"
-                            >
-                              {Object.values(newRoleForm.permissions).every((m) => m.delete) && (
-                                <span className="perm-circle-dot"></span>
-                              )}
-                            </div>
-                          </div>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.keys(newRoleForm.permissions).map((moduleName) => {
-                        const rowPerms = newRoleForm.permissions[moduleName];
-                        return (
-                          <tr key={moduleName}>
-                            <td>{moduleName}</td>
-                            <td>
-                              <div
-                                className={`perm-circle-checkbox ${rowPerms.view ? 'checked' : ''}`}
-                                onClick={() => handleTogglePermission(moduleName, 'view')}
-                              >
-                                {rowPerms.view && <Check size={12} strokeWidth={3} />}
-                              </div>
-                            </td>
-                            <td>
-                              <div
-                                className={`perm-circle-checkbox ${rowPerms.add ? 'checked' : ''}`}
-                                onClick={() => handleTogglePermission(moduleName, 'add')}
-                              >
-                                {rowPerms.add && <Check size={12} strokeWidth={3} />}
-                              </div>
-                            </td>
-                            <td>
-                              <div
-                                className={`perm-circle-checkbox ${rowPerms.edit ? 'checked' : ''}`}
-                                onClick={() => handleTogglePermission(moduleName, 'edit')}
-                              >
-                                {rowPerms.edit && <Check size={12} strokeWidth={3} />}
-                              </div>
-                            </td>
-                            <td>
-                              <div
-                                className={`perm-circle-checkbox ${rowPerms.delete ? 'checked' : ''}`}
-                                onClick={() => handleTogglePermission(moduleName, 'delete')}
-                              >
-                                {rowPerms.delete && <Check size={12} strokeWidth={3} />}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="add-role-modal-footer">
-                <button
-                  type="button"
-                  className="btn-modal-cancel"
-                  onClick={handleCloseCreateRole}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-modal-submit"
-                >
-                  Create Role
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

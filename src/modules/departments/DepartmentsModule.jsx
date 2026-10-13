@@ -11,8 +11,97 @@ import {
   ArrowLeft,
   Save,
   CheckCircle2,
+  MapPin,
 } from 'lucide-react';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import {
+  validateName,
+  validateNumber,
+  validateRequired,
+  sanitizeNameInput,
+  sanitizeNumberInput,
+} from '../../utils/validation';
 import './DepartmentsModule.css';
+
+// Helper: Format branch address so main street part is visible,
+// and area, city, state, pincode appear in interactive hover tooltip.
+const formatBranchAddress = (rec) => {
+  if (!rec) {
+    return {
+      mainAddress: '—',
+      areaCity: '',
+      fullMeta: '',
+      fullAddress: '',
+    };
+  }
+
+  const rawAddr = (rec.branchAddress || '').trim();
+  const city = (rec.city || '').trim();
+  const state = (rec.state || '').trim();
+  const pincode = (rec.pincode || '').trim();
+
+  // If no branch address, fallback to city
+  if (!rawAddr) {
+    const areaCity = city || '—';
+    const metaParts = [];
+    if (state) metaParts.push(state);
+    if (pincode) metaParts.push(`PIN: ${pincode}`);
+    const fullMeta = metaParts.join(' • ');
+    const fullAddress = [city, state, pincode].filter(Boolean).join(', ');
+    return {
+      mainAddress: areaCity,
+      areaCity,
+      fullMeta,
+      fullAddress,
+    };
+  }
+
+  // Split raw address by commas
+  const parts = rawAddr.split(',').map((p) => p.trim()).filter(Boolean);
+
+  let mainParts = [];
+  let areaParts = [];
+
+  if (parts.length >= 4) {
+    // e.g. "Tidel Park, 4th Floor, Rajiv Gandhi Salai, Taramani"
+    // Visible: first 3 parts ("Tidel Park, 4th Floor, Rajiv Gandhi Salai")
+    // Remaining: 4th part ("Taramani")
+    mainParts = parts.slice(0, 3);
+    areaParts = parts.slice(3);
+  } else if (parts.length >= 2) {
+    // e.g. "ELCOT IT Park, Ring Road, Ilandhaikulam" -> 2 visible, 1 remaining
+    // e.g. "Thuvakudi Industrial Corridor, Cantonment" -> 1 visible, 1 remaining
+    mainParts = parts.slice(0, parts.length - 1);
+    areaParts = parts.slice(parts.length - 1);
+  } else {
+    mainParts = parts;
+    areaParts = [];
+  }
+
+  const mainAddress = mainParts.join(', ');
+
+  // Area & City (e.g. "Taramani, Chennai")
+  const areaCityList = [...areaParts];
+  if (city && !areaCityList.includes(city)) {
+    areaCityList.push(city);
+  }
+  const areaCity = areaCityList.join(', ');
+
+  // State & Pincode meta
+  const metaParts = [];
+  if (state) metaParts.push(state);
+  if (pincode) metaParts.push(`PIN: ${pincode}`);
+  const fullMeta = metaParts.join(' • ');
+
+  const fullAddress = `${rawAddr}${city ? `, ${city}` : ''}${state ? `, ${state}` : ''}${pincode ? ` - ${pincode}` : ''}`;
+
+  return {
+    mainAddress,
+    areaCity,
+    fullMeta,
+    fullAddress,
+  };
+};
 
 export const DepartmentsModule = () => {
   // STRICTLY and ONLY the user-requested fields:
@@ -110,6 +199,10 @@ export const DepartmentsModule = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [toastMessage, setToastMessage] = useState('');
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Form State
   const initialFormState = {
     id: '',
@@ -126,6 +219,20 @@ export const DepartmentsModule = () => {
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
+
+  const handleFieldChange = (field, val) => {
+    let sanitized = val;
+    if (['departmentHead', 'city', 'state'].includes(field)) {
+      sanitized = sanitizeNameInput(val);
+    } else if (field === 'pincode') {
+      sanitized = sanitizeNumberInput(val, 6);
+    }
+    setFormData((prev) => ({ ...prev, [field]: sanitized }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
 
   // Show Toast
   const showToast = (msg) => {
@@ -143,6 +250,7 @@ export const DepartmentsModule = () => {
       rec.departmentHead.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rec.branchId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rec.branchName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rec.branchAddress && rec.branchAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
       rec.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rec.state.toLowerCase().includes(searchTerm.toLowerCase()) ||
       rec.pincode.toLowerCase().includes(searchTerm.toLowerCase());
@@ -153,57 +261,96 @@ export const DepartmentsModule = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Count metrics
-  const totalCount = records.length;
-  const activeCount = records.filter((r) => r.status === 'Active').length;
-  const inactiveCount = records.filter((r) => r.status === 'Inactive').length;
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage) || 1;
+  const paginatedRecords = filteredRecords.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Handler: Open Add View
   const handleOpenAdd = () => {
     const nextDeptNum = 100 + records.length + 1;
     const nextBranchNum = records.length + 1;
+    setErrors({});
     setFormData({
       ...initialFormState,
-      id: `REC-${String(records.length + 1).padStart(3, '0')}`,
+      id: `REC-${Date.now()}`,
       departmentId: `DEP-${nextDeptNum}`,
+      departmentName: '',
+      departmentHead: 'Sundar Raman',
       branchId: `BR-0${nextBranchNum}`,
+      branchName: 'HQ - Chennai Campus',
+      branchAddress: 'Tidel Park, 4th Floor, Rajiv Gandhi Salai, Taramani',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      pincode: '600113',
       status: 'Active',
     });
     setCurrentView('add');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handler: Open Edit View
   const handleOpenEdit = (record) => {
+    setErrors({});
     setFormData({ ...record });
     setCurrentView('edit');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handler: Back to List
   const handleBackToList = () => {
+    setErrors({});
     setCurrentView('list');
     setFormData(initialFormState);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Handler: Save (Add or Edit)
   const handleSaveRecord = (e) => {
     e.preventDefault();
+    const newErrors = {};
 
-    if (!formData.departmentName.trim()) {
-      alert('Please enter the Department Name');
+    const deptIdErr = validateRequired(formData.departmentId, 'Department ID');
+    if (deptIdErr) newErrors.departmentId = deptIdErr;
+
+    const deptNameErr = validateRequired(formData.departmentName, 'Department Name');
+    if (deptNameErr) newErrors.departmentName = deptNameErr;
+
+    if (formData.departmentHead) {
+      const headErr = validateName(formData.departmentHead, 'Department Head', true);
+      if (headErr) newErrors.departmentHead = headErr;
+    }
+
+    const branchIdErr = validateRequired(formData.branchId, 'Branch ID');
+    if (branchIdErr) newErrors.branchId = branchIdErr;
+
+    const branchNameErr = validateRequired(formData.branchName, 'Branch Name');
+    if (branchNameErr) newErrors.branchName = branchNameErr;
+
+    if (formData.city) {
+      const cityErr = validateName(formData.city, 'City', true);
+      if (cityErr) newErrors.city = cityErr;
+    }
+
+    if (formData.state) {
+      const stateErr = validateName(formData.state, 'State', true);
+      if (stateErr) newErrors.state = stateErr;
+    }
+
+    if (formData.pincode) {
+      const pinErr = validateNumber(formData.pincode, 'Pincode', true, 6, 6);
+      if (pinErr) newErrors.pincode = pinErr;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!formData.departmentHead.trim()) {
-      alert('Please enter the Department Head');
-      return;
-    }
-    if (!formData.branchName.trim()) {
-      alert('Please enter the Branch Name');
-      return;
-    }
-    if (!formData.city.trim() || !formData.state.trim() || !formData.pincode.trim()) {
-      alert('Please fill the City, State and Pincode');
-      return;
-    }
+
+    setErrors({});
 
     if (currentView === 'add') {
       const newRec = {
@@ -249,59 +396,37 @@ export const DepartmentsModule = () => {
       <div className="dept-page-header">
         {currentView === 'list' ? (
           <>
-            <div className="dept-header-left">
+            <div>
               <h1 className="dept-page-title">Departments & Branches</h1>
-              
             </div>
             <button
               type="button"
               className="btn-add-dept"
               onClick={handleOpenAdd}
             >
-              <Plus size={16} />
-              Add Department & Branch
+              <Plus size={16} strokeWidth={2.5} />
+              <span>Add Department</span>
             </button>
           </>
         ) : (
           <>
-            <div className="dept-inpage-header-left">
-              <button
-                type="button"
-                className="btn-back-dept"
-                onClick={handleBackToList}
-              >
-                <ArrowLeft size={16} />
-                Back to Directory
-              </button>
-              <div>
-                <h1 className="dept-page-title">
-                  {currentView === 'add'
-                    ? 'Add New Department & Branch'
-                    : 'Edit Department & Branch'}
-                </h1>
-                <p className="dept-subtitle">
-                  Configure department structure and branch location details
-                </p>
-              </div>
+            <div>
+              <h1 className="dept-page-title">
+                {currentView === 'add'
+                  ? 'Add Department & Branch'
+                  : `Edit Department & Branch — ${formData.departmentName}`}
+              </h1>
             </div>
 
-            <div className="dept-inpage-header-actions">
-              <button
-                type="button"
-                className="btn-cancel-dept"
-                onClick={handleBackToList}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="inpage-dept-form"
-                className="btn-save-dept"
-              >
-                <Save size={16} />
-                {currentView === 'add' ? 'Save Record' : 'Save Changes'}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={handleBackToList}
+              title="Back to List"
+            >
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
+            </button>
           </>
         )}
       </div>
@@ -323,36 +448,34 @@ export const DepartmentsModule = () => {
             ======================================================================= */}
         {currentView === 'list' && (
           <>
-            {/* Toolbar: Search, Status Filter & Count Chips */}
+            {/* Toolbar: Search (Left) + Status Filter (Right) */}
             <div className="dept-toolbar">
-              <div className="dept-toolbar-left">
-                <div className="dept-search-box">
-                  <Search size={16} style={{ color: 'var(--text-muted)' }} />
-                  <input
-                    type="text"
-                    placeholder="Search by department, head, branch, city or pincode..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="dept-search-input"
-                  />
-                </div>
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="dept-filter-select"
-                >
-                  <option value="All">All Status</option>
-                  <option value="Active">Active Only</option>
-                  <option value="Inactive">Inactive Only</option>
-                </select>
+              <div className="dept-search-box">
+                <Search size={16} style={{ color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="dept-search-input"
+                />
               </div>
 
-              <div className="dept-toolbar-stats">
-                <span className="dept-stat-chip">Total: {totalCount}</span>
-                <span className="dept-stat-chip active">Active: {activeCount}</span>
-                <span className="dept-stat-chip inactive">Inactive: {inactiveCount}</span>
-              </div>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="dept-filter-select"
+              >
+                <option value="All">All Status</option>
+                <option value="Active">Active Only</option>
+                <option value="Inactive">Inactive Only</option>
+              </select>
             </div>
 
             {/* Table */}
@@ -362,18 +485,16 @@ export const DepartmentsModule = () => {
                   <tr>
                     <th style={{ width: '55px' }}>S.NO</th>
                     <th>Department</th>
-                    <th>Department Head</th>
                     <th>Branch</th>
                     <th>Branch Address</th>
-                    <th>City / State / Pincode</th>
                     <th>Status</th>
-                    <th style={{ textAlign: 'center' }}>Actions</th>
+                    <th style={{ textAlign: 'center', width: '120px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredRecords.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="dept-empty-state">
+                      <td colSpan={6} className="dept-empty-state">
                         <div className="dept-empty-icon">🏢</div>
                         <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>
                           No departments or branches found
@@ -384,11 +505,13 @@ export const DepartmentsModule = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredRecords.map((rec, index) => (
+                    paginatedRecords.map((rec, index) => {
+                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                      return (
                       <tr key={rec.id}>
                         {/* S.NO */}
                         <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
-                          {index + 1}
+                          {serialNumber}
                         </td>
 
                         {/* 1. Department: Department ID & Name */}
@@ -399,9 +522,7 @@ export const DepartmentsModule = () => {
                           </div>
                         </td>
 
-                        
-
-                        {/* 3. Branch: Branch name/ID */}
+                        {/* 2. Branch: Branch name/ID */}
                         <td>
                           <div className="branch-cell-main">
                             <span className="branch-name-text">{rec.branchName}</span>
@@ -409,24 +530,40 @@ export const DepartmentsModule = () => {
                           </div>
                         </td>
 
-                        {/* 4. Branch Address: Branch address */}
+                        {/* 3. Branch Address: Street address visible + Interactive Hover Tooltip for Area, City, State, PIN */}
                         <td>
-                          <div className="branch-address-text">
-                            {rec.branchAddress || '—'}
-                          </div>
+                          {(() => {
+                            const { mainAddress, areaCity, fullMeta, fullAddress } =
+                              formatBranchAddress(rec);
+                            return (
+                              <div
+                                className="branch-address-cell-wrapper"
+                                title={fullAddress}
+                              >
+                                <span className="branch-address-text">
+                                  {mainAddress}
+                                </span>
+
+                                {/* Hover Tooltip Box */}
+                                <div className="branch-address-tooltip">
+                                  <div className="tooltip-title">Area & Location</div>
+                                  <div className="tooltip-area-city">{areaCity}</div>
+                                  {fullMeta && (
+                                    <div className="tooltip-meta">
+                                      <span>{rec.state}</span>
+                                      {rec.pincode && (
+                                        <span className="tooltip-pin">PIN: {rec.pincode}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                  <div className="tooltip-arrow" />
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
 
-                        {/* 5. City / State / Pincode: Branch location */}
-                        <td>
-                          <div className="location-cell-main">
-                            <span className="city-state-text">
-                              {rec.city}, {rec.state}
-                            </span>
-                            <span className="pincode-text">PIN: {rec.pincode}</span>
-                          </div>
-                        </td>
-
-                        {/* 6. Status: Active / Inactive */}
+                        {/* 4. Status: Active / Inactive */}
                         <td>
                           <span
                             className={`status-pill ${rec.status === 'Active' ? 'active' : 'inactive'
@@ -473,30 +610,52 @@ export const DepartmentsModule = () => {
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="dept-table-footer">
+            <div>
+              Showing {filteredRecords.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+              {Math.min(currentPage * itemsPerPage, filteredRecords.length)} of{' '}
+              {filteredRecords.length} Entries
             </div>
 
-            {/* Pagination Footer */}
-            <div className="dept-table-footer">
-              <div>
-                Showing 1 to {filteredRecords.length} of {records.length} Entries
-              </div>
-
-              <div className="dept-pagination-controls">
-                <button type="button" className="btn-dept-page" disabled>
-                  <ChevronLeft size={14} />
+            <div className="dept-pagination-controls">
+              <button
+                type="button"
+                className="btn-dept-page"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                title="Previous Page"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  className={`btn-dept-page ${currentPage === page ? 'active' : ''}`}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
                 </button>
-                <button type="button" className="btn-dept-page active">
-                  1
-                </button>
-                <button type="button" className="btn-dept-page" disabled>
-                  <ChevronRight size={14} />
-                </button>
-              </div>
+              ))}
+              <button
+                type="button"
+                className="btn-dept-page"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                title="Next Page"
+              >
+                <ChevronRight size={14} />
+              </button>
             </div>
+          </div>
           </>
         )}
 
@@ -515,6 +674,7 @@ export const DepartmentsModule = () => {
             id="inpage-dept-form"
             onSubmit={handleSaveRecord}
             className="inpage-dept-form"
+            noValidate
           >
             {/* SECTION 1: DEPARTMENT */}
             <div className="inpage-section-box">
@@ -529,13 +689,11 @@ export const DepartmentsModule = () => {
                   <input
                     type="text"
                     value={formData.departmentId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, departmentId: e.target.value })
-                    }
+                    onChange={(e) => handleFieldChange('departmentId', e.target.value)}
                     placeholder="e.g. DEP-101"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${errors.departmentId ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.departmentId} />
                 </div>
 
                 {/* Department Name */}
@@ -544,13 +702,11 @@ export const DepartmentsModule = () => {
                   <input
                     type="text"
                     value={formData.departmentName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, departmentName: e.target.value })
-                    }
+                    onChange={(e) => handleFieldChange('departmentName', e.target.value)}
                     placeholder="e.g. Engineering & Technology"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${errors.departmentName ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.departmentName} />
                 </div>
 
                 {/* Department Head */}
@@ -559,13 +715,11 @@ export const DepartmentsModule = () => {
                   <input
                     type="text"
                     value={formData.departmentHead}
-                    onChange={(e) =>
-                      setFormData({ ...formData, departmentHead: e.target.value })
-                    }
-                    placeholder="e.g. Sundar Raman"
-                    className="form-control-input"
-                    required
+                    onChange={(e) => handleFieldChange('departmentHead', e.target.value)}
+                    placeholder="e.g. Sundar Raman (letters only)"
+                    className={`form-control-input ${errors.departmentHead ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.departmentHead} />
                 </div>
               </div>
             </div>
@@ -583,13 +737,11 @@ export const DepartmentsModule = () => {
                   <input
                     type="text"
                     value={formData.branchId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, branchId: e.target.value })
-                    }
+                    onChange={(e) => handleFieldChange('branchId', e.target.value)}
                     placeholder="e.g. BR-01"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${errors.branchId ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.branchId} />
                 </div>
 
                 {/* Branch Name */}
@@ -598,13 +750,11 @@ export const DepartmentsModule = () => {
                   <input
                     type="text"
                     value={formData.branchName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, branchName: e.target.value })
-                    }
+                    onChange={(e) => handleFieldChange('branchName', e.target.value)}
                     placeholder="e.g. HQ - Chennai Campus"
-                    className="form-control-input"
-                    required
+                    className={`form-control-input ${errors.branchName ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.branchName} />
                 </div>
               </div>
 
@@ -613,14 +763,12 @@ export const DepartmentsModule = () => {
                 <label>Branch Address *</label>
                 <textarea
                   value={formData.branchAddress}
-                  onChange={(e) =>
-                    setFormData({ ...formData, branchAddress: e.target.value })
-                  }
+                  onChange={(e) => handleFieldChange('branchAddress', e.target.value)}
                   placeholder="e.g. Tidel Park, 4th Floor, Rajiv Gandhi Salai, Taramani"
-                  className="form-control-textarea"
+                  className={`form-control-textarea ${errors.branchAddress ? 'has-error' : ''}`}
                   rows={2}
-                  required
                 />
+                <FieldError error={errors.branchAddress} />
               </div>
 
               {/* City / State / Pincode */}
@@ -630,13 +778,11 @@ export const DepartmentsModule = () => {
                   <input
                     type="text"
                     value={formData.city}
-                    onChange={(e) =>
-                      setFormData({ ...formData, city: e.target.value })
-                    }
-                    placeholder="e.g. Chennai"
-                    className="form-control-input"
-                    required
+                    onChange={(e) => handleFieldChange('city', e.target.value)}
+                    placeholder="e.g. Chennai (letters only)"
+                    className={`form-control-input ${errors.city ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.city} />
                 </div>
 
                 <div className="form-field-group">
@@ -644,13 +790,11 @@ export const DepartmentsModule = () => {
                   <input
                     type="text"
                     value={formData.state}
-                    onChange={(e) =>
-                      setFormData({ ...formData, state: e.target.value })
-                    }
-                    placeholder="e.g. Tamil Nadu"
-                    className="form-control-input"
-                    required
+                    onChange={(e) => handleFieldChange('state', e.target.value)}
+                    placeholder="e.g. Tamil Nadu (letters only)"
+                    className={`form-control-input ${errors.state ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.state} />
                 </div>
 
                 <div className="form-field-group">
@@ -658,13 +802,11 @@ export const DepartmentsModule = () => {
                   <input
                     type="text"
                     value={formData.pincode}
-                    onChange={(e) =>
-                      setFormData({ ...formData, pincode: e.target.value })
-                    }
-                    placeholder="e.g. 600113"
-                    className="form-control-input"
-                    required
+                    onChange={(e) => handleFieldChange('pincode', e.target.value)}
+                    placeholder="e.g. 600113 (6 digits)"
+                    className={`form-control-input ${errors.pincode ? 'has-error' : ''}`}
                   />
+                  <FieldError error={errors.pincode} />
                 </div>
               </div>
             </div>
@@ -696,17 +838,17 @@ export const DepartmentsModule = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel-dept"
+                className="btn-cancel-action"
                 onClick={handleBackToList}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-save-dept"
+                className="btn-save-header-action"
               >
                 <Save size={16} />
-                {currentView === 'add' ? 'Save Department & Branch' : 'Update Record'}
+                <span>{currentView === 'add' ? 'Add Department' : 'Save Changes'}</span>
               </button>
             </div>
           </form>

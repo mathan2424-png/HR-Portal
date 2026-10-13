@@ -1,0 +1,262 @@
+/* ==========================================================================
+   PORTAL FLOATING TOAST NOTIFICATION COMPONENT
+   Style: Modern Enterprise Card (Clean white card, soft colored icon pill,
+   bold title + message hierarchy, smooth slide-in, and subtle progress bar)
+   ========================================================================== */
+
+.portal-toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 999999;
+  pointer-events: auto;
+  animation: toastSlideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes toastSlideInRight {
+  0% {
+    transform: translateX(110%) scale(0.94);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.portal-toast-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.95rem;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1rem 1.15rem 1.1rem 1.25rem;
+  min-width: 340px;
+  max-width: 450px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow:
+    0 20px 35px -8px rgba(15, 23, 42, 0.12),
+    0 6px 14px -3px rgba(15, 23, 42, 0.05),
+    0 0 0 1px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.portal-toast-card.is-paused {
+  box-shadow:
+    0 24px 44px -8px rgba(15, 23, 42, 0.18),
+    0 8px 18px -3px rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Left Accent Indicator Strip */
+.portal-toast-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+}
+
+.portal-toast-accent.success {
+  background-color: #10b981;
+}
+
+.portal-toast-accent.delete {
+  background-color: #f43f5e;
+}
+
+.portal-toast-accent.error {
+  background-color: #ef4444;
+}
+
+.portal-toast-accent.info {
+  background-color: #3b82f6;
+}
+
+.portal-toast-accent.warning {
+  background-color: #f59e0b;
+}
+
+/* Soft Tinted Icon Pill/Squircle Badge */
+.portal-toast-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.portal-toast-card:hover .portal-toast-icon-wrap {
+  transform: scale(1.05);
+}
+
+.portal-toast-icon-wrap.success {
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #059669;
+}
+
+.portal-toast-icon-wrap.delete {
+  background-color: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #e11d48;
+}
+
+.portal-toast-icon-wrap.error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.portal-toast-icon-wrap.info {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+}
+
+.portal-toast-icon-wrap.warning {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #d97706;
+}
+
+.portal-toast-svg {
+  flex-shrink: 0;
+}
+
+/* Text & Content Hierarchy */
+.portal-toast-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 1px;
+}
+
+.portal-toast-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.portal-toast-title {
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+
+.portal-toast-title.success {
+  color: #059669;
+}
+
+.portal-toast-title.delete {
+  color: #e11d48;
+}
+
+.portal-toast-title.error {
+  color: #dc2626;
+}
+
+.portal-toast-title.info {
+  color: #2563eb;
+}
+
+.portal-toast-title.warning {
+  color: #d97706;
+}
+
+.portal-toast-message {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #334155;
+  line-height: 1.42;
+  word-break: break-word;
+}
+
+/* Close Button */
+.portal-toast-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  margin-left: 0.25rem;
+  margin-top: -2px;
+  flex-shrink: 0;
+}
+
+.portal-toast-close:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+/* Bottom Countdown Progress Track & Bar */
+.portal-toast-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: #f1f5f9;
+  overflow: hidden;
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+.portal-toast-progress-bar {
+  height: 100%;
+  transition: width 0.03s linear;
+}
+
+.portal-toast-progress-bar.success {
+  background-color: #10b981;
+}
+
+.portal-toast-progress-bar.delete {
+  background-color: #f43f5e;
+}
+
+.portal-toast-progress-bar.error {
+  background-color: #ef4444;
+}
+
+.portal-toast-progress-bar.info {
+  background-color: #3b82f6;
+}
+
+.portal-toast-progress-bar.warning {
+  background-color: #f59e0b;
+}
+
+/* Responsive adjustment for compact screens */
+@media (max-width: 480px) {
+  .portal-toast-container {
+    top: 14px;
+    right: 14px;
+    left: 14px;
+  }
+
+  .portal-toast-card {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    padding: 0.85rem 1rem 0.95rem 1.05rem;
+  }
+}

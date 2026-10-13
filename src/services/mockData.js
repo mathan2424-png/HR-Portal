@@ -144,7 +144,7 @@ export const companyRecruitmentData = {
     },
     {
       id: 'INT-02',
-      candidateName: 'Priya Dharshini M',
+      candidateName: 'Nathiya  Dharshini M',
       candidateAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',
       jobTitle: 'Product Design Lead',
       interviewer: 'Anitha Murugesan (VP Design)',
@@ -223,10 +223,10 @@ export const employeesData = [
   },
   {
     id: 'CAN-002',
-    name: 'Priya Dharshini M',
+    name: 'Nathiya  Dharshini M',
     role: 'Product Design Lead',
     department: 'Design & UX',
-    email: 'priya.d@applicant.com',
+    email: 'Nathiya .d@applicant.com',
     status: 'Interested',
     joinDate: '2026-10-05',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',

@@ -338,7 +338,7 @@
   color: #ffffff !important;
   font-weight: 800;
   text-transform: uppercase;
-  font-size: 0.74rem;
+  font-size: 13px !important;
   letter-spacing: 0.05em;
   padding: 0.95rem 1rem;
   border: none;
@@ -371,6 +371,7 @@
   vertical-align: middle;
   color: var(--text-main);
   white-space: nowrap; /* PREVENTS WRAPPING */
+  font-size: 13px;
 }
 
 /* Status & Count Badges */
@@ -380,7 +381,7 @@
   justify-content: center;
   padding: 0.15rem 0.5rem;
   border-radius: 6px;
-  font-size: 0.78rem;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -425,7 +426,7 @@
 .rate-pill {
   font-weight: 800;
   color: #0f172a;
-  font-size: 0.82rem;
+  font-size: 13px;
   white-space: nowrap;
 }
 

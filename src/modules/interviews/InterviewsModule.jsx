@@ -10,9 +10,16 @@ import {
   Save,
   CheckCircle2,
 } from 'lucide-react';
+import { FieldError } from '../../components/common/FieldError/FieldError';
+import {
+  validateName,
+  validateRequired,
+  sanitizeNameInput,
+} from '../../utils/validation';
 import './InterviewsModule.css';
 
 export const InterviewsModule = () => {
+  const [errors, setErrors] = useState({});
   // STRICTLY and ONLY the 14 user-requested fields:
   // 1. Interview ID: Unique interview reference.
   // 2. Candidate: Candidate reference.
@@ -32,7 +39,7 @@ export const InterviewsModule = () => {
   const [interviews, setInterviews] = useState([
     {
       id: 'INT-2026-001',
-      candidate: 'Priya Dharshini (CAN-1042)',
+      candidate: 'Dharshini (CAN-1042)',
       job: 'Senior Frontend Engineer (JOB-2026-001)',
       interviewRound: 'Technical',
       interviewType: 'Online',
@@ -156,7 +163,7 @@ export const InterviewsModule = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
 
   // Form State (strictly the 14 requested fields)
   const initialFormState = {
@@ -191,42 +198,74 @@ export const InterviewsModule = () => {
     setFormData({
       ...initialFormState,
       id: generatedId,
+      candidate: '',
+      job: 'JOB-2026-001 (Senior Frontend Engineer)',
+      meetingLinkLocation: 'https://meet.google.com/hms-rec-int',
+      interviewerPanel: 'Sundar Raman (Lead Engineer)',
       dateTime: '2026-10-16 11:00 AM',
       timeZone: 'IST (UTC+05:30)',
+      interviewRound: 'Technical Round 1',
+      interviewType: 'Online',
+      interviewStatus: 'Scheduled',
     });
     setEditingId(null);
+    setErrors({});
     setCurrentView('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenEdit = (item) => {
     setFormData({ ...item });
     setEditingId(item.id);
+    setErrors({});
     setCurrentView('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelForm = () => {
+    setErrors({});
     setCurrentView('list');
     setEditingId(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let sanitized = value;
+    if (field === 'candidate') {
+      sanitized = sanitizeNameInput(value);
+    }
+    setFormData((prev) => ({ ...prev, [field]: sanitized }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
   };
 
   const handleSaveInterview = (e) => {
     e.preventDefault();
-    if (!formData.candidate.trim()) {
-      alert('Please enter Candidate reference.');
+    const newErrors = {};
+
+    const candErr = validateName(formData.candidate, 'Candidate reference', true);
+    if (candErr) newErrors.candidate = candErr;
+
+    const jobErr = validateRequired(formData.job, 'Related job');
+    if (jobErr) newErrors.job = jobErr;
+
+    const dtErr = validateRequired(formData.dateTime, 'Interview date / time');
+    if (dtErr) newErrors.dateTime = dtErr;
+
+    const locErr = validateRequired(formData.meetingLinkLocation, 'Meeting link / location');
+    if (locErr) newErrors.meetingLinkLocation = locErr;
+
+    const panelErr = validateRequired(formData.interviewerPanel, 'Interviewer / panel');
+    if (panelErr) newErrors.interviewerPanel = panelErr;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
     }
-    if (!formData.job.trim()) {
-      alert('Please enter Related Job.');
-      return;
-    }
-    if (!formData.dateTime.trim()) {
-      alert('Please provide Interview Date / Time.');
-      return;
-    }
+
+    setErrors({});
 
     if (editingId) {
       setInterviews((prev) =>
@@ -320,33 +359,36 @@ export const InterviewsModule = () => {
       <div className="interviews-page-header">
         {currentView === 'list' ? (
           <>
-            <div className="interviews-header-left">
+            <div>
               <h1 className="interviews-page-title">Interviews</h1>
-              
             </div>
             <button
               className="btn-add-interview"
               onClick={handleOpenAdd}
               id="btn-schedule-interview"
             >
-              <Plus size={16} />
+              <Plus size={16} strokeWidth={2.5} />
               <span>Schedule Interview</span>
             </button>
           </>
         ) : (
-          <div className="interviews-inpage-header-left">
+          <>
+            <div>
+              <h1 className="interviews-page-title">
+                {editingId ? `Edit Interview: ${formData.id}` : 'Schedule New Interview'}
+              </h1>
+            </div>
+
             <button
               type="button"
-              className="btn-back-interviews"
+              className="btn-back-to-list"
               onClick={handleCancelForm}
+              title="Back to List"
             >
-              <ArrowLeft size={16} />
-              <span>Back to Interviews List</span>
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to List</span>
             </button>
-            <h1 className="interviews-page-title">
-              {editingId ? `Edit Interview: ${formData.id}` : 'Schedule New Interview'}
-            </h1>
-          </div>
+          </>
         )}
       </div>
 
@@ -354,23 +396,23 @@ export const InterviewsModule = () => {
       <div className="interviews-main-card">
         {currentView === 'list' ? (
           <>
-            {/* Toolbar & Filters */}
+            {/* Toolbar: Search (Left) + Filters (Right) */}
             <div className="interviews-toolbar">
-              <div className="interviews-toolbar-left">
-                <div className="interviews-search-box">
-                  <Search size={16} className="text-muted" />
-                  <input
-                    type="text"
-                    placeholder="Search candidate, job, interviewer, ID..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="interviews-search-input"
-                  />
-                </div>
+              <div className="interviews-search-box">
+                <Search size={16} className="text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="interviews-search-input"
+                />
+              </div>
 
+              <div className="interviews-toolbar-right">
                 <select
                   value={statusFilter}
                   onChange={(e) => {
@@ -402,23 +444,6 @@ export const InterviewsModule = () => {
                   <option value="Managerial">Managerial</option>
                   <option value="Final">Final</option>
                 </select>
-              </div>
-
-              {/* Quick Stat Chips */}
-              <div className="interviews-toolbar-stats">
-                <span className="interviews-stat-chip">
-                  Total: {interviews.length}
-                </span>
-                <span className="interviews-stat-chip scheduled">
-                  Scheduled:{' '}
-                  {interviews.filter((i) => i.interviewStatus === 'Scheduled' || i.interviewStatus === 'Accepted').length}
-                </span>
-                <span className="interviews-stat-chip completed">
-                  Completed: {interviews.filter((i) => i.interviewStatus === 'Completed').length}
-                </span>
-                <span className="interviews-stat-chip hire">
-                  Hire Recommended: {interviews.filter((i) => i.recommendation === 'Hire').length}
-                </span>
               </div>
             </div>
 
@@ -618,7 +643,7 @@ export const InterviewsModule = () => {
           /* =====================================================================
              IN-PAGE FORM: Strictly the 14 requested fields (NO MODAL POPUP)
              ===================================================================== */
-          <form onSubmit={handleSaveInterview} className="inpage-interview-form">
+          <form onSubmit={handleSaveInterview} className="inpage-interview-form" noValidate>
             {/* Section 1: Interview Identity & Candidate Association */}
             <div className="inpage-section-box">
               <div className="inpage-section-header">
@@ -641,12 +666,12 @@ export const InterviewsModule = () => {
                   <label>Candidate Reference *</label>
                   <input
                     type="text"
-                    className="form-control-input"
-                    placeholder="e.g. Priya Sharma (CAN-1042)"
+                    className={`form-control-input ${errors.candidate ? 'has-error' : ''}`}
+                    placeholder="e.g. Nathiya Sharma (letters only)"
                     value={formData.candidate}
                     onChange={(e) => handleInputChange('candidate', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.candidate} />
                 </div>
 
                 {/* 3. Job */}
@@ -654,12 +679,12 @@ export const InterviewsModule = () => {
                   <label>Related Job *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.job ? 'has-error' : ''}`}
                     placeholder="e.g. Senior Frontend Engineer (JOB-2026-001)"
                     value={formData.job}
                     onChange={(e) => handleInputChange('job', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.job} />
                 </div>
               </div>
             </div>
@@ -706,12 +731,12 @@ export const InterviewsModule = () => {
                   <label>Date / Time *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.dateTime ? 'has-error' : ''}`}
                     placeholder="e.g. 2026-10-16 11:00 AM"
                     value={formData.dateTime}
                     onChange={(e) => handleInputChange('dateTime', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.dateTime} />
                 </div>
               </div>
 
@@ -738,12 +763,12 @@ export const InterviewsModule = () => {
                   <label>Meeting Link / Location *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.meetingLinkLocation ? 'has-error' : ''}`}
                     placeholder="e.g. https://meet.google.com/xyz or Room 402, Bangalore HQ"
                     value={formData.meetingLinkLocation}
                     onChange={(e) => handleInputChange('meetingLinkLocation', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.meetingLinkLocation} />
                 </div>
               </div>
             </div>
@@ -759,12 +784,12 @@ export const InterviewsModule = () => {
                   <label>Interviewer / Panel *</label>
                   <input
                     type="text"
-                    className="form-control-input"
+                    className={`form-control-input ${errors.interviewerPanel ? 'has-error' : ''}`}
                     placeholder="e.g. Sundar Raman (Eng Lead), Kavitha S (Staff Engineer)"
                     value={formData.interviewerPanel}
                     onChange={(e) => handleInputChange('interviewerPanel', e.target.value)}
-                    required
                   />
+                  <FieldError error={errors.interviewerPanel} />
                 </div>
 
                 {/* 10. Interview Status */}
@@ -856,14 +881,14 @@ export const InterviewsModule = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel-interview"
+                className="btn-cancel-action"
                 onClick={handleCancelForm}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn-save-interview"
+                className="btn-save-header-action"
                 id="btn-save-interview"
               >
                 <Save size={16} />
