@@ -53,7 +53,7 @@ export const AuditLogModule = () => {
     },
     {
       id: 'AUD-2026-004',
-      user: 'Deepak Verma (Finance Admin)',
+      user: 'Senthamizh Selvan (Finance Admin)',
       module: 'Subscription',
       action: 'Create',
       record: 'Invoice Payment (INV-2026-104 - ₹49,999 Enterprise Plan)',

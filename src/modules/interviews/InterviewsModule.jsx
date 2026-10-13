@@ -32,7 +32,7 @@ export const InterviewsModule = () => {
   const [interviews, setInterviews] = useState([
     {
       id: 'INT-2026-001',
-      candidate: 'Priya Sharma (CAN-1042)',
+      candidate: 'Priya Dharshini (CAN-1042)',
       job: 'Senior Frontend Engineer (JOB-2026-001)',
       interviewRound: 'Technical',
       interviewType: 'Online',
@@ -55,7 +55,7 @@ export const InterviewsModule = () => {
       dateTime: '2026-10-14 02:00 PM',
       timeZone: 'IST (UTC+05:30)',
       meetingLinkLocation: 'https://teams.microsoft.com/l/meetup-join/des-rev-002',
-      interviewerPanel: 'Karthik Raja (Design Head), Priya Nair (Director)',
+      interviewerPanel: 'Karthik Raja (Design Head), Anitha Murugesan (Director)',
       interviewStatus: 'Accepted',
       feedback: 'Excellent design systems and cross-functional product leadership mindset. Fits company culture.',
       rating: '4.8 / 5',
@@ -70,7 +70,7 @@ export const InterviewsModule = () => {
       interviewType: 'In-person',
       dateTime: '2026-10-15 11:00 AM',
       timeZone: 'IST (UTC+05:30)',
-      meetingLinkLocation: 'Admin Tower, Conference Room 4B, Bangalore Campus',
+      meetingLinkLocation: 'Admin Tower, Conference Room 4B, Chennai Campus',
       interviewerPanel: 'Vigneshwaran M (Principal Architect)',
       interviewStatus: 'Reschedule Requested',
       feedback: 'Awaiting rescheduled session due to candidate official travel commitments.',
@@ -112,7 +112,7 @@ export const InterviewsModule = () => {
     },
     {
       id: 'INT-2026-006',
-      candidate: 'Sneha Patel (CAN-1048)',
+      candidate: 'Subhashini M (CAN-1048)',
       job: 'Senior Frontend Engineer (JOB-2026-001)',
       interviewRound: 'Technical',
       interviewType: 'Online',

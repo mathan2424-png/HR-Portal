@@ -62,7 +62,7 @@ export const Sidebar = () => {
               title={sidebarCollapsed ? item.label : undefined}
             >
               <span className="nav-item-icon">
-                <Icon size={20} />
+                <Icon size={18} />
               </span>
               {!sidebarCollapsed && (
                 <>

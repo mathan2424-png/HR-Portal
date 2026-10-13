@@ -3,7 +3,7 @@ import { Palette, Building, Save, Check } from 'lucide-react';
 
 export const SettingsModule = () => {
   const [saved, setSaved] = useState(false);
-  const [companyName, setCompanyName] = useState('Acme Corporation');
+  const [companyName, setCompanyName] = useState('Marutham Technologies Pvt. Ltd.');
 
   const brandPalette = [
     { name: 'Primary Blue', hex: '#2563EB' },

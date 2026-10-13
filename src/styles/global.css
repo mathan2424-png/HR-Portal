@@ -19,6 +19,7 @@ body {
   font-family: var(--font-family);
   background-color: var(--bg-app);
   color: var(--text-main);
+  font-size: var(--font-size-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -38,22 +39,23 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.25;
 }
 
-h1 { font-size: 1.875rem; letter-spacing: -0.025em; }
-h2 { font-size: 1.5rem; letter-spacing: -0.02em; }
-h3 { font-size: 1.25rem; letter-spacing: -0.015em; }
-h4 { font-size: 1.125rem; }
-h5 { font-size: 1rem; }
-h6 { font-size: 0.875rem; }
+h1 { font-size: var(--font-size-3xl); letter-spacing: -0.025em; font-weight: 800; }
+h2 { font-size: var(--font-size-2xl); letter-spacing: -0.02em; font-weight: 700; }
+h3 { font-size: var(--font-size-lg); letter-spacing: -0.015em; font-weight: 700; }
+h4 { font-size: var(--font-size-md); font-weight: 600; }
+h5 { font-size: var(--font-size-base); font-weight: 600; }
+h6 { font-size: var(--font-size-sm); font-weight: 600; }
 
 p {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
 }
 
 a {
   color: var(--primary);
   text-decoration: none;
   transition: color var(--transition-fast);
+  font-size: inherit;
 }
 
 a:hover {
@@ -62,6 +64,7 @@ a:hover {
 
 button {
   font-family: inherit;
+  font-size: var(--font-size-base);
   cursor: pointer;
   border: none;
   outline: none;
@@ -70,9 +73,18 @@ button {
 
 input, select, textarea {
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: var(--font-size-base);
   color: var(--text-main);
   outline: none;
+}
+
+/* --- Global Table & Badge Hierarchy --- */
+th {
+  font-size: var(--font-size-body-sm);
+}
+
+td {
+  font-size: 13.5px;
 }
 
 /* --- Custom Scrollbar --- */

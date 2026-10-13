@@ -61,6 +61,15 @@
 
   /* --- Typography & Text --- */
   --font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-body-sm: 13px;
+  --font-size-base: 14px;            /* Standard 14px base (Sidebar modules & app core) */
+  --font-size-md: 15px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
   
   --text-main: #0F172A;              /* Primary Text */
   --text-secondary: #64748B;         /* Secondary Text */

@@ -104,17 +104,17 @@ export const UsersRoles = () => {
     },
   ]);
 
-  // 2. Users Table Data matching Image 1
+  // 2. Users Table Data matching Image 1 (Tamil Names)
   const [users, setUsers] = useState([
     {
       userId: 'USR-001',
-      employeeName: 'Marcus Vance',
-      email: 'marcus.admin@hrportal.example.com',
-      mobile: '+1 (555) 019-2831',
+      employeeName: 'Saravanan S',
+      email: 'saravanan.admin@hrportal.example.com',
+      mobile: '+91 98401 23456',
       employeeId: 'EMP-1042',
       designation: 'Super Administrator',
       department: 'Executive Administration',
-      branch: 'Headquarters',
+      branch: 'Chennai HQ',
       role: 'Super Admin',
       assignedJobs: 'All System Requisitions',
       status: 'Active',
@@ -122,13 +122,13 @@ export const UsersRoles = () => {
     },
     {
       userId: 'USR-002',
-      employeeName: 'Elena Rostova',
-      email: 'elena.finance@hrportal.example.com',
-      mobile: '+1 (555) 019-2832',
+      employeeName: 'Kavitha Ramachandran',
+      email: 'kavitha.finance@hrportal.example.com',
+      mobile: '+91 98410 76543',
       employeeId: 'EMP-1048',
       designation: 'Lead Finance Controller',
       department: 'Finance & Accounts',
-      branch: 'New York Campus',
+      branch: 'Coimbatore Branch',
       role: 'Finance Lead',
       assignedJobs: 'None (Finance View Only)',
       status: 'Active',
@@ -156,7 +156,7 @@ export const UsersRoles = () => {
       employeeId: 'EMP-3091',
       designation: 'Senior HR Manager',
       department: 'Human Resources',
-      branch: 'Chennai HQ',
+      branch: 'Madurai Branch',
       role: 'Super Admin',
       assignedJobs: 'All Company Jobs',
       status: 'Active',
@@ -170,7 +170,7 @@ export const UsersRoles = () => {
       employeeId: 'EMP-4102',
       designation: 'Support Engineer',
       department: 'Operations',
-      branch: 'Bangalore Tech Park',
+      branch: 'Tiruchirappalli Branch',
       role: 'Support Specialist',
       assignedJobs: 'Technical Screening & Scheduling',
       status: 'Active',
@@ -178,17 +178,45 @@ export const UsersRoles = () => {
     },
     {
       userId: 'USR-006',
-      employeeName: 'Siddharth Roy',
-      email: 'siddharth.r@company.com',
-      mobile: '+91 97712 33445',
+      employeeName: 'Vigneshwaran P',
+      email: 'vigneshwaran.p@company.com',
+      mobile: '+91 97890 11223',
       employeeId: 'EMP-5020',
       designation: 'Talent Sourcing Specialist',
       department: 'Talent Acquisition',
-      branch: 'Remote - India',
+      branch: 'Salem Branch',
       role: 'Support Specialist',
       assignedJobs: 'Design & UX Roles (2)',
       status: 'Invited',
       lastLogin: 'Invited (Pending First Login)',
+    },
+    {
+      userId: 'USR-007',
+      employeeName: 'Meenakshi Sundaram',
+      email: 'meenakshi.s@company.com',
+      mobile: '+91 94432 55667',
+      employeeId: 'EMP-5034',
+      designation: 'Associate HR Specialist',
+      department: 'Talent Acquisition',
+      branch: 'Tirunelveli Branch',
+      role: 'Product Owner',
+      assignedJobs: 'Entry Level Graduate Hiring',
+      status: 'Active',
+      lastLogin: '12-Oct-2026 10:00 AM',
+    },
+    {
+      userId: 'USR-008',
+      employeeName: 'Rithesh K',
+      email: 'Rithesh.k@company.com',
+      mobile: '+91 98940 33445',
+      employeeId: 'EMP-5042',
+      designation: 'Systems Auditor',
+      department: 'Operations & Compliance',
+      branch: 'Erode Branch',
+      role: 'Support Specialist',
+      assignedJobs: 'Compliance & Verification',
+      status: 'Active',
+      lastLogin: '11-Oct-2026 02:45 PM',
     },
   ]);
 
@@ -461,7 +489,7 @@ export const UsersRoles = () => {
             <span className="breadcrumb-current">Roles & Permissions</span>
           </div>
           <h1 className="users-page-title">Roles & Permissions</h1>
-          
+
         </div>
 
         {currentView === 'list' ? (
@@ -769,7 +797,7 @@ export const UsersRoles = () => {
                 <input
                   type="text"
                   className="role-input-control"
-                  placeholder="e.g. Marcus Vance"
+                  placeholder="e.g. Saravanan S"
                   value={userFormData.employeeName}
                   onChange={(e) => setUserFormData({ ...userFormData, employeeName: e.target.value })}
                   disabled={currentView === 'view-user'}
@@ -783,7 +811,7 @@ export const UsersRoles = () => {
                 <input
                   type="email"
                   className="role-input-control"
-                  placeholder="e.g. marcus.admin@hrportal.example.com"
+                  placeholder="e.g. saravanan.admin@company.com"
                   value={userFormData.email}
                   onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
                   disabled={currentView === 'view-user'}
@@ -799,7 +827,7 @@ export const UsersRoles = () => {
                 <input
                   type="text"
                   className="role-input-control"
-                  placeholder="e.g. +1 (555) 019-2831"
+                  placeholder="e.g. +91 98401 23456"
                   value={userFormData.mobile}
                   onChange={(e) => setUserFormData({ ...userFormData, mobile: e.target.value })}
                   disabled={currentView === 'view-user'}

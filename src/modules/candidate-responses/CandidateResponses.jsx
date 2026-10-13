@@ -46,7 +46,7 @@ export const CandidateResponses = () => {
     },
     {
       id: 'RESP-002',
-      candidate: 'Sneha Rao (CAN-8034)',
+      candidate: 'Sivakami R (CAN-8034)',
       job: 'Lead Product Designer (JOB-2026-002)',
       response: 'Interested',
       responseDate: '12-Oct-2026 01:20 PM',
@@ -74,7 +74,7 @@ export const CandidateResponses = () => {
     },
     {
       id: 'RESP-004',
-      candidate: 'Ananya Sharma (CAN-8015)',
+      candidate: 'Anitha Murugesan (CAN-8015)',
       job: 'Senior Technical Recruiter (JOB-2026-003)',
       response: 'Interested',
       responseDate: '11-Oct-2026 11:30 AM',

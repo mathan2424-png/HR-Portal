@@ -103,7 +103,7 @@ export const ScreeningModule = () => {
       candidateAnswer: '₹45 Lakhs annual contract with mid-market manufacturing client.',
       screeningStatus: 'Pending',
       result: 'Review Required',
-      reviewedBy: 'Siddharth Roy (Sales Director)',
+      reviewedBy: 'Muthuvel Pandian (Sales Director)',
       reviewDate: '10-Oct-2026 11:30 AM',
     },
     {
@@ -118,7 +118,7 @@ export const ScreeningModule = () => {
       candidateAnswer: 'No, have managed PF only, TDS was handled by external auditing firm.',
       screeningStatus: 'Completed',
       result: 'Not Qualified',
-      reviewedBy: 'Meera Nambiar (Finance Lead)',
+      reviewedBy: 'Meenakshi Sundaram (Finance Lead)',
       reviewDate: '09-Oct-2026 03:00 PM',
     },
     {

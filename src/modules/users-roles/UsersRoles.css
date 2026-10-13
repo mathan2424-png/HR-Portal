@@ -21,7 +21,7 @@
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  font-size: 0.8rem;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
@@ -33,7 +33,7 @@
 
 .breadcrumb-sep {
   color: #94a3b8;
-  font-size: 0.75rem;
+  font-size: 12px;
 }
 
 .breadcrumb-current {
@@ -59,7 +59,7 @@
 }
 
 .users-page-title {
-  font-size: 1.6rem;
+  font-size: 24px;
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.025em;
@@ -68,7 +68,7 @@
 }
 
 .users-subtitle {
-  font-size: 0.86rem;
+  font-size: 14px;
   color: var(--text-muted);
   margin: 0;
   max-width: 720px;
@@ -105,7 +105,7 @@
   color: #1e293b;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -127,7 +127,7 @@
   color: #ffffff;
   border: none;
   border-radius: 8px;
-  font-size: 0.86rem;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -199,14 +199,14 @@
 }
 
 .defined-roles-title {
-  font-size: 0.95rem;
+  font-size: 15px;
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.01em;
 }
 
 .defined-roles-subtext {
-  font-size: 0.78rem;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
@@ -260,20 +260,20 @@
 }
 
 .role-card-name {
-  font-size: 0.92rem;
+  font-size: 15px;
   font-weight: 800;
   color: #0f172a;
 }
 
 .role-card-code {
-  font-size: 0.74rem;
+  font-size: 12px;
   font-weight: 700;
   color: #94a3b8;
   letter-spacing: 0.02em;
 }
 
 .role-card-desc {
-  font-size: 0.78rem;
+  font-size: 13px;
   color: var(--text-muted);
   line-height: 1.4;
   min-height: 2.4rem;
@@ -287,9 +287,9 @@
 }
 
 .role-perm-chip {
-  padding: 0.15rem 0.5rem;
+  padding: 0.18rem 0.55rem;
   border-radius: 4px;
-  font-size: 0.72rem;
+  font-size: 11.5px;
   font-weight: 700;
   background: #eff6ff;
   color: #1d4ed8;
@@ -342,7 +342,7 @@
 .users-search-box input {
   border: none;
   background: transparent;
-  font-size: 0.84rem;
+  font-size: 14px;
   color: var(--text-main);
   outline: none;
   width: 100%;
@@ -353,7 +353,7 @@
   background: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 0.83rem;
+  font-size: 14px;
   color: var(--text-main);
   outline: none;
   cursor: pointer;
@@ -379,7 +379,7 @@
   min-width: 1050px;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.85rem;
+  font-size: 14px;
   white-space: nowrap; /* PREVENTS WRAPPING */
 }
 
@@ -389,7 +389,7 @@
   color: #ffffff !important;
   font-weight: 800;
   text-transform: uppercase;
-  font-size: 0.74rem;
+  font-size: 13px;
   letter-spacing: 0.05em;
   padding: 0.95rem 1rem;
   border: none;
@@ -421,6 +421,7 @@
   padding: 0.85rem 1rem;
   vertical-align: middle;
   color: var(--text-main);
+  font-size: 13.5px;
   white-space: nowrap; /* PREVENTS WRAPPING */
 }
 
@@ -435,12 +436,12 @@
 .user-full-name {
   font-weight: 700;
   color: #0f172a;
-  font-size: 0.88rem;
+  font-size: 14px;
   white-space: nowrap;
 }
 
 .user-email-sub {
-  font-size: 0.75rem;
+  font-size: 12px;
   color: #64748b;
   white-space: nowrap;
 }
@@ -449,7 +450,7 @@
 .user-id-text {
   font-weight: 700;
   color: #1e293b;
-  font-size: 0.84rem;
+  font-size: 13.5px;
 }
 
 /* Assigned Role Badge */
@@ -458,7 +459,7 @@
   align-items: center;
   padding: 0.22rem 0.65rem;
   border-radius: 20px;
-  font-size: 0.74rem;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   background: #eff6ff;
@@ -497,7 +498,7 @@
   gap: 0.35rem;
   padding: 0.22rem 0.65rem;
   border-radius: 20px;
-  font-size: 0.74rem;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -573,7 +574,7 @@
   align-items: center;
   justify-content: space-between;
   padding-top: 0.5rem;
-  font-size: 0.82rem;
+  font-size: 13px;
   color: var(--text-muted);
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -593,7 +594,7 @@
   border: 1px solid var(--border-color);
   background: #ffffff;
   color: var(--text-main);
-  font-size: 0.82rem;
+  font-size: 13px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -679,7 +680,7 @@
 }
 
 .add-role-modal-title {
-  font-size: 1.2rem;
+  font-size: 18px;
   font-weight: 800;
   color: #0f172a;
   margin: 0;
@@ -687,7 +688,7 @@
 }
 
 .add-role-modal-subtitle {
-  font-size: 0.82rem;
+  font-size: 13px;
   color: var(--text-muted);
   margin-top: 0.25rem;
 }
@@ -726,7 +727,7 @@
 }
 
 .role-form-group label {
-  font-size: 0.82rem;
+  font-size: 13px;
   font-weight: 700;
   color: #0f172a;
 }
@@ -735,7 +736,7 @@
   padding: 0.65rem 0.95rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 14px;
   color: var(--text-main);
   background: #ffffff;
   outline: none;
@@ -753,7 +754,7 @@
   padding: 0.65rem 0.95rem;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 14px;
   color: var(--text-main);
   background: #ffffff;
   outline: none;
@@ -778,7 +779,7 @@
   padding: 0.65rem 0.85rem;
   background: #eff6ff;
   border-radius: 8px;
-  font-size: 0.78rem;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.05em;
   color: #1e3a8a;
@@ -800,13 +801,13 @@
 .permissions-matrix-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: 13.5px;
 }
 
 .permissions-matrix-table th {
   background: #f8fafc;
   color: #475569;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -885,7 +886,7 @@
   color: var(--text-muted);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 0.84rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -902,7 +903,7 @@
   color: #ffffff;
   border: none;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -934,7 +935,7 @@
   color: #ffffff !important;
   padding: 0.65rem 1.15rem;
   border-radius: 6px;
-  font-size: 0.78rem;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -974,7 +975,7 @@
   color: var(--text-muted);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  font-size: 0.84rem;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -995,7 +996,7 @@
   color: #ffffff;
   border: none;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);

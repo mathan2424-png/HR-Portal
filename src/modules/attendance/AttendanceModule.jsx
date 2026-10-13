@@ -6,11 +6,11 @@ import { Badge } from '../../components/common/Badge/Badge';
 
 export const AttendanceModule = () => {
   const attendanceLogs = [
-    { id: 'ATT-1', name: 'Sarah Jenkins', checkIn: '08:55 AM', checkOut: '05:30 PM', workHours: '8h 35m', status: 'Present' },
-    { id: 'ATT-2', name: 'David Chen', checkIn: '09:05 AM', checkOut: '--', workHours: 'In Progress', status: 'Present' },
-    { id: 'ATT-3', name: 'Michael Torres', checkIn: '09:45 AM', checkOut: '--', workHours: 'In Progress', status: 'Late' },
-    { id: 'ATT-4', name: 'Priya Sharma', checkIn: '--', checkOut: '--', workHours: '0h', status: 'On Leave' },
-    { id: 'ATT-5', name: 'Elena Rostova', checkIn: '08:40 AM', checkOut: '05:15 PM', workHours: '8h 35m', status: 'Present' },
+    { id: 'ATT-1', name: 'Kavitha Ramachandran', checkIn: '08:55 AM', checkOut: '05:30 PM', workHours: '8h 35m', status: 'Present' },
+    { id: 'ATT-2', name: 'Saravanan S', checkIn: '09:05 AM', checkOut: '--', workHours: 'In Progress', status: 'Present' },
+    { id: 'ATT-3', name: 'Vigneshwaran P', checkIn: '09:45 AM', checkOut: '--', workHours: 'In Progress', status: 'Late' },
+    { id: 'ATT-4', name: 'Abinaya R', checkIn: '--', checkOut: '--', workHours: '0h', status: 'On Leave' },
+    { id: 'ATT-5', name: 'Dhakshan S', checkIn: '08:40 AM', checkOut: '05:15 PM', workHours: '8h 35m', status: 'Present' },
   ];
 
   const columns = [
