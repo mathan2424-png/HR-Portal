@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Mail,
@@ -53,10 +53,16 @@ export const PortalBrandLogo = ({ color = '#1D72FE', textColor = '#0F172A', size
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = usePortal();
+  const { login, isAuthenticated } = usePortal();
 
-  const [email, setEmail] = useState('admin@hrms.com');
-  const [password, setPassword] = useState('admin123');
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,7 +102,7 @@ export const LoginPage = () => {
       }
       showToast('Login Successfully! Redirecting...', 'success');
       setTimeout(() => {
-        navigate('/company-profile');
+        navigate('/');
       }, 700);
     }, 450);
   };
@@ -170,7 +176,7 @@ export const LoginPage = () => {
                 <input
                   type="email"
                   className="login-input"
-                  placeholder="admin@hrms.com"
+                  placeholder="Enter Email Address"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);

@@ -6,7 +6,7 @@ export const PortalProvider = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('hr_portal_authenticated') !== 'false';
+    return localStorage.getItem('hr_portal_authenticated') === 'true';
   });
   const [currentUser, setCurrentUser] = useState({
     name: 'Administrator',
@@ -15,15 +15,85 @@ export const PortalProvider = ({ children }) => {
     avatarInitial: 'A',
   });
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'New leave application from Nathiya  Sharma', time: '10m ago', unread: true },
-    { id: 2, title: 'Payroll generation ready for review', time: '1h ago', unread: true },
-    { id: 3, title: 'Quarterly review meetings scheduled', time: 'Yesterday', unread: false },
+    {
+      id: 'NTF-2026-001',
+      notificationType: 'Interview',
+      title: 'Interview Accepted by Candidate',
+      message: 'Nathiya  Sharma (CAN-1042) accepted Technical Round interview invitation for 14-Oct-2026 at 10:30 AM IST.',
+      dateTime: '12-Oct-2026 05:15 PM',
+      readStatus: 'Unread',
+      recipient: 'Sundar Raman (Eng Lead)',
+    },
+    {
+      id: 'NTF-2026-002',
+      notificationType: 'Candidate response',
+      title: 'Candidate Response Received',
+      message: 'Anand Kumar responded "Interested" to Lead Product Designer (JOB-2026-002) job alert broadcast.',
+      dateTime: '12-Oct-2026 04:30 PM',
+      readStatus: 'Unread',
+      recipient: 'Abinaya R (Senior HR Manager)',
+    },
+    {
+      id: 'NTF-2026-003',
+      notificationType: 'Screening',
+      title: 'Screening Assessment Completed',
+      message: 'Karthik V completed Cloud Infrastructure & Kubernetes screening assessment with a score of 84% (Qualified).',
+      dateTime: '12-Oct-2026 02:45 PM',
+      readStatus: 'Read',
+      recipient: 'Sundar Raman (Eng Lead)',
+    },
+    {
+      id: 'NTF-2026-004',
+      notificationType: 'Subscription',
+      title: 'Monthly Plan Credits Refilled',
+      message: 'Your Enterprise Recruitment Plan was replenished with 5,000 candidate match credits and 3,000 alert broadcasts.',
+      dateTime: '11-Oct-2026 11:00 AM',
+      readStatus: 'Read',
+      recipient: 'Company Administrator (Rajeshwaran K)',
+    },
+    {
+      id: 'NTF-2026-005',
+      notificationType: 'Payment',
+      title: 'Subscription Invoice Generated & Paid',
+      message: 'Invoice #INV-2026-104 for ₹49,999 + GST processed successfully via Corporate Auto-Debit.',
+      dateTime: '10-Oct-2026 09:15 AM',
+      readStatus: 'Read',
+      recipient: 'Finance Admin (Deepak Verma)',
+    },
+    {
+      id: 'NTF-2026-006',
+      notificationType: 'Interview',
+      title: 'Reschedule Requested by Candidate',
+      message: 'Karthik V requested reschedule for DevOps Technical round due to conflicting official travel commitments.',
+      dateTime: '09-Oct-2026 03:20 PM',
+      readStatus: 'Read',
+      recipient: 'Abinaya R (Senior HR Manager)',
+    },
+    {
+      id: 'NTF-2026-007',
+      notificationType: 'Candidate response',
+      title: 'Offer Letter Signed & Accepted',
+      message: 'Deepa Rajan (CAN-1046) signed offer letter for Talent Acquisition Lead. Scheduled joining on 05-Nov-2026.',
+      dateTime: '08-Oct-2026 06:10 PM',
+      readStatus: 'Read',
+      recipient: 'Company Administrator (Rajeshwaran K)',
+    },
   ]);
+
+  const unreadCount = notifications.filter((n) => n.readStatus === 'Unread').length;
 
   const toggleSidebar = () => setSidebarCollapsed((prev) => !prev);
 
   const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+    setNotifications((prev) =>
+      prev.map((item) => ({ ...item, readStatus: 'Read' }))
+    );
+  };
+
+  const markNotificationAsRead = (id) => {
+    setNotifications((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, readStatus: 'Read' } : item))
+    );
   };
 
   const login = (email) => {
@@ -41,7 +111,7 @@ export const PortalProvider = ({ children }) => {
 
   const logout = () => {
     setIsAuthenticated(false);
-    localStorage.setItem('hr_portal_authenticated', 'false');
+    localStorage.removeItem('hr_portal_authenticated');
   };
 
   return (
@@ -53,7 +123,10 @@ export const PortalProvider = ({ children }) => {
         globalSearch,
         setGlobalSearch,
         notifications,
+        setNotifications,
+        unreadCount,
         markAllRead,
+        markNotificationAsRead,
         isAuthenticated,
         currentUser,
         login,

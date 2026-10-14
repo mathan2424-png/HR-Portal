@@ -14,7 +14,6 @@ import {
   CalendarCheck,
   FileCheck,
   BarChart3,
-  Bell,
   Settings,
   ScrollText,
   ChevronDown,
@@ -52,7 +51,6 @@ const navItems = [
   { path: '/interviews', label: 'Interviews', icon: CalendarCheck },
   { path: '/offers', label: 'Offers & Hiring', icon: FileCheck },
   { path: '/reports', label: 'Recruitment Reports', icon: BarChart3 },
-  { path: '/notifications', label: 'Notifications', icon: Bell },
   { path: '/settings', label: 'Settings & Security', icon: Settings },
   { path: '/audit-log', label: 'Company Audit Log', icon: ScrollText },
 ];
@@ -185,18 +183,7 @@ export const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <button
-          type="button"
-          className="sidebar-logout-btn"
-          onClick={() => {
-            if (logout) logout();
-            navigate('/login');
-          }}
-          title="Sign Out"
-        >
-          <LogOut size={18} />
-          {!sidebarCollapsed && <span>Sign Out</span>}
-        </button>
+
       </div>
     </aside>
   );

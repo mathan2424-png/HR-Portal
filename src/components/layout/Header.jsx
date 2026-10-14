@@ -1,15 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, LogOut, Shield } from 'lucide-react';
+import { Menu, LogOut, Bell, Check } from 'lucide-react';
 import { usePortal } from '../../context/PortalContext';
 import './Header.css';
 
 export const Header = () => {
-  const { toggleSidebar, currentUser, logout } = usePortal();
+  const {
+    toggleSidebar,
+    currentUser,
+    logout,
+    notifications = [],
+    unreadCount = 0,
+    markAllRead,
+    markNotificationAsRead,
+  } = usePortal();
   const navigate = useNavigate();
   const [currentDateTime, setCurrentDateTime] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const menuRef = useRef(null);
+  const notificationRef = useRef(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -29,7 +39,7 @@ export const Header = () => {
       hours = hours % 12;
       hours = hours ? String(hours).padStart(2, '0') : '12';
 
-      setCurrentDateTime(`${day}-${month}-${year} ${hours}:${minutes}:${seconds} ${ampm}`);
+      setCurrentDateTime(`${day} ${month.slice(0, 3)} ${year} • ${hours}:${minutes}:${seconds} ${ampm}`);
     };
 
     updateTime();
@@ -37,11 +47,14 @@ export const Header = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setMenuOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setNotificationOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -52,6 +65,28 @@ export const Header = () => {
     setMenuOpen(false);
     if (logout) logout();
     navigate('/login');
+  };
+
+  const getTypeClass = (type = '') => {
+    const t = type.toLowerCase();
+    if (t.includes('interview')) return 'tag-interview';
+    if (t.includes('candidate') || t.includes('response')) return 'tag-candidate';
+    if (t.includes('screening')) return 'tag-screening';
+    if (t.includes('subscription')) return 'tag-subscription';
+    if (t.includes('payment')) return 'tag-payment';
+    if (t.includes('support')) return 'tag-support';
+    if (t.includes('enquiry')) return 'tag-enquiry';
+    if (t.includes('help')) return 'tag-help';
+    return 'tag-default';
+  };
+
+  const formatShortTime = (dtStr = '') => {
+    if (!dtStr) return '';
+    const parts = dtStr.split(' ');
+    if (parts.length >= 3) {
+      return `${parts[1]} ${parts[2]}`;
+    }
+    return dtStr;
   };
 
   return (
@@ -72,11 +107,108 @@ export const Header = () => {
           {currentDateTime}
         </div>
 
+        {/* Notification Bell with Dropdown (Matches requested Image 2) */}
+        <div className="header-notification-wrapper" ref={notificationRef}>
+          <button
+            type="button"
+            className={`header-bell-btn ${notificationOpen ? 'active' : ''}`}
+            onClick={() => {
+              setNotificationOpen((prev) => !prev);
+              setMenuOpen(false);
+            }}
+            title="Notifications"
+            aria-label="Notifications"
+          >
+            <Bell size={19} />
+            {unreadCount > 0 && <span className="header-bell-dot" />}
+          </button>
+
+          {notificationOpen && (
+            <div className="header-notification-dropdown">
+              <div className="notification-dropdown-header">
+                <div className="notification-dropdown-title-wrap">
+                  <span className="notification-dropdown-title">NOTIFICATIONS</span>
+                  {unreadCount > 0 && (
+                    <span className="notification-dropdown-badge">{unreadCount}</span>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    className="notification-mark-read-btn"
+                    onClick={() => {
+                      if (markAllRead) markAllRead();
+                    }}
+                  >
+                    <Check size={14} />
+                    <span>Mark all read</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="notification-dropdown-list">
+                {notifications.length === 0 ? (
+                  <div className="notification-dropdown-empty">
+                    No notifications available
+                  </div>
+                ) : (
+                  notifications.map((item) => {
+                    const isUnread = item.readStatus === 'Unread';
+                    return (
+                      <div
+                        key={item.id}
+                        className={`notification-dropdown-item ${isUnread ? 'unread' : ''}`}
+                        onClick={() => {
+                          if (markNotificationAsRead) markNotificationAsRead(item.id);
+                          setNotificationOpen(false);
+                          navigate('/notifications');
+                        }}
+                      >
+                        <div className="notification-item-top">
+                          <span className={`notification-item-tag ${getTypeClass(item.notificationType)}`}>
+                            {item.notificationType.toUpperCase()}
+                          </span>
+                          <span className="notification-item-title" title={item.title}>
+                            {item.title}
+                          </span>
+                          <span className="notification-item-time">
+                            {formatShortTime(item.dateTime)}
+                          </span>
+                        </div>
+                        <div className="notification-item-snippet" title={item.message}>
+                          {item.message}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="notification-dropdown-footer">
+                <button
+                  type="button"
+                  className="notification-view-all-btn"
+                  onClick={() => {
+                    setNotificationOpen(false);
+                    navigate('/notifications');
+                  }}
+                >
+                  View All Notifications
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* User Account Menu */}
         <div className="header-user-menu-wrapper" ref={menuRef}>
           <div
             className="header-avatar-circle"
             title="Administrator Account"
-            onClick={() => setMenuOpen((prev) => !prev)}
+            onClick={() => {
+              setMenuOpen((prev) => !prev);
+              setNotificationOpen(false);
+            }}
           >
             <span>{currentUser?.avatarInitial || 'A'}</span>
           </div>

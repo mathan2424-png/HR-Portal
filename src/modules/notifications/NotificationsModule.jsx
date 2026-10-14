@@ -14,83 +14,11 @@ import {
 } from 'lucide-react';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import { validateRequired } from '../../utils/validation';
+import { usePortal } from '../../context/PortalContext';
 import './NotificationsModule.css';
 
 export const NotificationsModule = () => {
-  // STRICTLY and ONLY the 7 user-requested fields:
-  // 1. Notification ID: Unique notification.
-  // 2. Notification Type: Candidate response, interview, screening, subscription, payment, etc.
-  // 3. Title: Notification title.
-  // 4. Message: Notification message.
-  // 5. Date / Time: Notification time.
-  // 6. Read Status: Read/Unread.
-  // 7. Recipient: Company user receiving it.
-
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'NTF-2026-001',
-      notificationType: 'Interview',
-      title: 'Interview Accepted by Candidate',
-      message: 'Nathiya  Sharma (CAN-1042) accepted Technical Round interview invitation for 14-Oct-2026 at 10:30 AM IST.',
-      dateTime: '12-Oct-2026 05:15 PM',
-      readStatus: 'Unread',
-      recipient: 'Sundar Raman (Eng Lead)',
-    },
-    {
-      id: 'NTF-2026-002',
-      notificationType: 'Candidate response',
-      title: 'Candidate Response Received',
-      message: 'Anand Kumar responded "Interested" to Lead Product Designer (JOB-2026-002) job alert broadcast.',
-      dateTime: '12-Oct-2026 04:30 PM',
-      readStatus: 'Unread',
-      recipient: 'Abinaya R (Senior HR Manager)',
-    },
-    {
-      id: 'NTF-2026-003',
-      notificationType: 'Screening',
-      title: 'Screening Assessment Completed',
-      message: 'Karthik V completed Cloud Infrastructure & Kubernetes screening assessment with a score of 84% (Qualified).',
-      dateTime: '12-Oct-2026 02:45 PM',
-      readStatus: 'Read',
-      recipient: 'Sundar Raman (Eng Lead)',
-    },
-    {
-      id: 'NTF-2026-004',
-      notificationType: 'Subscription',
-      title: 'Monthly Plan Credits Refilled',
-      message: 'Your Enterprise Recruitment Plan was replenished with 5,000 candidate match credits and 3,000 alert broadcasts.',
-      dateTime: '11-Oct-2026 11:00 AM',
-      readStatus: 'Read',
-      recipient: 'Company Administrator (Rajeshwaran K)',
-    },
-    {
-      id: 'NTF-2026-005',
-      notificationType: 'Payment',
-      title: 'Subscription Invoice Generated & Paid',
-      message: 'Invoice #INV-2026-104 for ₹49,999 + GST processed successfully via Corporate Auto-Debit.',
-      dateTime: '10-Oct-2026 09:15 AM',
-      readStatus: 'Read',
-      recipient: 'Finance Admin (Deepak Verma)',
-    },
-    {
-      id: 'NTF-2026-006',
-      notificationType: 'Interview',
-      title: 'Reschedule Requested by Candidate',
-      message: 'Karthik V requested reschedule for DevOps Technical round due to conflicting official travel commitments.',
-      dateTime: '09-Oct-2026 03:20 PM',
-      readStatus: 'Read',
-      recipient: 'Abinaya R (Senior HR Manager)',
-    },
-    {
-      id: 'NTF-2026-007',
-      notificationType: 'Candidate response',
-      title: 'Offer Letter Signed & Accepted',
-      message: 'Deepa Rajan (CAN-1046) signed offer letter for Talent Acquisition Lead. Scheduled joining on 05-Nov-2026.',
-      dateTime: '08-Oct-2026 06:10 PM',
-      readStatus: 'Read',
-      recipient: 'Company Administrator (Rajeshwaran K)',
-    },
-  ]);
+  const { notifications, setNotifications, markAllRead, unreadCount } = usePortal();
 
   // Views: 'list' | 'form'
   const [currentView, setCurrentView] = useState('list');
@@ -220,9 +148,7 @@ export const NotificationsModule = () => {
   };
 
   const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((item) => ({ ...item, readStatus: 'Read' }))
-    );
+    markAllRead();
     showToast('All notifications marked as read.');
   };
 
@@ -258,8 +184,6 @@ export const NotificationsModule = () => {
     currentPage * itemsPerPage
   );
 
-  const unreadCount = notifications.filter((n) => n.readStatus === 'Unread').length;
-
   const getTypeClass = (type) => {
     switch (type) {
       case 'Candidate response':
@@ -291,10 +215,15 @@ export const NotificationsModule = () => {
       <div className="notifications-page-header">
         {currentView === 'list' ? (
           <>
-            <div>
+            <div className="notifications-title-area">
               <h1 className="notifications-page-title">Notifications</h1>
             </div>
             <div className="notifications-header-actions">
+              {unreadCount > 0 && (
+                <span className="notifications-unread-pill">
+                  {unreadCount} Unread
+                </span>
+              )}
               {unreadCount > 0 && (
                 <button
                   type="button"
