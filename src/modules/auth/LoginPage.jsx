@@ -164,7 +164,7 @@ export const LoginPage = () => {
           <form onSubmit={handleSubmit} className="login-form" noValidate>
             {/* Field 1: Email Address */}
             <div className="login-field-group">
-              <label className="login-field-label">Email Address</label>
+              <label className="login-field-label">User Name</label>
               <div
                 className={`login-input-container ${
                   emailFocused ? 'focused' : ''

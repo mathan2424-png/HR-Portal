@@ -1,286 +1,804 @@
 import React, { useState } from 'react';
 import {
   Search,
-  Plus,
-  Edit2,
-  Trash2,
+  Filter,
+  ChevronRight,
+  ChevronLeft,
+  ArrowLeft,
+  Send,
+  CheckCircle,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  XCircle,
+  Eye,
   Lock,
   Unlock,
-  ChevronLeft,
-  ChevronRight,
-  ArrowLeft,
-  Save,
-  CheckCircle2,
+  Users,
+  Sparkles,
+  Briefcase,
+  Award,
+  CheckSquare,
+  Square,
+  RefreshCw,
+  Layers,
+  ShieldCheck,
   FileText,
+  DollarSign,
+  MapPin,
+  Calendar,
+  ThumbsUp,
+  ThumbsDown,
+  HelpCircle,
+  UserCheck,
+  Check,
+  Sliders,
+  ChevronDown,
 } from 'lucide-react';
-import { FieldError } from '../../components/common/FieldError/FieldError';
-import {
-  validateName,
-  validateRequired,
-  sanitizeNameInput,
-} from '../../utils/validation';
+import { usePortal } from '../../context/PortalContext';
 import './CandidateResponses.css';
 
+// 1. Initial Job-Wise Responses Summary Data (Main Table)
+const initialJobsResponseSummary = [
+  {
+    id: 'JOB-2026-007',
+    jobTitle: 'Software Developer',
+    department: 'Engineering & Technology',
+    publishedDate: '06-Oct-2026',
+    totalNotified: 60,
+    interestedCount: 45,
+    notInterestedCount: 8,
+    maybeLaterCount: 5,
+    noResponseCount: 2,
+    screeningSentCount: 0,
+  },
+  {
+    id: 'JOB-2026-003',
+    jobTitle: 'HR Executive',
+    department: 'Human Resources',
+    publishedDate: '04-Oct-2026',
+    totalNotified: 45,
+    interestedCount: 28,
+    notInterestedCount: 7,
+    maybeLaterCount: 6,
+    noResponseCount: 4,
+    screeningSentCount: 10,
+  },
+  {
+    id: 'JOB-2026-002',
+    jobTitle: 'UI/UX Designer',
+    department: 'Design & UX',
+    publishedDate: '02-Oct-2026',
+    totalNotified: 30,
+    interestedCount: 16,
+    notInterestedCount: 6,
+    maybeLaterCount: 5,
+    noResponseCount: 3,
+    screeningSentCount: 5,
+  },
+  {
+    id: 'JOB-2026-001',
+    jobTitle: 'Senior Frontend Engineer',
+    department: 'Engineering & Technology',
+    publishedDate: '01-Oct-2026',
+    totalNotified: 50,
+    interestedCount: 38,
+    notInterestedCount: 6,
+    maybeLaterCount: 4,
+    noResponseCount: 2,
+    screeningSentCount: 12,
+  },
+  {
+    id: 'JOB-2026-004',
+    jobTitle: 'DevOps & Cloud Architect',
+    department: 'Engineering & Technology',
+    publishedDate: '03-Oct-2026',
+    totalNotified: 35,
+    interestedCount: 20,
+    notInterestedCount: 8,
+    maybeLaterCount: 4,
+    noResponseCount: 3,
+    screeningSentCount: 8,
+  },
+  {
+    id: 'JOB-2026-005',
+    jobTitle: 'Enterprise Account Executive',
+    department: 'Business Development',
+    publishedDate: '05-Oct-2026',
+    totalNotified: 25,
+    interestedCount: 15,
+    notInterestedCount: 5,
+    maybeLaterCount: 3,
+    noResponseCount: 2,
+    screeningSentCount: 4,
+  },
+];
+
+// 2. Candidate Responses Data for all Published Jobs
+const initialCandidatesData = [
+  // Candidates for Software Developer (JOB-2026-007)
+  {
+    id: 'CAN-REF-7011',
+    jobId: 'JOB-2026-007',
+    candidateName: 'Karthikeyan Selvam',
+    permissionGranted: true,
+    specialty: 'Full-Stack JavaScript & Node Developer',
+    matchScore: 95,
+    skillsMatch: '95% (JavaScript, Node.js, React, SQL)',
+    skillsMatchedCount: '4/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '3.5 Yrs (Req: 2 - 5 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹9.5L vs ₹8-14L',
+    availability: 'Immediate',
+    response: 'Interested',
+    responseDate: '12-Oct-2026 04:15 PM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Interested',
+    notes: 'Strong backend logic & portfolio on GitHub. Validated for immediate screening.',
+  },
+  {
+    id: 'CAN-REF-7024',
+    jobId: 'JOB-2026-007',
+    candidateName: 'Praveen Venkatesh',
+    permissionGranted: false,
+    specialty: 'Core Java & Spring Boot Developer',
+    matchScore: 92,
+    skillsMatch: '90% (Java, Spring Boot, Microservices, SQL)',
+    skillsMatchedCount: '4/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '4.0 Yrs (Req: 2 - 5 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ / Hybrid',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹11L vs ₹8-14L',
+    availability: '15 Days Notice',
+    response: 'Interested',
+    responseDate: '12-Oct-2026 02:40 PM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Interested',
+    notes: 'Good experience in enterprise APIs and SQL performance tuning.',
+  },
+  {
+    id: 'CAN-REF-7035',
+    jobId: 'JOB-2026-007',
+    candidateName: 'Meenakshi Sundaram',
+    permissionGranted: true,
+    specialty: 'React & Python Full-Stack Engineer',
+    matchScore: 89,
+    skillsMatch: '85% (React, Python, Django, REST APIs)',
+    skillsMatchedCount: '3/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '3.0 Yrs (Req: 2 - 5 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹10L vs ₹8-14L',
+    availability: '30 Days Notice',
+    response: 'Interested',
+    responseDate: '11-Oct-2026 06:10 PM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Interested',
+    notes: 'Ex-startup engineer, comfortable with full-stack delivery cycles.',
+  },
+  {
+    id: 'CAN-REF-7048',
+    jobId: 'JOB-2026-007',
+    candidateName: 'Sanjay Krishnan',
+    permissionGranted: false,
+    specialty: 'Software Engineer - Backend',
+    matchScore: 86,
+    skillsMatch: '85% (Node.js, PostgreSQL, Docker)',
+    skillsMatchedCount: '3/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '2.5 Yrs (Req: 2 - 5 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹8.5L vs ₹8-14L',
+    availability: 'Immediate',
+    response: 'Interested',
+    responseDate: '11-Oct-2026 11:20 AM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Interested',
+    notes: 'Immediate joiner, eager for backend technical screening.',
+  },
+  {
+    id: 'CAN-REF-7059',
+    jobId: 'JOB-2026-007',
+    candidateName: 'Deepak Raj',
+    permissionGranted: true,
+    specialty: 'Junior Software Engineer',
+    matchScore: 78,
+    skillsMatch: '75% (JavaScript, React.js)',
+    skillsMatchedCount: '2/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '2.0 Yrs (Req: 2 - 5 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Not Suitable',
+    locationDetail: 'Bengaluru (Prefers Remote)',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹8L vs ₹8-14L',
+    availability: 'Notice Period',
+    response: 'Interested',
+    responseDate: '10-Oct-2026 03:00 PM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Interested',
+    notes: 'Location suitability requires recruiter review before screening dispatch.',
+  },
+  {
+    id: 'CAN-REF-7062',
+    jobId: 'JOB-2026-007',
+    candidateName: 'Ashok V',
+    permissionGranted: false,
+    specialty: 'QA Automation Engineer',
+    matchScore: 68,
+    skillsMatch: '60% (Python, Selenium)',
+    skillsMatchedCount: '1/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '3.0 Yrs (Req: 2 - 5 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹9L vs ₹8-14L',
+    availability: 'Notice Period',
+    response: 'Not Interested',
+    responseDate: '10-Oct-2026 12:45 PM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Matched',
+    notes: 'Candidate looking strictly for SDET / Test Automation roles.',
+  },
+
+  // Candidates for HR Executive (JOB-2026-003)
+  {
+    id: 'CAN-REF-3008',
+    jobId: 'JOB-2026-003',
+    candidateName: 'Nathiya Ramesh',
+    permissionGranted: true,
+    specialty: 'Senior Technical Talent Partner',
+    matchScore: 94,
+    skillsMatch: '95% (Tech Sourcing, Screening, ATS, Negotiation)',
+    skillsMatchedCount: '4/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '4.5 Yrs (Req: 3 - 6 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹12L vs ₹10-15L',
+    availability: 'Immediate',
+    response: 'Interested',
+    responseDate: '10-Oct-2026 01:15 PM',
+    screeningStatus: 'Completed',
+    screeningAssessment: 'HR Leadership & Competency Screening',
+    screeningScore: 92,
+    screeningResult: 'Qualified',
+    recruitmentStage: 'Shortlisted',
+    notes: 'Scored 92% in screening assessment. Highly qualified for technical recruitment lead.',
+  },
+  {
+    id: 'CAN-REF-3015',
+    jobId: 'JOB-2026-003',
+    candidateName: 'Divya Bharathi',
+    permissionGranted: true,
+    specialty: 'HR Operations & Employee Relations',
+    matchScore: 90,
+    skillsMatch: '90% (Onboarding, HRIS, Talent Acquisition)',
+    skillsMatchedCount: '3/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '4.0 Yrs (Req: 3 - 6 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹11L vs ₹10-15L',
+    availability: '15 Days Notice',
+    response: 'Interested',
+    responseDate: '10-Oct-2026 04:30 PM',
+    screeningStatus: 'Pending',
+    screeningAssessment: 'HR Leadership & Competency Screening',
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Screening',
+    notes: 'Assessment link dispatched via email. Awaiting candidate submission.',
+  },
+  {
+    id: 'CAN-REF-3022',
+    jobId: 'JOB-2026-003',
+    candidateName: 'Subash Chandra Bose',
+    permissionGranted: false,
+    specialty: 'Campus Recruiter & Employer Branding',
+    matchScore: 84,
+    skillsMatch: '80% (Sourcing, Screening, Campus Drives)',
+    skillsMatchedCount: '3/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '3.5 Yrs (Req: 3 - 6 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹10L vs ₹10-15L',
+    availability: 'Immediate',
+    response: 'Interested',
+    responseDate: '11-Oct-2026 10:00 AM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Interested',
+    notes: 'Strong campus hiring background, eligible for assessment dispatch.',
+  },
+
+  // Candidates for UI/UX Designer (JOB-2026-002)
+  {
+    id: 'CAN-REF-2015',
+    jobId: 'JOB-2026-002',
+    candidateName: 'Aishwarya Lakshmi',
+    permissionGranted: true,
+    specialty: 'Principal Design System Specialist',
+    matchScore: 96,
+    skillsMatch: '95% (Figma, Design Systems, UX Research, Prototyping)',
+    skillsMatchedCount: '4/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '6.5 Yrs (Req: 5 - 9 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Coimbatore Tech Park',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹26L vs ₹20-30L',
+    availability: 'Immediate',
+    response: 'Interested',
+    responseDate: '11-Oct-2026 09:30 AM',
+    screeningStatus: 'Completed',
+    screeningAssessment: 'UI/UX Design Challenge & Systems Thinking',
+    screeningScore: 94,
+    screeningResult: 'Qualified',
+    recruitmentStage: 'Shortlisted',
+    notes: 'Flawless design portfolio and passed practical design evaluation.',
+  },
+  {
+    id: 'CAN-REF-2028',
+    jobId: 'JOB-2026-002',
+    candidateName: 'Harish Kalyan',
+    permissionGranted: false,
+    specialty: 'Senior Product Designer',
+    matchScore: 91,
+    skillsMatch: '90% (Figma, Design Systems, UX Research)',
+    skillsMatchedCount: '3/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '6.0 Yrs (Req: 5 - 9 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Coimbatore Tech Park',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹24L vs ₹20-30L',
+    availability: '15 Days Notice',
+    response: 'Interested',
+    responseDate: '11-Oct-2026 02:15 PM',
+    screeningStatus: 'Pending',
+    screeningAssessment: 'UI/UX Design Challenge & Systems Thinking',
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Screening',
+    notes: 'Screening challenge dispatched; due in 4 days.',
+  },
+  {
+    id: 'CAN-REF-2034',
+    jobId: 'JOB-2026-002',
+    candidateName: 'Monisha V',
+    permissionGranted: true,
+    specialty: 'SaaS UX & Interaction Designer',
+    matchScore: 86,
+    skillsMatch: '85% (Figma, Prototyping, Design Systems)',
+    skillsMatchedCount: '3/4 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '5.2 Yrs (Req: 5 - 9 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Coimbatore Tech Park',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹22L vs ₹20-30L',
+    availability: '30 Days Notice',
+    response: 'Interested',
+    responseDate: '11-Oct-2026 05:40 PM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Interested',
+    notes: 'Portfolio reviewed by lead designer. Eligible for screening dispatch.',
+  },
+
+  // Candidates for Senior Frontend Engineer (JOB-2026-001)
+  {
+    id: 'CAN-REF-1042',
+    jobId: 'JOB-2026-001',
+    candidateName: 'Rajesh Kumar',
+    permissionGranted: true,
+    specialty: 'Senior React & Next.js Specialist',
+    matchScore: 96,
+    skillsMatch: '95% (React.js, TypeScript, Next.js, Redux)',
+    skillsMatchedCount: '4/5 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '5.5 Yrs (Req: 4 - 8 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹22L vs ₹18-28L',
+    availability: 'Immediate',
+    response: 'Interested',
+    responseDate: '12-Oct-2026 03:45 PM',
+    screeningStatus: 'Completed',
+    screeningAssessment: 'Frontend Architecture & React 19 Coding Test',
+    screeningScore: 92,
+    screeningResult: 'Qualified',
+    recruitmentStage: 'Shortlisted',
+    notes: 'Exceeded pass criteria (Score 92%). Moved to shortlisted stage.',
+  },
+  {
+    id: 'CAN-REF-1038',
+    jobId: 'JOB-2026-001',
+    candidateName: 'Gopinath Sundaram',
+    permissionGranted: true,
+    specialty: 'Lead Frontend UI Architect',
+    matchScore: 94,
+    skillsMatch: '90% (React.js, TypeScript, Next.js, Tailwind)',
+    skillsMatchedCount: '4/5 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '6.0 Yrs (Req: 4 - 8 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹24L vs ₹18-28L',
+    availability: '15 Days Notice',
+    response: 'Interested',
+    responseDate: '12-Oct-2026 01:20 PM',
+    screeningStatus: 'Completed',
+    screeningAssessment: 'Frontend Architecture & React 19 Coding Test',
+    screeningScore: 71,
+    screeningResult: 'Review Required',
+    recruitmentStage: 'Screening',
+    notes: 'Scored 71% (Threshold 75%). Core React concepts solid, needs review on SSR performance optimization.',
+  },
+  {
+    id: 'CAN-REF-1055',
+    jobId: 'JOB-2026-001',
+    candidateName: 'Vijay Anand',
+    permissionGranted: false,
+    specialty: 'Full-Stack React & Node Engineer',
+    matchScore: 91,
+    skillsMatch: '90% (React.js, Next.js, Redux, Node.js)',
+    skillsMatchedCount: '4/5 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '4.8 Yrs (Req: 4 - 8 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹20L vs ₹18-28L',
+    availability: '30 Days Notice',
+    response: 'Interested',
+    responseDate: '12-Oct-2026 11:15 AM',
+    screeningStatus: 'Pending',
+    screeningAssessment: 'Frontend Architecture & React 19 Coding Test',
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Screening',
+    notes: 'Assessment invitation sent; pending submission from candidate.',
+  },
+  {
+    id: 'CAN-REF-1064',
+    jobId: 'JOB-2026-001',
+    candidateName: 'Swetha Ramachandran',
+    permissionGranted: true,
+    specialty: 'TypeScript & Component Systems Engineer',
+    matchScore: 88,
+    skillsMatch: '85% (React.js, TypeScript, TailwindCSS)',
+    skillsMatchedCount: '3/5 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '5.0 Yrs (Req: 4 - 8 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ / Hybrid',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹23L vs ₹18-28L',
+    availability: '30 Days Notice',
+    response: 'Interested',
+    responseDate: '11-Oct-2026 04:50 PM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Interested',
+    notes: 'Strong component system architecture experience. Eligible for screening.',
+  },
+  {
+    id: 'CAN-REF-1071',
+    jobId: 'JOB-2026-001',
+    candidateName: 'Kishore Kumar',
+    permissionGranted: false,
+    specialty: 'Web Performance & React Engineer',
+    matchScore: 86,
+    skillsMatch: '80% (React.js, TypeScript, Redux)',
+    skillsMatchedCount: '3/5 Matched',
+    experienceMatch: 'Meets Required',
+    experienceDetail: '4.2 Yrs (Req: 4 - 8 Yrs)',
+    experienceSuitable: true,
+    locationMatch: 'Suitable',
+    locationDetail: 'Chennai HQ Campus',
+    salaryMatch: 'Within Budget',
+    salaryDetail: 'Exp: ₹19L vs ₹18-28L',
+    availability: 'Immediate',
+    response: 'Interested',
+    responseDate: '11-Oct-2026 09:10 AM',
+    screeningStatus: 'Not Sent',
+    screeningAssessment: null,
+    screeningScore: null,
+    screeningResult: null,
+    recruitmentStage: 'Interested',
+    notes: 'Immediate joiner, profile meets requirements.',
+  },
+];
+
+// Available Screening Assessment Templates
+const availableAssessments = [
+  {
+    id: 'ASM-FE-001',
+    name: 'Frontend Architecture & React 19 Coding Test',
+    duration: '45 mins',
+    passThreshold: 75,
+    category: 'Engineering & Technology',
+  },
+  {
+    id: 'ASM-BE-002',
+    name: 'Backend Microservices & Node.js Architecture',
+    duration: '60 mins',
+    passThreshold: 75,
+    category: 'Engineering & Technology',
+  },
+  {
+    id: 'ASM-UX-003',
+    name: 'UI/UX Design Challenge & Systems Thinking',
+    duration: '60 mins',
+    passThreshold: 75,
+    category: 'Design & UX',
+  },
+  {
+    id: 'ASM-HR-004',
+    name: 'HR Leadership & Competency Screening',
+    duration: '30 mins',
+    passThreshold: 75,
+    category: 'Human Resources',
+  },
+  {
+    id: 'ASM-GEN-005',
+    name: 'General Technical Aptitude & Logic Assessment',
+    duration: '40 mins',
+    passThreshold: 70,
+    category: 'General',
+  },
+];
+
 export const CandidateResponses = () => {
-  // STRICTLY and ONLY the 11 user-requested fields:
-  // 1. Candidate: Candidate reference/profile.
-  // 2. Job: Related job.
-  // 3. Response: Interested, Not Interested, Maybe Later, No Response.
-  // 4. Response Date: Date/time of response.
-  // 5. Match Score: Candidate-job score.
-  // 6. Recruitment Stage: Matched, Interested, Screening, Shortlisted, Interview, Offer, Hired.
-  // 7. Assigned Recruiter: Responsible HR/recruiter.
-  // 8. Resume Access: Locked/Unlocked, according to permissions.
-  // 9. Notes: Internal recruitment notes.
-  // 10. Tags: Company-defined candidate tags.
-  // 11. Outcome: Selected, Rejected, Withdrawn, etc.
+  const { setNotifications } = usePortal();
 
-  const [responses, setResponses] = useState([
-    {
-      id: 'RESP-001',
-      candidate: 'Rajesh Kumar (CAN-8021)',
-      job: 'Senior Frontend Engineer (JOB-2026-001)',
-      response: 'Interested',
-      responseDate: '12-Oct-2026 03:45 PM',
-      matchScore: 94,
-      recruitmentStage: 'Screening',
-      assignedRecruiter: 'Dhakshan S',
-      resumeAccess: 'Unlocked',
-      notes: 'Strong React & Next.js background, 5.5 years exp at mid-market SaaS, available for technical screening call on Wednesday.',
-      tags: ['Top Tier', 'Immediate Joiner', 'React Lead'],
-      outcome: 'In Process',
-    },
-    {
-      id: 'RESP-002',
-      candidate: 'Sivakami R (CAN-8034)',
-      job: 'Lead Product Designer (JOB-2026-002)',
-      response: 'Interested',
-      responseDate: '12-Oct-2026 01:20 PM',
-      matchScore: 91,
-      recruitmentStage: 'Shortlisted',
-      assignedRecruiter: 'Dhakshan S',
-      resumeAccess: 'Unlocked',
-      notes: 'Excellent design portfolio in Figma & Design Systems. Shortlisted by Hiring Manager Karthik Raja.',
-      tags: ['Design Systems', 'B2B SaaS', 'Figma Pro'],
-      outcome: 'In Process',
-    },
-    {
-      id: 'RESP-003',
-      candidate: 'Vigneshwaran P (CAN-8049)',
-      job: 'DevOps & Cloud Architect (JOB-2026-004)',
-      response: 'Interested',
-      responseDate: '11-Oct-2026 05:10 PM',
-      matchScore: 88,
-      recruitmentStage: 'Interview',
-      assignedRecruiter: 'Dhakshan S',
-      resumeAccess: 'Unlocked',
-      notes: 'Passed initial screening, technical architecture round scheduled with Sundar Raman for Friday.',
-      tags: ['AWS Certified', 'Kubernetes', 'Terraform'],
-      outcome: 'In Process',
-    },
-    {
-      id: 'RESP-004',
-      candidate: 'Anitha Murugesan (CAN-8015)',
-      job: 'Senior Technical Recruiter (JOB-2026-003)',
-      response: 'Interested',
-      responseDate: '11-Oct-2026 11:30 AM',
-      matchScore: 85,
-      recruitmentStage: 'Offer',
-      assignedRecruiter: 'Nathiya  ',
-      resumeAccess: 'Unlocked',
-      notes: 'Final leadership round completed with Abinaya R. Offer rolled out for ₹14.5 LPA, awaiting acceptance.',
-      tags: ['Tech Sourcing', 'Fast Joiner'],
-      outcome: 'Selected',
-    },
-    {
-      id: 'RESP-005',
-      candidate: 'Arvind Swamy (CAN-8062)',
-      job: 'Enterprise Account Executive (JOB-2026-005)',
-      response: 'Maybe Later',
-      responseDate: '10-Oct-2026 02:40 PM',
-      matchScore: 78,
-      recruitmentStage: 'Interested',
-      assignedRecruiter: 'Nathiya  ',
-      resumeAccess: 'Locked',
-      notes: 'Currently leading an active deal cycle, open to exploring opportunities next quarter (January 2027).',
-      tags: ['Enterprise Sales', 'Q1 Pipeline'],
-      outcome: 'In Process',
-    },
-    {
-      id: 'RESP-006',
-      candidate: 'Manoj Pillai (CAN-8078)',
-      job: 'Senior Frontend Engineer (JOB-2026-001)',
-      response: 'Not Interested',
-      responseDate: '09-Oct-2026 06:15 PM',
-      matchScore: 82,
-      recruitmentStage: 'Matched',
-      assignedRecruiter: 'Dhakshan S',
-      resumeAccess: 'Locked',
-      notes: 'Looking strictly for 100% remote positions, not open to hybrid setup at Chennai campus.',
-      tags: ['Remote Only'],
-      outcome: 'Withdrawn',
-    },
-    {
-      id: 'RESP-007',
-      candidate: 'Kavitha Natarajan (CAN-8091)',
-      job: 'Finance & Payroll Specialist (JOB-2026-006)',
-      response: 'No Response',
-      responseDate: '08-Oct-2026 10:00 AM',
-      matchScore: 72,
-      recruitmentStage: 'Matched',
-      assignedRecruiter: 'Nathiya  ',
-      resumeAccess: 'Locked',
-      notes: 'Alert delivered via email, candidate has not viewed or responded yet.',
-      tags: ['Follow Up'],
-      outcome: 'In Process',
-    },
-  ]);
+  // State: 'main' (Job Summary Table) | 'details' (Interested Candidates Table)
+  const [viewMode, setViewMode] = useState('main');
+  const [selectedJobId, setSelectedJobId] = useState(null);
 
-  // Views: 'list' | 'add' | 'edit'
-  const [currentView, setCurrentView] = useState('list');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [responseFilter, setResponseFilter] = useState('All');
-  const [stageFilter, setStageFilter] = useState('All');
+  // Data State
+  const [jobsSummary, setJobsSummary] = useState(initialJobsResponseSummary);
+  const [candidates, setCandidates] = useState(initialCandidatesData);
+
+  // Main Table Search / Filter
+  const [mainSearchTerm, setMainSearchTerm] = useState('');
+  const [mainDeptFilter, setMainDeptFilter] = useState('All');
+
+  // Details Table Search / Filter
+  const [detailsSearchTerm, setDetailsSearchTerm] = useState('');
+  const [responseFilter, setResponseFilter] = useState('Interested'); // 'Interested' | 'All' | others
+  const [screeningFilter, setScreeningFilter] = useState('All');
+  const [scoreFilter, setScoreFilter] = useState('All');
+
+  // Candidate Selection State in Details Table
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState([]);
+
+  // Send Screening Assessment Modal
+  const [screeningModalOpen, setScreeningModalOpen] = useState(false);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState('ASM-FE-001');
+  const [assessmentExpiryDays, setAssessmentExpiryDays] = useState('5');
+  const [screeningNotes, setScreeningNotes] = useState('');
+  const [singleTargetCandidate, setSingleTargetCandidate] = useState(null);
+
+  // Candidate Profile Drawer / Modal
+  const [profileModalCandidate, setProfileModalCandidate] = useState(null);
+
+  // Toast State
   const [toastMessage, setToastMessage] = useState('');
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  // Form State
-  const initialFormState = {
-    id: '',
-    candidate: '',
-    job: 'Senior Frontend Engineer (JOB-2026-001)',
-    response: 'Interested',
-    responseDate: '',
-    matchScore: 85,
-    recruitmentStage: 'Interested',
-    assignedRecruiter: 'Dhakshan S',
-    resumeAccess: 'Unlocked',
-    notes: '',
-    tags: '',
-    outcome: 'In Process',
-  };
-
-  const [formData, setFormData] = useState(initialFormState);
-  const [errors, setErrors] = useState({});
-
-  const handleFieldChange = (field, val) => {
-    let sanitized = val;
-    if (field === 'candidate' || field === 'assignedRecruiter') {
-      sanitized = sanitizeNameInput(val);
-    }
-    setFormData((prev) => ({ ...prev, [field]: sanitized }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
-    }
-  };
-
-  // Toast
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage('');
-    }, 3500);
+    }, 4000);
   };
 
-  // Filter Responses
-  const filteredResponses = responses.filter((item) => {
-    const term = searchTerm.toLowerCase();
+  // Selected Job Object
+  const selectedJob = jobsSummary.find((j) => j.id === selectedJobId);
+
+  // Filter Main Table Jobs
+  const filteredJobs = jobsSummary.filter((job) => {
+    const term = mainSearchTerm.toLowerCase();
     const matchesSearch =
-      item.candidate.toLowerCase().includes(term) ||
-      item.job.toLowerCase().includes(term) ||
-      item.assignedRecruiter.toLowerCase().includes(term) ||
-      (Array.isArray(item.tags) ? item.tags.join(' ').toLowerCase().includes(term) : item.tags.toLowerCase().includes(term)) ||
-      item.notes.toLowerCase().includes(term);
+      job.id.toLowerCase().includes(term) ||
+      job.jobTitle.toLowerCase().includes(term) ||
+      job.department.toLowerCase().includes(term);
 
-    const matchesResponse =
-      responseFilter === 'All' ? true : item.response === responseFilter;
+    const matchesDept =
+      mainDeptFilter === 'All' ? true : job.department === mainDeptFilter;
 
-    const matchesStage =
-      stageFilter === 'All' ? true : item.recruitmentStage === stageFilter;
-
-    return matchesSearch && matchesResponse && matchesStage;
+    return matchesSearch && matchesDept;
   });
 
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredResponses.length / itemsPerPage) || 1;
-  const paginatedResponses = filteredResponses.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Filter Details Table Candidates
+  const filteredCandidates = candidates.filter((cand) => {
+    if (cand.jobId !== selectedJobId) return false;
 
-  // Open Add
-  const handleOpenAdd = () => {
-    const nowStr = new Date().toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
-    setErrors({});
-    setFormData({
-      ...initialFormState,
-      id: `RESP-${Date.now()}`,
-      candidate: '',
-      job: 'JOB-2026-001 (Senior Frontend Engineer)',
-      assignedRecruiter: 'Dhakshan S',
-      recruitmentStage: 'Screening',
-      response: 'Interested',
-      contactChannel: 'Email & WhatsApp',
-      notes: 'Candidate confirmed interest and sent updated resume.',
-      tags: 'React, Immediate Joiner',
-      responseDate: nowStr,
-    });
-    setCurrentView('add');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const term = detailsSearchTerm.toLowerCase();
+    const matchesSearch =
+      cand.id.toLowerCase().includes(term) ||
+      cand.candidateName.toLowerCase().includes(term) ||
+      cand.specialty.toLowerCase().includes(term) ||
+      cand.skillsMatch.toLowerCase().includes(term) ||
+      cand.locationDetail.toLowerCase().includes(term);
+
+    const matchesResponse =
+      responseFilter === 'All' ? true : cand.response === responseFilter;
+
+    const matchesScreening =
+      screeningFilter === 'All' ? true : cand.screeningStatus === screeningFilter;
+
+    const matchesScore =
+      scoreFilter === 'All'
+        ? true
+        : scoreFilter === '90'
+        ? cand.matchScore >= 90
+        : scoreFilter === '80'
+        ? cand.matchScore >= 80
+        : cand.matchScore >= 70;
+
+    return matchesSearch && matchesResponse && matchesScreening && matchesScore;
+  });
+
+  // Pagination State (Consistent with Company Details)
+  const [mainPage, setMainPage] = useState(1);
+  const [detailsPage, setDetailsPage] = useState(1);
+  const itemsPerPage = 8;
+
+  const totalMainPages = Math.ceil(filteredJobs.length / itemsPerPage) || 1;
+  const paginatedJobs = filteredJobs.slice((mainPage - 1) * itemsPerPage, mainPage * itemsPerPage);
+
+  const totalDetailsPages = Math.ceil(filteredCandidates.length / itemsPerPage) || 1;
+  const paginatedCandidates = filteredCandidates.slice((detailsPage - 1) * itemsPerPage, detailsPage * itemsPerPage);
+
+  // Handle Opening Details for a Job
+  const handleOpenJobDetails = (jobId, defaultResponseFilter = 'Interested') => {
+    setSelectedJobId(jobId);
+    setResponseFilter(defaultResponseFilter);
+    setScreeningFilter('All');
+    setScoreFilter('All');
+    setDetailsSearchTerm('');
+    setSelectedCandidateIds([]);
+    setDetailsPage(1);
+    setViewMode('details');
   };
 
-  // Open Edit
-  const handleOpenEdit = (item) => {
-    setErrors({});
-    setFormData({
-      ...item,
-      tags: Array.isArray(item.tags) ? item.tags.join(', ') : item.tags,
-    });
-    setCurrentView('edit');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Back to list
-  const handleBackToList = () => {
-    setErrors({});
-    setCurrentView('list');
-    setFormData(initialFormState);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Save Response
-  const handleSaveResponse = (e) => {
-    e.preventDefault();
-    const newErrors = {};
-
-    const candErr = validateName(formData.candidate, 'Candidate name', true);
-    if (candErr) newErrors.candidate = candErr;
-
-    const jobErr = validateRequired(formData.job, 'Related job');
-    if (jobErr) newErrors.job = jobErr;
-
-    if (formData.assignedRecruiter) {
-      const recErr = validateName(formData.assignedRecruiter, 'Assigned recruiter', true);
-      if (recErr) newErrors.assignedRecruiter = recErr;
+  // Toggle Single Candidate Checkbox
+  const handleToggleCandidateSelect = (cand) => {
+    // Rule: Cannot select if not Interested
+    if (cand.response !== 'Interested') {
+      showToast('Only candidates who responded "Interested" are eligible for screening.');
+      return;
     }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      window.scrollTo({ top: 120, behavior: 'smooth' });
+    // Rule: Cannot select if already completed
+    if (cand.screeningStatus === 'Completed') {
+      showToast(`Candidate ${cand.id} has already completed the screening assessment.`);
       return;
     }
 
-    setErrors({});
+    setSelectedCandidateIds((prev) =>
+      prev.includes(cand.id) ? prev.filter((id) => id !== cand.id) : [...prev, cand.id]
+    );
+  };
+
+  // Select All Eligible Candidates
+  const eligibleCandidatesToSelect = filteredCandidates.filter(
+    (c) => c.response === 'Interested' && c.screeningStatus !== 'Completed'
+  );
+
+  const handleToggleSelectAll = () => {
+    if (selectedCandidateIds.length === eligibleCandidatesToSelect.length && eligibleCandidatesToSelect.length > 0) {
+      setSelectedCandidateIds([]);
+    } else {
+      setSelectedCandidateIds(eligibleCandidatesToSelect.map((c) => c.id));
+    }
+  };
+
+  // Open Screening Modal for Selected or Single Candidate
+  const handleOpenScreeningModal = (singleCandidate = null) => {
+    if (singleCandidate) {
+      if (singleCandidate.response !== 'Interested') {
+        showToast('Only candidates with response "Interested" are eligible for screening.');
+        return;
+      }
+      if (singleCandidate.screeningStatus === 'Completed') {
+        showToast(`Candidate ${singleCandidate.id} has already completed screening.`);
+        return;
+      }
+      setSingleTargetCandidate(singleCandidate);
+      setSelectedCandidateIds([singleCandidate.id]);
+    } else {
+      setSingleTargetCandidate(null);
+      if (selectedCandidateIds.length === 0) {
+        showToast('Please select at least one eligible candidate to send screening.');
+        return;
+      }
+    }
+
+    // Auto-select relevant assessment by job department
+    if (selectedJob?.department === 'Design & UX') {
+      setSelectedAssessmentId('ASM-UX-003');
+    } else if (selectedJob?.department === 'Human Resources') {
+      setSelectedAssessmentId('ASM-HR-004');
+    } else {
+      setSelectedAssessmentId('ASM-FE-001');
+    }
+
+    setScreeningNotes(
+      `Please complete this technical assessment for ${selectedJob?.jobTitle} within 5 days.`
+    );
+    setScreeningModalOpen(false);
+    setViewMode('screening-form');
+  };
+
+  // Execute Send Screening Dispatch
+  const handleExecuteSendScreening = () => {
+    const targetIds = singleTargetCandidate
+      ? [singleTargetCandidate.id]
+      : selectedCandidateIds;
+
+    if (targetIds.length === 0) return;
+
+    const chosenAssessment =
+      availableAssessments.find((a) => a.id === selectedAssessmentId) ||
+      availableAssessments[0];
 
     const nowStr = new Date().toLocaleString('en-GB', {
       day: '2-digit',
@@ -291,144 +809,155 @@ export const CandidateResponses = () => {
       hour12: true,
     });
 
-    const parsedTags = typeof formData.tags === 'string'
-      ? formData.tags.split(',').map((t) => t.trim()).filter(Boolean)
-      : formData.tags;
-
-    if (currentView === 'add') {
-      const newResp = {
-        ...formData,
-        id: `RESP-${Date.now()}`,
-        responseDate: formData.responseDate || nowStr,
-        tags: parsedTags,
-      };
-      setResponses([newResp, ...responses]);
-      showToast(`Response record for "${newResp.candidate}" added successfully.`);
-    } else if (currentView === 'edit') {
-      const updatedResp = {
-        ...formData,
-        tags: parsedTags,
-      };
-      setResponses(responses.map((r) => (r.id === formData.id ? updatedResp : r)));
-      showToast(`Candidate response updated.`);
-    }
-
-    handleBackToList();
-  };
-
-  // Toggle Resume Access
-  const handleToggleResume = (item) => {
-    const nextAccess = item.resumeAccess === 'Unlocked' ? 'Locked' : 'Unlocked';
-    setResponses(
-      responses.map((r) => (r.id === item.id ? { ...r, resumeAccess: nextAccess } : r))
+    // Update Candidates Data
+    let newlySentCount = 0;
+    setCandidates((prev) =>
+      prev.map((c) => {
+        if (targetIds.includes(c.id)) {
+          // If was not previously sent, count towards newly sent
+          if (c.screeningStatus === 'Not Sent') {
+            newlySentCount++;
+          }
+          return {
+            ...c,
+            screeningStatus: 'Pending',
+            screeningAssessment: chosenAssessment.name,
+            recruitmentStage: 'Screening',
+            screeningSentDate: nowStr,
+          };
+        }
+        return c;
+      })
     );
-    showToast(`Resume access set to ${nextAccess} for ${item.candidate}.`);
+
+    // Update Job Summary Screening Sent Count
+    setJobsSummary((prev) =>
+      prev.map((j) => {
+        if (j.id === selectedJobId) {
+          return {
+            ...j,
+            screeningSentCount: j.screeningSentCount + newlySentCount,
+          };
+        }
+        return j;
+      })
+    );
+
+    // Push into Live Portal Notifications
+    if (setNotifications) {
+      const newNotif = {
+        id: `NTF-SCRN-${Date.now()}`,
+        notificationType: 'Screening',
+        title: `Screening Assessment Dispatched (${targetIds.length} Candidates)`,
+        message: `Dispatched "${chosenAssessment.name}" to ${targetIds.length} candidate(s) for ${selectedJob?.jobTitle}.`,
+        dateTime: nowStr,
+        readStatus: 'Unread',
+        recipient: 'Recruitment Team',
+      };
+      setNotifications((prev) => [newNotif, ...prev]);
+    }
+
+    setScreeningModalOpen(false);
+    setSelectedCandidateIds([]);
+    setSingleTargetCandidate(null);
+    setViewMode('details');
+    showToast(
+      `Successfully sent "${chosenAssessment.name}" to ${targetIds.length} candidate(s)! Status updated to Pending.`
+    );
   };
 
-  // Delete Response
-  const handleDeleteResponse = (item) => {
-    if (window.confirm(`Are you sure you want to delete response for "${item.candidate}"?`)) {
-      setResponses(responses.filter((r) => r.id !== item.id));
-      showToast('Response record deleted.');
+  // Simulate / Record Candidate Completing Screening Assessment
+  const handleRecordScreeningCompletion = (cand, targetScore = 88) => {
+    const isQualified = targetScore >= 75;
+    const resultText = isQualified ? 'Qualified' : 'Review Required';
+
+    setCandidates((prev) =>
+      prev.map((c) =>
+        c.id === cand.id
+          ? {
+              ...c,
+              screeningStatus: 'Completed',
+              screeningScore: targetScore,
+              screeningResult: resultText,
+              recruitmentStage: isQualified ? 'Shortlisted' : 'Screening',
+            }
+          : c
+      )
+    );
+
+    if (profileModalCandidate && profileModalCandidate.id === cand.id) {
+      setProfileModalCandidate((prev) => ({
+        ...prev,
+        screeningStatus: 'Completed',
+        screeningScore: targetScore,
+        screeningResult: resultText,
+        recruitmentStage: isQualified ? 'Shortlisted' : 'Screening',
+      }));
+    }
+
+    showToast(
+      `Recorded completion for ${cand.id}: Score ${targetScore}% (${resultText}).`
+    );
+  };
+
+  // Move Qualified Candidate to Next Stage: Shortlisted
+  const handleMoveToShortlisted = (cand) => {
+    setCandidates((prev) =>
+      prev.map((c) =>
+        c.id === cand.id
+          ? {
+              ...c,
+              recruitmentStage: 'Shortlisted',
+            }
+          : c
+      )
+    );
+
+    if (profileModalCandidate && profileModalCandidate.id === cand.id) {
+      setProfileModalCandidate((prev) => ({
+        ...prev,
+        recruitmentStage: 'Shortlisted',
+      }));
+    }
+
+    showToast(`Candidate ${cand.id} successfully moved to "Shortlisted" stage!`);
+  };
+
+  // Toggle Candidate Name Permission
+  const handleTogglePermission = (candId) => {
+    setCandidates((prev) =>
+      prev.map((c) => {
+        if (c.id === candId) {
+          const updatedState = !c.permissionGranted;
+          showToast(
+            updatedState
+              ? `Candidate Name Unlocked with consent.`
+              : `Candidate Name Locked (Confidential Mode).`
+          );
+          return { ...c, permissionGranted: updatedState };
+        }
+        return c;
+      })
+    );
+
+    if (profileModalCandidate && profileModalCandidate.id === candId) {
+      setProfileModalCandidate((prev) => ({
+        ...prev,
+        permissionGranted: !prev.permissionGranted,
+      }));
     }
   };
 
-  // Helpers
-  const getResponsePillClass = (resp) => {
-    switch (resp?.toLowerCase()) {
-      case 'interested':
-        return 'interested';
-      case 'maybe later':
-        return 'maybe-later';
-      case 'not interested':
-        return 'not-interested';
-      default:
-        return 'no-response';
-    }
-  };
-
-  const getStageClass = (st) => {
-    switch (st?.toLowerCase()) {
-      case 'matched':
-        return 'matched';
-      case 'interested':
-        return 'interested';
-      case 'screening':
-        return 'screening';
-      case 'shortlisted':
-        return 'shortlisted';
-      case 'interview':
-        return 'interview';
-      case 'offer':
-        return 'offer';
-      default:
-        return 'hired';
-    }
-  };
-
-  const getOutcomeClass = (out) => {
-    switch (out?.toLowerCase()) {
-      case 'selected':
-        return 'selected';
-      case 'rejected':
-        return 'rejected';
-      case 'withdrawn':
-        return 'withdrawn';
-      default:
-        return 'in-process';
-    }
-  };
-
-  const getScoreClass = (score) => {
-    if (score >= 90) return 'high';
-    if (score >= 80) return 'mid';
-    return 'fair';
+  // Helper for Score Badge Styling
+  const getScoreBadgeClass = (score) => {
+    if (score >= 90) return 'score-high';
+    if (score >= 80) return 'score-mid';
+    return 'score-fair';
   };
 
   return (
-    <div className="responses-page-container">
-      {/* =========================================================================
-          MODULE HEADER
-          ========================================================================= */}
-      <div className="responses-page-header">
-        {currentView === 'list' ? (
-          <>
-            <div>
-              <h1 className="responses-page-title">Candidate Responses</h1>
-            </div>
-            <button
-              type="button"
-              className="btn-add-response"
-              onClick={handleOpenAdd}
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              <span>Add Candidate Response</span>
-            </button>
-          </>
-        ) : (
-          <>
-            <div>
-              <h1 className="responses-page-title">
-                {currentView === 'add'
-                  ? 'Record Candidate Response'
-                  : 'Edit Candidate Response & Evaluation'}
-              </h1>
-            </div>
-
-            <button
-              type="button"
-              className="btn-back-to-list"
-              onClick={handleBackToList}
-              title="Back to List"
-            >
-              <ArrowLeft size={16} strokeWidth={2.5} />
-              <span>Back to List</span>
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Toast Alert */}
+    <div className="responses-page-container animate-fade-in">
+      {/* Toast Notification Alert */}
       {toastMessage && (
         <div className="responses-toast-alert">
           <CheckCircle2 size={18} />
@@ -437,503 +966,1201 @@ export const CandidateResponses = () => {
       )}
 
       {/* =========================================================================
-          MAIN CARD CONTAINER
+          MODULE HEADER
           ========================================================================= */}
-      <div className="responses-main-card">
-        {/* =======================================================================
-            VIEW 1: DIRECTORY TABLE (Shown when currentView === 'list')
-            ======================================================================= */}
-        {currentView === 'list' && (
-          <>
-            {/* Toolbar: Search (Left) + Filters (Right) */}
-            <div className="responses-toolbar">
+      <div className="responses-page-header">
+        <div className="responses-header-left">
+          <div className="responses-title-row">
+            {viewMode !== 'main' && (
+              <button
+                type="button"
+                className="btn-back-to-list"
+                onClick={() => {
+                  if (viewMode === 'screening-form' || viewMode === 'profile-view') {
+                    setViewMode('details');
+                  } else {
+                    setViewMode('main');
+                  }
+                }}
+                title={viewMode === 'details' ? 'Back to All Jobs' : 'Back to Candidates'}
+              >
+                <ArrowLeft size={16} strokeWidth={2.5} />
+                <span>{viewMode === 'details' ? 'Back to All Jobs' : 'Back to Candidates'}</span>
+              </button>
+            )}
+
+            <div>
+              <h1 className="responses-page-title">
+                {viewMode === 'main'
+                  ? 'Candidate Responses'
+                  : viewMode === 'details'
+                  ? `Candidate Responses: ${selectedJob?.jobTitle}`
+                  : viewMode === 'screening-form'
+                  ? `Send Screening Assessment: ${selectedJob?.jobTitle}`
+                  : `Candidate Profile: ${profileModalCandidate?.candidateName || profileModalCandidate?.id}`}
+              </h1>
+              
+            </div>
+          </div>
+        </div>
+
+        {/* Global Action / Counter Header */}
+        <div className="responses-header-actions">
+          {viewMode === 'main' && (
+            <div className="responses-stat-pill">
+              <Briefcase size={14} className="stat-pill-icon" />
+              <span className="stat-pill-val">{jobsSummary.length} Jobs</span>
+              <span className="stat-pill-lbl">Actively Monitored</span>
+            </div>
+          )}
+          
+        </div>
+      </div>
+
+      {/* =========================================================================
+          VIEW 1: CANDIDATE RESPONSES — MAIN TABLE (JOB-WISE SUMMARY)
+          ========================================================================= */}
+      {viewMode === 'main' && (
+        <div className="responses-main-view animate-fade-in">
+          {/* Top 4 Executive KPI Cards */}
+          <div className="responses-kpi-grid">
+            <div className="responses-kpi-card">
+              <div className="kpi-icon-wrap blue">
+                <Users size={18} />
+              </div>
+              <div className="kpi-info">
+                <span className="kpi-num">
+                  {jobsSummary.reduce((acc, j) => acc + j.totalNotified, 0)}
+                </span>
+                <span className="kpi-title">Total Candidates Notified</span>
+              </div>
+            </div>
+
+            <div className="responses-kpi-card">
+              <div className="kpi-icon-wrap green">
+                <ThumbsUp size={18} />
+              </div>
+              <div className="kpi-info">
+                <span className="kpi-num">
+                  {jobsSummary.reduce((acc, j) => acc + j.interestedCount, 0)}
+                </span>
+                <span className="kpi-title">Total Interested Responses</span>
+              </div>
+            </div>
+
+            <div className="responses-kpi-card">
+              <div className="kpi-icon-wrap purple">
+                <Send size={18} />
+              </div>
+              <div className="kpi-info">
+                <span className="kpi-num">
+                  {jobsSummary.reduce((acc, j) => acc + j.screeningSentCount, 0)}
+                </span>
+                <span className="kpi-title">Screening Assessments Sent</span>
+              </div>
+            </div>
+
+            <div className="responses-kpi-card">
+              <div className="kpi-icon-wrap amber">
+                <Clock size={18} />
+              </div>
+              <div className="kpi-info">
+                <span className="kpi-num">
+                  {jobsSummary.reduce((acc, j) => acc + j.noResponseCount, 0)}
+                </span>
+                <span className="kpi-title">Pending / No Response</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Table Toolbar */}
+          <div className="responses-toolbar-card">
+            <div className="toolbar-left-group">
               <div className="responses-search-box">
-                <Search size={16} style={{ color: 'var(--text-muted)' }} />
+                <Search size={15} className="search-icon" />
                 <input
                   type="text"
                   placeholder="Search..."
-                  value={searchTerm}
+                  value={mainSearchTerm}
                   onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
+                    setMainSearchTerm(e.target.value);
+                    setMainPage(1);
                   }}
                   className="responses-search-input"
                 />
               </div>
 
-              <div className="responses-toolbar-right">
-                <select
-                  value={responseFilter}
-                  onChange={(e) => {
-                    setResponseFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="responses-filter-select"
-                >
-                  <option value="All">All Responses</option>
-                  <option value="Interested">Interested</option>
-                  <option value="Maybe Later">Maybe Later</option>
-                  <option value="Not Interested">Not Interested</option>
-                  <option value="No Response">No Response</option>
-                </select>
-
-                <select
-                  value={stageFilter}
-                  onChange={(e) => {
-                    setStageFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="responses-filter-select"
-                >
-                  <option value="All">All Stages</option>
-                  <option value="Matched">Matched</option>
-                  <option value="Interested">Interested</option>
-                  <option value="Screening">Screening</option>
-                  <option value="Shortlisted">Shortlisted</option>
-                  <option value="Interview">Interview</option>
-                  <option value="Offer">Offer</option>
-                  <option value="Hired">Hired</option>
-                </select>
-              </div>
+              <select
+                value={mainDeptFilter}
+                onChange={(e) => {
+                  setMainDeptFilter(e.target.value);
+                  setMainPage(1);
+                }}
+                className="responses-filter-select"
+              >
+                <option value="All">All Departments</option>
+                <option value="Engineering & Technology">Engineering & Technology</option>
+                <option value="Human Resources">Human Resources</option>
+                <option value="Design & UX">Design & UX</option>
+                <option value="Business Development">Business Development</option>
+              </select>
             </div>
+          </div>
 
-            {/* Modern Data Table */}
-            <div className="responses-table-wrapper">
-              <table className="responses-table">
+          {/* Candidate Responses — Main Table */}
+          <div className="responses-table-card">
+            <div className="table-responsive-wrapper">
+              <table className="responses-data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '55px', textAlign: 'center' }}>S.NO</th>
-                    <th>Candidate Profile</th>
-                    <th>Related Job</th>
-                    <th>Response</th>
-                    <th>Match Score</th>
-                    <th>Recruitment Stage</th>
-                    <th>Assigned Recruiter</th>
-                    <th>Resume Access</th>
-                    <th>Tags</th>
-                    <th>Response Date</th>
-                    <th>Outcome</th>
+                    <th style={{ width: '55px', textAlign: 'center' }}>S.No</th>
+                    <th>Job ID</th>
+                    <th>Job Title</th>
+                    <th>Department</th>
+                    <th>Published Date</th>
+                    <th style={{ textAlign: 'center' }}>Total Candidates Notified</th>
+                    <th style={{ textAlign: 'center' }}>Interested Count</th>
+                    <th style={{ textAlign: 'center' }}>Not Interested Count</th>
+                    <th style={{ textAlign: 'center' }}>Maybe Later Count</th>
+                    <th style={{ textAlign: 'center' }}>No Response Count</th>
+                    <th style={{ textAlign: 'center' }}>Screening Sent Count</th>
                     <th style={{ textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredResponses.length === 0 ? (
+                  {filteredJobs.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="responses-empty-state">
-                        <div className="responses-empty-icon">📨</div>
-                        <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>
-                          No candidate responses found
-                        </p>
-                        <p style={{ fontSize: '0.8rem', margin: 0 }}>
-                          Adjust filters or wait for candidates to respond to job alerts
-                        </p>
+                      <td colSpan="12" className="table-empty-cell">
+                        No published jobs found matching your search criteria.
                       </td>
                     </tr>
                   ) : (
-                    paginatedResponses.map((item, index) => {
-                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                    paginatedJobs.map((job, idx) => {
+                      const sNo = (mainPage - 1) * itemsPerPage + idx + 1;
                       return (
-                        <tr key={item.id}>
-                          {/* S.NO */}
-                          <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
-                            {serialNumber}
+                        <tr key={job.id}>
+                          {/* S.No */}
+                          <td style={{ textAlign: 'center', fontWeight: 600 }}>{sNo}</td>
+
+                          {/* Job ID */}
+                          <td>
+                            <span className="job-id-code">{job.id}</span>
                           </td>
 
-                          {/* 1. Candidate: Profile/Reference */}
+                          {/* Job Title */}
                           <td>
-                            <div className="cand-profile-cell">
-                              <div className="cand-name-box">
-                                <span className="cand-name-text">{item.candidate.split(' (')[0]}</span>
-                                <span className="cand-id-badge">
-                                  {item.candidate.includes('(') ? item.candidate.split('(')[1].replace(')', '') : 'CAN'}
-                                </span>
-                              </div>
+                            <div className="job-title-cell">
+                              <span className="job-name-main">{job.jobTitle}</span>
                             </div>
                           </td>
 
-                          {/* 2. Job: Related Job */}
+                          {/* Department */}
                           <td>
-                            <div className="cand-job-cell">
-                              <span className="cand-job-title">{item.job.split(' (')[0]}</span>
-                              <span className="cand-job-id">
-                                {item.job.includes('(') ? item.job.split('(')[1].replace(')', '') : item.job}
-                              </span>
-                            </div>
+                            <span className="dept-tag-chip">{job.department}</span>
                           </td>
 
-                          {/* 3. Response */}
+                          {/* Published Date */}
                           <td>
-                            <span className={`response-pill ${getResponsePillClass(item.response)}`}>
-                              {item.response}
+                            <span className="date-text-cell">{job.publishedDate}</span>
+                          </td>
+
+                          {/* Total Candidates Notified */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="count-pill-neutral">
+                              <Users size={12} /> {job.totalNotified}
                             </span>
                           </td>
 
-                          {/* 5. Match Score */}
-                          <td>
-                            <span className={`resp-score-pill ${getScoreClass(item.matchScore)}`}>
-                              {item.matchScore}%
+                          {/* Interested Count */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="count-pill-interested">
+                              <ThumbsUp size={12} /> {job.interestedCount}
                             </span>
                           </td>
 
-                          {/* 6. Recruitment Stage */}
-                          <td>
-                            <span className={`stage-pill ${getStageClass(item.recruitmentStage)}`}>
-                              {item.recruitmentStage}
+                          {/* Not Interested Count */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="count-pill-not-interested">
+                              <ThumbsDown size={12} /> {job.notInterestedCount}
                             </span>
                           </td>
 
-                          {/* 7. Assigned Recruiter */}
-                          <td style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.84rem' }}>
-                            {item.assignedRecruiter}
-                          </td>
-
-                          {/* 8. Resume Access */}
-                          <td>
-                            <span className={`resume-access-pill ${item.resumeAccess === 'Unlocked' ? 'unlocked' : 'locked'}`}>
-                              {item.resumeAccess === 'Unlocked' ? (
-                                <>
-                                  <Unlock size={12} />
-                                  Unlocked
-                                </>
-                              ) : (
-                                <>
-                                  <Lock size={12} />
-                                  Locked
-                                </>
-                              )}
+                          {/* Maybe Later Count */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="count-pill-maybe">
+                              <Clock size={12} /> {job.maybeLaterCount}
                             </span>
                           </td>
 
-                          {/* 10. Tags */}
-                          <td>
-                            <div>
-                              {Array.isArray(item.tags)
-                                ? item.tags.map((tag) => (
-                                  <span key={tag} className="tag-chip">
-                                    #{tag}
-                                  </span>
-                                ))
-                                : <span className="tag-chip">#{item.tags}</span>}
-                            </div>
-                          </td>
-
-                          {/* 4. Response Date */}
-                          <td style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>
-                            {item.responseDate || '—'}
-                          </td>
-
-                          {/* 11. Outcome */}
-                          <td>
-                            <span className={`outcome-pill ${getOutcomeClass(item.outcome)}`}>
-                              {item.outcome}
+                          {/* No Response Count */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="count-pill-no-response">
+                              <HelpCircle size={12} /> {job.noResponseCount}
                             </span>
                           </td>
 
-                          {/* Actions */}
-                          <td>
-                            <div className="resp-row-actions" style={{ justifyContent: 'center' }}>
+                          {/* Screening Sent Count */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="count-pill-screening-sent">
+                              <Send size={12} /> {job.screeningSentCount}
+                            </span>
+                          </td>
+
+                          {/* Actions: View Interested / View All Responses (Icon Only) */}
+                          <td style={{ textAlign: 'center' }}>
+                            <div className="table-actions-cluster">
                               <button
                                 type="button"
-                                className="action-icon-btn edit"
-                                title="Edit Evaluation"
-                                onClick={() => handleOpenEdit(item)}
+                                className="action-icon-button interested"
+                                onClick={() => handleOpenJobDetails(job.id, 'Interested')}
+                                title="View Interested Candidates"
                               >
-                                <Edit2 size={15} />
+                                <ThumbsUp size={16} />
                               </button>
 
                               <button
                                 type="button"
-                                className="action-icon-btn resume-toggle"
-                                title={item.resumeAccess === 'Unlocked' ? 'Lock Resume' : 'Unlock Resume'}
-                                onClick={() => handleToggleResume(item)}
+                                className="action-icon-button view"
+                                onClick={() => handleOpenJobDetails(job.id, 'All')}
+                                title="View All Candidate Responses"
                               >
-                                <FileText size={15} />
-                              </button>
-
-                              <button
-                                type="button"
-                                className="action-icon-btn delete"
-                                title="Delete Record"
-                                onClick={() => handleDeleteResponse(item)}
-                              >
-                                <Trash2 size={15} />
+                                <Eye size={16} />
                               </button>
                             </div>
                           </td>
                         </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination Footer */}
-          <div className="responses-table-footer">
-            <div>
-              Showing {filteredResponses.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
-              {Math.min(currentPage * itemsPerPage, filteredResponses.length)} of{' '}
-              {filteredResponses.length} Entries
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            <div className="responses-pagination-controls">
-              <button
-                type="button"
-                className="btn-responses-page"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                title="Previous Page"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            {/* Pagination Footer (Consistent with Company Details) */}
+            <div className="companies-pagination-row">
+              <div className="pagination-entries-count">
+                Showing {filteredJobs.length > 0 ? (mainPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(mainPage * itemsPerPage, filteredJobs.length)} of{' '}
+                {filteredJobs.length} entries
+              </div>
+              <div className="pagination-controls">
                 <button
-                  key={page}
                   type="button"
-                  className={`btn-responses-page ${currentPage === page ? 'active' : ''}`}
-                  onClick={() => setCurrentPage(page)}
+                  className={`pagination-nav-btn ${mainPage === 1 ? 'disabled' : ''}`}
+                  disabled={mainPage === 1}
+                  onClick={() => setMainPage((p) => Math.max(1, p - 1))}
+                  title="Previous Page"
                 >
-                  {page}
+                  <ChevronLeft size={16} />
                 </button>
-              ))}
-              <button
-                type="button"
-                className="btn-responses-page"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                title="Next Page"
-              >
-                <ChevronRight size={14} />
-              </button>
+                {Array.from({ length: totalMainPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-btn ${mainPage === page ? 'active' : ''}`}
+                    onClick={() => setMainPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${mainPage === totalMainPages ? 'disabled' : ''}`}
+                  disabled={mainPage === totalMainPages}
+                  onClick={() => setMainPage((p) => Math.min(totalMainPages, p + 1))}
+                  title="Next Page"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
-          </>
-        )}
+        </div>
+      )}
 
-        {/* =======================================================================
-            VIEW 2: IN-PAGE ADD / EDIT FORM (NO MODALS / POPUPS!)
-            Strictly and only the 11 requested fields
-            ======================================================================= */}
-        {currentView !== 'list' && (
-          <form
-            id="inpage-response-form"
-            onSubmit={handleSaveResponse}
-            className="inpage-response-form"
-            noValidate
-          >
-            {/* SECTION 1: CANDIDATE PROFILE & JOB ASSOCIATION */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                1. CANDIDATE PROFILE & JOB ASSOCIATION
+      {/* =========================================================================
+          VIEW 2: VIEW INTERESTED CANDIDATES — DETAILS TABLE
+          ========================================================================= */}
+      {viewMode === 'details' && selectedJob && (
+        <div className="responses-details-view animate-fade-in">
+          {/* Selected Job Overview Header Banner */}
+          <div className="job-details-overview-banner">
+            <div className="overview-left">
+              <div className="overview-title-row">
+                <span className="overview-job-id">{selectedJob.id}</span>
+                <h2 className="overview-job-title">{selectedJob.jobTitle}</h2>
+                <span className="overview-dept-badge">{selectedJob.department}</span>
               </div>
-
-              <div className="inpage-grid-3col">
-                {/* 1. Candidate */}
-                <div className="form-field-group">
-                  <label>Candidate Profile / Reference *</label>
-                  <input
-                    type="text"
-                    value={formData.candidate}
-                    onChange={(e) => handleFieldChange('candidate', e.target.value)}
-                    placeholder="e.g. Rajesh Kumar (letters only)"
-                    className={`form-control-input ${errors.candidate ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.candidate} />
-                </div>
-
-                {/* 2. Job */}
-                <div className="form-field-group">
-                  <label>Related Job Opening *</label>
-                  <select
-                    value={formData.job}
-                    onChange={(e) => {
-                      setFormData({ ...formData, job: e.target.value });
-                      if (errors.job) setErrors({ ...errors, job: null });
-                    }}
-                    className={`form-control-select ${errors.job ? 'has-error' : ''}`}
-                  >
-                    <option value="Senior Frontend Engineer (JOB-2026-001)">Senior Frontend Engineer (JOB-2026-001)</option>
-                    <option value="Lead Product Designer (JOB-2026-002)">Lead Product Designer (JOB-2026-002)</option>
-                    <option value="Senior Technical Recruiter (JOB-2026-003)">Senior Technical Recruiter (JOB-2026-003)</option>
-                    <option value="DevOps & Cloud Architect (JOB-2026-004)">DevOps & Cloud Architect (JOB-2026-004)</option>
-                    <option value="Enterprise Account Executive (JOB-2026-005)">Enterprise Account Executive (JOB-2026-005)</option>
-                    <option value="Finance & Payroll Specialist (JOB-2026-006)">Finance & Payroll Specialist (JOB-2026-006)</option>
-                  </select>
-                  <FieldError error={errors.job} />
-                </div>
-
-                {/* 5. Match Score */}
-                <div className="form-field-group">
-                  <label>Candidate Match Score (%) *</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={formData.matchScore}
-                    onChange={(e) =>
-                      setFormData({ ...formData, matchScore: parseInt(e.target.value) || 0 })
-                    }
-                    className="form-control-input"
-                  />
-                </div>
-              </div>
+              <p className="overview-meta-text">
+                Published on <strong>{selectedJob.publishedDate}</strong> • Total Candidates Notified:{' '}
+                <strong>{selectedJob.totalNotified}</strong>
+              </p>
             </div>
 
-            {/* SECTION 2: RESPONSE DETAILS & TIMELINE */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                2. RESPONSE DETAILS & TIMELINE
+            {/* Mini Summary Counters */}
+            <div className="overview-counters-row">
+              <div
+                className={`overview-counter-pill ${
+                  responseFilter === 'Interested' ? 'active' : ''
+                }`}
+                onClick={() => setResponseFilter('Interested')}
+                title="Filter to Interested only"
+              >
+                <ThumbsUp size={14} />
+                <span className="num">{selectedJob.interestedCount}</span>
+                <span className="lbl">Interested</span>
               </div>
 
-              <div className="inpage-grid-3col">
-                {/* 3. Response */}
-                <div className="form-field-group">
-                  <label>Candidate Response *</label>
-                  <select
-                    value={formData.response}
-                    onChange={(e) => setFormData({ ...formData, response: e.target.value })}
-                    className="form-control-select"
-                  >
-                    <option value="Interested">Interested</option>
-                    <option value="Maybe Later">Maybe Later</option>
-                    <option value="Not Interested">Not Interested</option>
-                    <option value="No Response">No Response</option>
-                  </select>
-                </div>
+              <div
+                className={`overview-counter-pill ${
+                  responseFilter === 'Not Interested' ? 'active' : ''
+                }`}
+                onClick={() => setResponseFilter('Not Interested')}
+                title="Filter to Not Interested"
+              >
+                <ThumbsDown size={14} />
+                <span className="num">{selectedJob.notInterestedCount}</span>
+                <span className="lbl">Not Interested</span>
+              </div>
 
-                {/* 4. Response Date */}
-                <div className="form-field-group">
-                  <label>Response Date & Timestamp</label>
-                  <input
-                    type="text"
-                    value={formData.responseDate}
-                    onChange={(e) => setFormData({ ...formData, responseDate: e.target.value })}
-                    placeholder="e.g. 12-Oct-2026 03:45 PM"
-                    className="form-control-input"
-                  />
-                </div>
+              <div
+                className={`overview-counter-pill ${
+                  responseFilter === 'Maybe Later' ? 'active' : ''
+                }`}
+                onClick={() => setResponseFilter('Maybe Later')}
+                title="Filter to Maybe Later"
+              >
+                <Clock size={14} />
+                <span className="num">{selectedJob.maybeLaterCount}</span>
+                <span className="lbl">Maybe Later</span>
+              </div>
 
-                {/* 11. Outcome */}
-                <div className="form-field-group">
-                  <label>Recruitment Outcome *</label>
-                  <select
-                    value={formData.outcome}
-                    onChange={(e) => setFormData({ ...formData, outcome: e.target.value })}
-                    className="form-control-select"
-                  >
-                    <option value="In Process">In Process</option>
-                    <option value="Selected">Selected</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Withdrawn">Withdrawn</option>
-                  </select>
-                </div>
+              <div className="overview-counter-pill screening">
+                <Send size={14} />
+                <span className="num">{selectedJob.screeningSentCount}</span>
+                <span className="lbl">Screening Sent</span>
               </div>
             </div>
+          </div>
 
-            {/* SECTION 3: RECRUITMENT PROGRESS & ASSIGNMENT */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                3. RECRUITMENT PROGRESS & ASSIGNMENT
-              </div>
 
-              <div className="inpage-grid-3col">
-                {/* 6. Recruitment Stage */}
-                <div className="form-field-group">
-                  <label>Recruitment Stage *</label>
-                  <select
-                    value={formData.recruitmentStage}
-                    onChange={(e) => setFormData({ ...formData, recruitmentStage: e.target.value })}
-                    className="form-control-select"
-                  >
-                    <option value="Matched">Matched</option>
-                    <option value="Interested">Interested</option>
-                    <option value="Screening">Screening</option>
-                    <option value="Shortlisted">Shortlisted</option>
-                    <option value="Interview">Interview</option>
-                    <option value="Offer">Offer</option>
-                    <option value="Hired">Hired</option>
-                  </select>
-                </div>
-
-                {/* 7. Assigned Recruiter */}
-                <div className="form-field-group">
-                  <label>Assigned Recruiter (Responsible HR) *</label>
-                  <input
-                    type="text"
-                    value={formData.assignedRecruiter}
-                    onChange={(e) => handleFieldChange('assignedRecruiter', e.target.value)}
-                    placeholder="e.g. Dhakshan S (letters only)"
-                    className={`form-control-input ${errors.assignedRecruiter ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.assignedRecruiter} />
-                </div>
-
-                {/* 8. Resume Access */}
-                <div className="form-field-group">
-                  <label>Resume Access Permission *</label>
-                  <select
-                    value={formData.resumeAccess}
-                    onChange={(e) => setFormData({ ...formData, resumeAccess: e.target.value })}
-                    className="form-control-select"
-                  >
-                    <option value="Unlocked">Unlocked</option>
-                    <option value="Locked">Locked</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 4: NOTES & TAGS */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                4. EVALUATION NOTES & TAGS
-              </div>
-
-              {/* 10. Tags */}
-              <div className="form-field-group">
-                <label>Candidate Tags (Comma-separated) *</label>
+          {/* Details Table Toolbar & Action Bar */}
+          <div className="details-toolbar-card">
+            <div className="toolbar-left-group">
+              <div className="responses-search-box">
+                <Search size={15} className="search-icon" />
                 <input
                   type="text"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="e.g. Top Tier, Immediate Joiner, React Lead"
-                  className="form-control-input"
+                  placeholder="Search reference, skills, name..."
+                  value={detailsSearchTerm}
+                  onChange={(e) => {
+                    setDetailsSearchTerm(e.target.value);
+                    setDetailsPage(1);
+                  }}
+                  className="responses-search-input"
                 />
               </div>
 
-              {/* 9. Notes */}
-              <div className="form-field-group">
-                <label>Internal Recruitment Notes *</label>
+              <select
+                value={responseFilter}
+                onChange={(e) => {
+                  setResponseFilter(e.target.value);
+                  setDetailsPage(1);
+                }}
+                className="responses-filter-select"
+              >
+                <option value="All">All Responses</option>
+                <option value="Interested">Interested Only</option>
+                <option value="Not Interested">Not Interested</option>
+                <option value="Maybe Later">Maybe Later</option>
+                <option value="No Response">No Response</option>
+              </select>
+
+              <select
+                value={screeningFilter}
+                onChange={(e) => {
+                  setScreeningFilter(e.target.value);
+                  setDetailsPage(1);
+                }}
+                className="responses-filter-select"
+              >
+                <option value="All">All Screening Statuses</option>
+                <option value="Not Sent">Not Sent</option>
+                <option value="Pending">Pending</option>
+                <option value="Completed">Completed</option>
+              </select>
+
+              <select
+                value={scoreFilter}
+                onChange={(e) => {
+                  setScoreFilter(e.target.value);
+                  setDetailsPage(1);
+                }}
+                className="responses-filter-select"
+              >
+                <option value="All">All Match Scores</option>
+                <option value="90">90%+ High Match</option>
+                <option value="80">80%+ Good Match</option>
+                <option value="70">70%+ Fair Match</option>
+              </select>
+            </div>
+
+            {/* Selection & Send Screening Action Button */}
+            <div className="toolbar-right-group">
+              <span className="selected-counter-text">
+                <strong>{selectedCandidateIds.length}</strong> of{' '}
+                {eligibleCandidatesToSelect.length} Eligible Selected
+              </span>
+
+              <button
+                type="button"
+                className="btn-select-all-toggle"
+                onClick={handleToggleSelectAll}
+                disabled={eligibleCandidatesToSelect.length === 0}
+              >
+                {selectedCandidateIds.length === eligibleCandidatesToSelect.length &&
+                eligibleCandidatesToSelect.length > 0 ? (
+                  <>
+                    <CheckSquare size={14} />
+                    <span>Deselect All</span>
+                  </>
+                ) : (
+                  <>
+                    <Square size={14} />
+                    <span>Select All Eligible ({eligibleCandidatesToSelect.length})</span>
+                  </>
+                )}
+              </button>
+
+              {/* Main Button: Send Screening to Selected Candidates */}
+              <button
+                type="button"
+                className="btn-send-screening-primary"
+                onClick={() => handleOpenScreeningModal()}
+                disabled={selectedCandidateIds.length === 0}
+              >
+                <Send size={15} />
+                <span>
+                  {selectedCandidateIds.length > 0
+                    ? `Send Screening to Selected (${selectedCandidateIds.length})`
+                    : 'Send Screening to Selected Candidates'}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Details Table */}
+          <div className="responses-table-card">
+            <div className="table-responsive-wrapper">
+              <table className="responses-data-table details-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '45px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={
+                          eligibleCandidatesToSelect.length > 0 &&
+                          selectedCandidateIds.length === eligibleCandidatesToSelect.length
+                        }
+                        onChange={handleToggleSelectAll}
+                        disabled={eligibleCandidatesToSelect.length === 0}
+                        title="Select All Eligible Candidates"
+                      />
+                    </th>
+                    <th>Candidate ID</th>
+                    <th>Candidate Name</th>
+                    <th>Match Score</th>
+                    <th>Skills Match</th>
+                    <th>Experience Match</th>
+                    <th>Location Match</th>
+                    <th>Salary Match</th>
+                    <th>Availability</th>
+                    <th>Response Date</th>
+                    <th>Screening Status</th>
+                    <th style={{ textAlign: 'center' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCandidates.length === 0 ? (
+                    <tr>
+                      <td colSpan="12" className="table-empty-cell">
+                        No candidates found for "{selectedJob.jobTitle}" matching your filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedCandidates.map((cand) => {
+                      const isSelected = selectedCandidateIds.includes(cand.id);
+                      const isEligible =
+                        cand.response === 'Interested' && cand.screeningStatus !== 'Completed';
+
+                      return (
+                        <tr
+                          key={cand.id}
+                          className={`${isSelected ? 'row-selected' : ''} ${
+                            !isEligible ? 'row-ineligible' : ''
+                          }`}
+                        >
+                          {/* 1. Select Checkbox */}
+                          <td style={{ textAlign: 'center' }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              disabled={!isEligible}
+                              onChange={() => handleToggleCandidateSelect(cand)}
+                              title={
+                                cand.response !== 'Interested'
+                                  ? 'Candidate response is not Interested'
+                                  : cand.screeningStatus === 'Completed'
+                                  ? 'Screening already completed'
+                                  : 'Select candidate for screening'
+                              }
+                            />
+                          </td>
+
+                          {/* 2. Candidate ID */}
+                          <td>
+                            <div className="candidate-id-cell">
+                              <span className="cand-ref-code">{cand.id}</span>
+                              <span className="cand-specialty-sub">{cand.specialty}</span>
+                            </div>
+                          </td>
+
+                          {/* 3. Candidate Name (Permission irundha mattum show pannavum) */}
+                          <td>
+                            <div className="candidate-name-cell">
+                              {cand.permissionGranted ? (
+                                <div className="name-unlocked-row">
+                                  <span className="unlocked-name-text">{cand.candidateName}</span>
+                                  <button
+                                    type="button"
+                                    className="btn-privacy-toggle unlocked"
+                                    onClick={() => handleTogglePermission(cand.id)}
+                                    title="Consent Granted. Click to lock / anonymize."
+                                  >
+                                    <Unlock size={12} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="name-locked-row">
+                                  <span className="locked-name-text">
+                                    [Confidential Candidate]
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="btn-privacy-toggle locked"
+                                    onClick={() => handleTogglePermission(cand.id)}
+                                    title="Candidate Consent Hidden. Click to unlock with recruiter authorization."
+                                  >
+                                    <Lock size={12} />
+                                    <span>Unlock</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 4. Match Score */}
+                          <td>
+                            <div className="match-score-cell">
+                              <span className={`score-badge ${getScoreBadgeClass(cand.matchScore)}`}>
+                                {cand.matchScore}%
+                              </span>
+                              <div className="score-mini-track">
+                                <div
+                                  className={`score-mini-fill ${getScoreBadgeClass(cand.matchScore)}`}
+                                  style={{ width: `${cand.matchScore}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 5. Skills Match */}
+                          <td>
+                            <div className="skills-match-cell">
+                              <span className="skills-match-text">{cand.skillsMatch}</span>
+                              <span className="skills-matched-pill">{cand.skillsMatchedCount}</span>
+                            </div>
+                          </td>
+
+                          {/* 6. Experience Match */}
+                          <td>
+                            <div className="experience-match-cell">
+                              <span className="exp-suitable-tag">
+                                <CheckCircle size={12} /> {cand.experienceMatch}
+                              </span>
+                              <span className="exp-sub-detail">{cand.experienceDetail}</span>
+                            </div>
+                          </td>
+
+                          {/* 7. Location Match */}
+                          <td>
+                            <div className="location-match-cell">
+                              <span
+                                className={`loc-suitable-chip ${
+                                  cand.locationMatch === 'Suitable' ? 'suitable' : 'not-suitable'
+                                }`}
+                              >
+                                {cand.locationMatch === 'Suitable' ? (
+                                  <Check size={11} />
+                                ) : (
+                                  <XCircle size={11} />
+                                )}
+                                <span>{cand.locationMatch}</span>
+                              </span>
+                              <span className="loc-sub-detail">{cand.locationDetail}</span>
+                            </div>
+                          </td>
+
+                          {/* 8. Salary Match */}
+                          <td>
+                            <div className="salary-match-cell">
+                              <span className="salary-status-tag">
+                                <DollarSign size={11} /> {cand.salaryMatch}
+                              </span>
+                              <span className="salary-detail-text">{cand.salaryDetail}</span>
+                            </div>
+                          </td>
+
+                          {/* 9. Availability */}
+                          <td>
+                            <span
+                              className={`availability-pill avail-${cand.availability
+                                .toLowerCase()
+                                .replace(/[^a-z0-9]+/g, '-')}`}
+                            >
+                              {cand.availability}
+                            </span>
+                          </td>
+
+                          {/* 10. Response Date */}
+                          <td>
+                            <div className="response-date-cell">
+                              <span className="response-status-badge">
+                                {cand.response === 'Interested' && <ThumbsUp size={11} />}
+                                {cand.response === 'Not Interested' && <ThumbsDown size={11} />}
+                                {cand.response === 'Maybe Later' && <Clock size={11} />}
+                                <span>{cand.response}</span>
+                              </span>
+                              <span className="response-date-sub">{cand.responseDate}</span>
+                            </div>
+                          </td>
+
+                          {/* 11. Screening Status (Not Sent / Pending / Completed) */}
+                          <td>
+                            <div className="screening-status-cell">
+                              <span
+                                className={`screening-status-chip status-${cand.screeningStatus
+                                  .toLowerCase()
+                                  .replace(/\s+/g, '-')}`}
+                              >
+                                {cand.screeningStatus === 'Not Sent' && <AlertCircle size={12} />}
+                                {cand.screeningStatus === 'Pending' && <Clock size={12} />}
+                                {cand.screeningStatus === 'Completed' && <CheckCircle2 size={12} />}
+                                <span>{cand.screeningStatus}</span>
+                              </span>
+
+                              {/* If Completed, show Result (Qualified / Review Required) */}
+                              {cand.screeningStatus === 'Completed' && (
+                                <div className="screening-result-row">
+                                  <span
+                                    className={`result-tag ${
+                                      cand.screeningResult === 'Qualified'
+                                        ? 'qualified'
+                                        : 'review-required'
+                                    }`}
+                                  >
+                                    {cand.screeningResult}: {cand.screeningScore}%
+                                  </span>
+                                </div>
+                              )}
+
+                              {cand.screeningStatus === 'Pending' && (
+                                <button
+                                  type="button"
+                                  className="btn-simulate-complete"
+                                  onClick={() => handleRecordScreeningCompletion(cand, 88)}
+                                  title="Simulate candidate submission (Score 88%)"
+                                >
+                                  Record Result
+                                </button>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 12. Actions: View Profile / Send Screening (Icon Only) */}
+                          <td style={{ textAlign: 'center' }}>
+                            <div className="table-actions-cluster">
+                              <button
+                                type="button"
+                                className="action-icon-button view"
+                                onClick={() => {
+                                  setProfileModalCandidate(cand);
+                                  setViewMode('profile-view');
+                                }}
+                                title="View Candidate Profile & Matching Details"
+                              >
+                                <Eye size={16} />
+                              </button>
+
+                              {cand.screeningStatus === 'Completed' ? (
+                                cand.recruitmentStage === 'Shortlisted' ? (
+                                  <span className="stage-shortlisted-pill" title="Shortlisted Candidate">
+                                    <Check size={13} />
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="action-icon-button shortlist"
+                                    onClick={() => handleMoveToShortlisted(cand)}
+                                    title="Candidate Qualified: Move to Shortlisted"
+                                  >
+                                    <UserCheck size={16} />
+                                  </button>
+                                )
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="action-icon-button send"
+                                  onClick={() => handleOpenScreeningModal(cand)}
+                                  disabled={cand.response !== 'Interested'}
+                                  title={
+                                    cand.response !== 'Interested'
+                                      ? 'Only Interested candidates can be screened'
+                                      : 'Send Screening Assessment'
+                                  }
+                                >
+                                  <Send size={15} />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Footer (Consistent with Company Details) */}
+            <div className="companies-pagination-row">
+              <div className="pagination-entries-count">
+                Showing {filteredCandidates.length > 0 ? (detailsPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(detailsPage * itemsPerPage, filteredCandidates.length)} of{' '}
+                {filteredCandidates.length} entries
+              </div>
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${detailsPage === 1 ? 'disabled' : ''}`}
+                  disabled={detailsPage === 1}
+                  onClick={() => setDetailsPage((p) => Math.max(1, p - 1))}
+                  title="Previous Page"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalDetailsPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-btn ${detailsPage === page ? 'active' : ''}`}
+                    onClick={() => setDetailsPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${detailsPage === totalDetailsPages ? 'disabled' : ''}`}
+                  disabled={detailsPage === totalDetailsPages}
+                  onClick={() => setDetailsPage((p) => Math.min(totalDetailsPages, p + 1))}
+                  title="Next Page"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          VIEW 3: SEND SCREENING ASSESSMENT (IN-PAGE VIEW, NO POPUP!)
+          ========================================================================= */}
+      {viewMode === 'screening-form' && (
+        <div className="inpage-card-container animate-fade-in">
+          <div className="inpage-card-header">
+            <div className="inpage-card-title-wrap">
+              <div className="modal-icon-ring blue">
+                <Send size={18} />
+              </div>
+              <div>
+                <h3 className="inpage-card-title">Send Screening Assessment</h3>
+                <p className="inpage-card-subtitle">
+                  Target Job: {selectedJob?.jobTitle} ({selectedJob?.id})
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={() => setViewMode('details')}
+              title="Back to Candidates"
+            >
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to Candidates</span>
+            </button>
+          </div>
+
+          <div className="responses-modal-body">
+              {/* Recipient Summary Box */}
+              <div className="modal-recipients-summary-box">
+                <div className="recipients-stat">
+                  <span className="rec-lbl">Recipients Count:</span>
+                  <span className="rec-val">
+                    <Users size={14} />
+                    <strong>
+                      {singleTargetCandidate ? 1 : selectedCandidateIds.length} Candidate(s)
+                    </strong>
+                  </span>
+                </div>
+                <div className="recipients-stat">
+                  <span className="rec-lbl">Eligibility Validation:</span>
+                  <span className="rec-val green">
+                    <ShieldCheck size={14} />
+                    <strong>Interested & Eligible</strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Assessment Template Selection */}
+              <div className="modal-form-section">
+                <label className="modal-section-label">
+                  Select Screening Assessment <span className="req-star">*</span>
+                </label>
+                <div className="assessment-options-list">
+                  {availableAssessments.map((asm) => (
+                    <label
+                      key={asm.id}
+                      className={`assessment-option-item ${
+                        selectedAssessmentId === asm.id ? 'active' : ''
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="selectedAssessment"
+                        value={asm.id}
+                        checked={selectedAssessmentId === asm.id}
+                        onChange={() => setSelectedAssessmentId(asm.id)}
+                      />
+                      <div className="asm-item-details">
+                        <div className="asm-title-row">
+                          <span className="asm-name">{asm.name}</span>
+                          <span className="asm-badge">{asm.category}</span>
+                        </div>
+                        <div className="asm-meta-row">
+                          <span>
+                            <Clock size={12} /> Duration: {asm.duration}
+                          </span>
+                          <span>•</span>
+                          <span>
+                            <Award size={12} /> Pass Criteria: Min {asm.passThreshold}%
+                          </span>
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Expiry Days & Passing Threshold */}
+              <div className="modal-grid-two-cols">
+                <div className="modal-form-section">
+                  <label className="modal-section-label">Assessment Expiry (Days)</label>
+                  <select
+                    value={assessmentExpiryDays}
+                    onChange={(e) => setAssessmentExpiryDays(e.target.value)}
+                    className="modal-select-input"
+                  >
+                    <option value="3">3 Days</option>
+                    <option value="5">5 Days (Recommended)</option>
+                    <option value="7">7 Days</option>
+                    <option value="10">10 Days</option>
+                  </select>
+                </div>
+
+                <div className="modal-form-section">
+                  <label className="modal-section-label">Duplicate Screening Rule</label>
+                  <div className="rule-badge-box">
+                    <CheckCircle size={13} className="rule-icon" />
+                    <span>Duplicate screening automatically avoided for completed tests</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instructions / Notes */}
+              <div className="modal-form-section">
+                <label className="modal-section-label">Recruiter Instructions to Candidate</label>
                 <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Record interview impressions, technical strengths, compensation discussions, and notice period clarifications..."
-                  className="form-control-textarea"
-                  rows={3}
+                  value={screeningNotes}
+                  onChange={(e) => setScreeningNotes(e.target.value)}
+                  rows="3"
+                  className="modal-textarea-input"
+                  placeholder="Add custom assessment guidelines..."
                 />
               </div>
             </div>
 
             {/* Form Footer */}
-            <div className="inpage-form-footer">
+            <div className="responses-modal-footer">
               <button
                 type="button"
-                className="btn-cancel-action"
-                onClick={handleBackToList}
+                className="btn-modal-cancel"
+                onClick={() => setViewMode('details')}
               >
                 Cancel
               </button>
+
               <button
-                type="submit"
-                className="btn-save-header-action"
+                type="button"
+                className="btn-modal-submit"
+                onClick={handleExecuteSendScreening}
               >
-                <Save size={16} />
-                <span>{currentView === 'add' ? 'Save Response' : 'Update Evaluation'}</span>
+                <Send size={15} />
+                <span>
+                  Dispatch Screening to{' '}
+                  {singleTargetCandidate ? 1 : selectedCandidateIds.length} Candidate(s)
+                </span>
               </button>
             </div>
-          </form>
+          </div>
         )}
-      </div>
+
+      {/* =========================================================================
+          VIEW 4: CANDIDATE PROFILE & MATCHING DETAILS (IN-PAGE VIEW, NO POPUP!)
+          ========================================================================= */}
+      {viewMode === 'profile-view' && profileModalCandidate && (
+        <div className="inpage-card-container animate-fade-in">
+          <div className="inpage-card-header">
+            <div className="inpage-card-title-wrap">
+              <div className="modal-icon-ring purple">
+                <Users size={18} />
+              </div>
+              <div>
+                <h3 className="inpage-card-title">
+                  Candidate Profile: {profileModalCandidate.id}
+                </h3>
+                <p className="inpage-card-subtitle">
+                  {profileModalCandidate.permissionGranted
+                    ? profileModalCandidate.candidateName
+                    : '[Confidential Candidate • Consent Required]'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={() => setViewMode('details')}
+              title="Back to Candidates"
+            >
+              <ArrowLeft size={16} strokeWidth={2.5} />
+              <span>Back to Candidates</span>
+            </button>
+          </div>
+
+          <div className="responses-modal-body">
+              {/* Permission & Identity Card */}
+              <div className="profile-identity-card">
+                <div className="identity-status-row">
+                  <div className="identity-tag">
+                    {profileModalCandidate.permissionGranted ? (
+                      <span className="unlocked-badge">
+                        <Unlock size={13} /> Name & Contact Unlocked
+                      </span>
+                    ) : (
+                      <span className="locked-badge">
+                        <Lock size={13} /> Name Masked (Confidential)
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-toggle-permission-modal"
+                    onClick={() => handleTogglePermission(profileModalCandidate.id)}
+                  >
+                    {profileModalCandidate.permissionGranted ? (
+                      <>
+                        <Lock size={13} />
+                        <span>Lock Name</span>
+                      </>
+                    ) : (
+                      <>
+                        <Unlock size={13} />
+                        <span>Authorize & Unlock Name</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="profile-specialty-title">
+                  {profileModalCandidate.specialty}
+                </div>
+                <div className="profile-notes-text">
+                  "{profileModalCandidate.notes}"
+                </div>
+              </div>
+
+              {/* Match Criteria Quad Grid */}
+              <div className="profile-criteria-grid">
+                <div className="criteria-card">
+                  <span className="crit-lbl">Match Score</span>
+                  <span
+                    className={`crit-val score ${getScoreBadgeClass(
+                      profileModalCandidate.matchScore
+                    )}`}
+                  >
+                    {profileModalCandidate.matchScore}%
+                  </span>
+                </div>
+
+                <div className="criteria-card">
+                  <span className="crit-lbl">Experience</span>
+                  <span className="crit-val green">
+                    <CheckCircle size={13} /> {profileModalCandidate.experienceMatch}
+                  </span>
+                  <span className="crit-sub">{profileModalCandidate.experienceDetail}</span>
+                </div>
+
+                <div className="criteria-card">
+                  <span className="crit-lbl">Location Suitability</span>
+                  <span
+                    className={`crit-val ${
+                      profileModalCandidate.locationMatch === 'Suitable'
+                        ? 'green'
+                        : 'red'
+                    }`}
+                  >
+                    {profileModalCandidate.locationMatch}
+                  </span>
+                  <span className="crit-sub">{profileModalCandidate.locationDetail}</span>
+                </div>
+
+                <div className="criteria-card">
+                  <span className="crit-lbl">Salary Match</span>
+                  <span className="crit-val blue">
+                    {profileModalCandidate.salaryMatch}
+                  </span>
+                  <span className="crit-sub">{profileModalCandidate.salaryDetail}</span>
+                </div>
+              </div>
+
+              {/* Skills Verification Breakdown */}
+              <div className="profile-section-box">
+                <div className="section-box-header">
+                  <Sparkles size={15} />
+                  <span>Skills Match Breakdown</span>
+                </div>
+                <div className="skills-breakdown-content">
+                  <span className="skills-full-text">
+                    {profileModalCandidate.skillsMatch}
+                  </span>
+                </div>
+              </div>
+
+              {/* Screening & Recruitment Stage Status */}
+              <div className="profile-section-box">
+                <div className="section-box-header">
+                  <Layers size={15} />
+                  <span>Screening & Recruitment Progression</span>
+                </div>
+                <div className="stage-progression-content">
+                  <div className="stage-row">
+                    <span className="stage-lbl">Response:</span>
+                    <span className="stage-val">
+                      {profileModalCandidate.response} ({profileModalCandidate.responseDate})
+                    </span>
+                  </div>
+                  <div className="stage-row">
+                    <span className="stage-lbl">Screening Status:</span>
+                    <span
+                      className={`screening-status-chip status-${profileModalCandidate.screeningStatus
+                        .toLowerCase()
+                        .replace(/\s+/g, '-')}`}
+                    >
+                      {profileModalCandidate.screeningStatus}
+                    </span>
+                  </div>
+                  {profileModalCandidate.screeningAssessment && (
+                    <div className="stage-row">
+                      <span className="stage-lbl">Assigned Test:</span>
+                      <span className="stage-val">
+                        {profileModalCandidate.screeningAssessment}
+                      </span>
+                    </div>
+                  )}
+                  {profileModalCandidate.screeningScore && (
+                    <div className="stage-row">
+                      <span className="stage-lbl">Test Score & Result:</span>
+                      <span
+                        className={`result-tag ${
+                          profileModalCandidate.screeningResult === 'Qualified'
+                            ? 'qualified'
+                            : 'review-required'
+                        }`}
+                      >
+                        {profileModalCandidate.screeningScore}% (
+                        {profileModalCandidate.screeningResult})
+                      </span>
+                    </div>
+                  )}
+                  <div className="stage-row">
+                    <span className="stage-lbl">Current Stage:</span>
+                    <span className="stage-val bold">
+                      {profileModalCandidate.recruitmentStage}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="responses-modal-footer">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setViewMode('details')}
+              >
+                Back to Candidates
+              </button>
+
+              {profileModalCandidate.screeningStatus === 'Completed' &&
+              profileModalCandidate.screeningResult === 'Qualified' &&
+              profileModalCandidate.recruitmentStage !== 'Shortlisted' ? (
+                <button
+                  type="button"
+                  className="btn-modal-submit green"
+                  onClick={() => handleMoveToShortlisted(profileModalCandidate)}
+                >
+                  <UserCheck size={15} />
+                  <span>Move Candidate to Shortlisted</span>
+                </button>
+              ) : profileModalCandidate.screeningStatus === 'Not Sent' &&
+                profileModalCandidate.response === 'Interested' ? (
+                <button
+                  type="button"
+                  className="btn-modal-submit"
+                  onClick={() => {
+                    const cand = profileModalCandidate;
+                    handleOpenScreeningModal(cand);
+                  }}
+                >
+                  <Send size={15} />
+                  <span>Send Screening Assessment</span>
+                </button>
+              ) : null}
+            </div>
+          </div>
+      )}
     </div>
   );
 };

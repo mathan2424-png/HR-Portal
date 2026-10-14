@@ -2,391 +2,793 @@ import React, { useState } from 'react';
 import {
   Search,
   Plus,
+  Send,
+  Eye,
   Edit2,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
-  ArrowLeft,
-  Save,
-  CheckCircle2,
+  FileQuestion,
+  Award,
   CheckCircle,
+  CheckCircle2,
+  Clock,
   AlertCircle,
   XCircle,
+  Users,
+  Briefcase,
+  History,
+  HelpCircle,
+  Check,
+  ChevronDown,
+  Sparkles,
+  BookOpen,
+  Sliders,
+  ShieldAlert,
+  ArrowRight,
+  ArrowLeft,
+  Filter,
+  CheckSquare,
+  Square,
+  UserCheck,
 } from 'lucide-react';
-import { FieldError } from '../../components/common/FieldError/FieldError';
-import {
-  validateName,
-  validateNumber,
-  validateRequired,
-  sanitizeNameInput,
-  sanitizeNumberInput,
-} from '../../utils/validation';
+import { usePortal } from '../../context/PortalContext';
 import './ScreeningModule.css';
 
+// 1. Available Published Jobs for Screening Mapping
+const publishedJobs = [
+  {
+    id: 'JOB-2026-001',
+    title: 'Senior Frontend Engineer (JOB-2026-001)',
+    department: 'Engineering & Technology',
+  },
+  {
+    id: 'JOB-2026-007',
+    title: 'Software Developer (JOB-2026-007)',
+    department: 'Engineering & Technology',
+  },
+  {
+    id: 'JOB-2026-002',
+    title: 'Lead Product Designer (JOB-2026-002)',
+    department: 'Design & UX',
+  },
+  {
+    id: 'JOB-2026-004',
+    title: 'DevOps & Cloud Architect (JOB-2026-004)',
+    department: 'Engineering & Technology',
+  },
+  {
+    id: 'JOB-2026-003',
+    title: 'HR Executive (JOB-2026-003)',
+    department: 'Human Resources',
+  },
+  {
+    id: 'JOB-2026-005',
+    title: 'Enterprise Account Executive (JOB-2026-005)',
+    department: 'Business Development',
+  },
+];
+
+// 2. Initial Screening Assessments List
+const initialScreenings = [
+  {
+    id: 'SCRN-2026-001',
+    name: 'Frontend Architecture & React 19 Coding Test',
+    jobId: 'JOB-2026-001',
+    jobTitle: 'Senior Frontend Engineer (JOB-2026-001)',
+    department: 'Engineering & Technology',
+    duration: '45 Mins',
+    totalQuestions: 12,
+    totalMarks: 100,
+    passMark: 75,
+    candidatesAssigned: 12,
+    completedCount: 9,
+    pendingCount: 3,
+    status: 'Active',
+    version: '1.0',
+    hasPendingManualReview: true,
+    questions: [
+      {
+        id: 'Q-001',
+        text: 'Explain how React 19 Server Components handle data mutations and streaming boundaries.',
+        type: 'Descriptive',
+        marks: 20,
+        mandatory: true,
+      },
+      {
+        id: 'Q-002',
+        text: 'Which hook in React 19 provides direct access to form action pending state?',
+        type: 'MCQ',
+        marks: 10,
+        mandatory: true,
+      },
+      {
+        id: 'Q-003',
+        text: 'What are the performance implications of using Next.js App Router parallel routes with nested suspense?',
+        type: 'Descriptive',
+        marks: 20,
+        mandatory: true,
+      },
+      {
+        id: 'Q-004',
+        text: 'Implement a debounce function with leading and trailing execution options in TypeScript.',
+        type: 'Code Assessment',
+        marks: 25,
+        mandatory: true,
+      },
+      {
+        id: 'Q-005',
+        text: 'State management: Compare Zustand vs Redux Toolkit in micro-frontends.',
+        type: 'Descriptive',
+        marks: 25,
+        mandatory: false,
+      },
+    ],
+    results: [
+      {
+        candidateId: 'CAN-REF-1042',
+        candidateName: 'Rajesh Kumar',
+        assignedDate: '10-Oct-2026',
+        submittedDate: '12-Oct-2026 03:45 PM',
+        marksObtained: 92,
+        result: 'Qualified',
+        status: 'Completed',
+        manualReviewNeeded: false,
+        descriptiveAnswer:
+          'React 19 Server Components execute solely on the server, generating a static virtual DOM stream that hydrates zero client-side JavaScript bundle for pure components.',
+        reviewerFeedback: 'Excellent architectural understanding and clean TypeScript implementation.',
+      },
+      {
+        candidateId: 'CAN-REF-1038',
+        candidateName: 'Gopinath Sundaram',
+        assignedDate: '10-Oct-2026',
+        submittedDate: '12-Oct-2026 01:20 PM',
+        marksObtained: 71,
+        result: 'Review Required',
+        status: 'Completed',
+        manualReviewNeeded: true,
+        descriptiveAnswer:
+          'Server components stream UI chunks via suspense boundaries. Mutations use Server Actions with revalidatePath.',
+        reviewerFeedback: 'Solid concepts, descriptive answers require score confirmation.',
+      },
+      {
+        candidateId: 'CAN-REF-1055',
+        candidateName: 'Vijay Anand',
+        assignedDate: '11-Oct-2026',
+        submittedDate: null,
+        marksObtained: 0,
+        result: 'Pending',
+        status: 'Pending',
+        manualReviewNeeded: false,
+        descriptiveAnswer: null,
+        reviewerFeedback: null,
+      },
+    ],
+    history: [
+      { date: '01-Oct-2026 10:00 AM', event: 'Screening created by Sundar Raman (Engineering Lead)' },
+      { date: '02-Oct-2026 02:30 PM', event: '12 Questions mapped and validated. Status moved to Ready.' },
+      { date: '10-Oct-2026 04:00 PM', event: 'Dispatched to 12 candidates. Status updated to Active.' },
+    ],
+  },
+  {
+    id: 'SCRN-2026-002',
+    name: 'UI/UX Design Challenge & Systems Thinking',
+    jobId: 'JOB-2026-002',
+    jobTitle: 'Lead Product Designer (JOB-2026-002)',
+    department: 'Design & UX',
+    duration: '60 Mins',
+    totalQuestions: 8,
+    totalMarks: 100,
+    passMark: 70,
+    candidatesAssigned: 5,
+    completedCount: 4,
+    pendingCount: 1,
+    status: 'Active',
+    version: '1.0',
+    hasPendingManualReview: false,
+    questions: [
+      {
+        id: 'Q-101',
+        text: 'How do you structure design tokens in Figma for automatic dark mode transformation?',
+        type: 'Descriptive',
+        marks: 25,
+        mandatory: true,
+      },
+      {
+        id: 'Q-102',
+        text: 'Explain the difference between usability benchmarking and comparative heuristic evaluation.',
+        type: 'Descriptive',
+        marks: 25,
+        mandatory: true,
+      },
+    ],
+    results: [
+      {
+        candidateId: 'CAN-REF-2015',
+        candidateName: 'Aishwarya Lakshmi',
+        assignedDate: '09-Oct-2026',
+        submittedDate: '11-Oct-2026 09:30 AM',
+        marksObtained: 94,
+        result: 'Qualified',
+        status: 'Completed',
+        manualReviewNeeded: false,
+        descriptiveAnswer:
+          'Design tokens are divided into Global (primitive colors), Alias (semantic intent), and Component-specific tiers.',
+        reviewerFeedback: 'Outstanding Figma systems mastery.',
+      },
+    ],
+    history: [
+      { date: '02-Oct-2026 11:00 AM', event: 'Screening created by Karthik Raja (Design Head)' },
+      { date: '09-Oct-2026 01:00 PM', event: 'Dispatched to 5 design candidates.' },
+    ],
+  },
+  {
+    id: 'SCRN-2026-003',
+    name: 'HR Leadership & Competency Screening',
+    jobId: 'JOB-2026-003',
+    jobTitle: 'HR Executive (JOB-2026-003)',
+    department: 'Human Resources',
+    duration: '30 Mins',
+    totalQuestions: 10,
+    totalMarks: 100,
+    passMark: 75,
+    candidatesAssigned: 10,
+    completedCount: 7,
+    pendingCount: 3,
+    status: 'Active',
+    version: '1.0',
+    hasPendingManualReview: true,
+    questions: [
+      {
+        id: 'Q-201',
+        text: 'How do you handle difficult offer negotiations while maintaining positive candidate sentiment?',
+        type: 'Descriptive',
+        marks: 25,
+        mandatory: true,
+      },
+    ],
+    results: [
+      {
+        candidateId: 'CAN-REF-3008',
+        candidateName: 'Nathiya Ramesh',
+        assignedDate: '08-Oct-2026',
+        submittedDate: '10-Oct-2026 01:15 PM',
+        marksObtained: 92,
+        result: 'Qualified',
+        status: 'Completed',
+        manualReviewNeeded: false,
+        descriptiveAnswer:
+          'Anchor discussions around total rewards, career growth ladders and transparent compensation bands.',
+        reviewerFeedback: 'Exceptional negotiation clarity and professionalism.',
+      },
+    ],
+    history: [
+      { date: '04-Oct-2026 09:30 AM', event: 'Screening created by Abinaya R (Senior HR Manager)' },
+    ],
+  },
+  {
+    id: 'SCRN-2026-004',
+    name: 'Cloud Infrastructure & Kubernetes Assessment',
+    jobId: 'JOB-2026-004',
+    jobTitle: 'DevOps & Cloud Architect (JOB-2026-004)',
+    department: 'Engineering & Technology',
+    duration: '50 Mins',
+    totalQuestions: 15,
+    totalMarks: 100,
+    passMark: 80,
+    candidatesAssigned: 8,
+    completedCount: 6,
+    pendingCount: 2,
+    status: 'Active',
+    version: '1.0',
+    hasPendingManualReview: false,
+    questions: [],
+    results: [],
+    history: [
+      { date: '03-Oct-2026 02:00 PM', event: 'Screening created by Sundar Raman' },
+    ],
+  },
+  {
+    id: 'SCRN-2026-005',
+    name: 'Full-Stack JavaScript & Node.js Evaluation',
+    jobId: 'JOB-2026-007',
+    jobTitle: 'Software Developer (JOB-2026-007)',
+    department: 'Engineering & Technology',
+    duration: '45 Mins',
+    totalQuestions: 10,
+    totalMarks: 100,
+    passMark: 75,
+    candidatesAssigned: 0,
+    completedCount: 0,
+    pendingCount: 0,
+    status: 'Ready',
+    version: '1.0',
+    hasPendingManualReview: false,
+    questions: [
+      {
+        id: 'Q-301',
+        text: 'Write an asynchronous pipeline using Node.js Streams with backpressure handling.',
+        type: 'Code Assessment',
+        marks: 30,
+        mandatory: true,
+      },
+    ],
+    results: [],
+    history: [
+      { date: '06-Oct-2026 03:00 PM', event: 'Created & 10 questions validated. Ready for dispatch.' },
+    ],
+  },
+  {
+    id: 'SCRN-2026-006',
+    name: 'B2B Enterprise Sales & Discovery Assessment',
+    jobId: 'JOB-2026-005',
+    jobTitle: 'Enterprise Account Executive (JOB-2026-005)',
+    department: 'Business Development',
+    duration: '30 Mins',
+    totalQuestions: 0,
+    totalMarks: 0,
+    passMark: 70,
+    candidatesAssigned: 0,
+    completedCount: 0,
+    pendingCount: 0,
+    status: 'Draft',
+    version: '1.0',
+    hasPendingManualReview: false,
+    questions: [],
+    results: [],
+    history: [
+      { date: '07-Oct-2026 11:30 AM', event: 'Draft configuration initialized. Pending question mapping.' },
+    ],
+  },
+];
+
 export const ScreeningModule = () => {
-  const [errors, setErrors] = useState({});
-  // STRICTLY and ONLY the 12 user-requested fields:
-  // 1. Screening Name: Screening name.
-  // 2. Job: Related job.
-  // 3. Questions: Screening questions.
-  // 4. Question Type: Yes/No, MCQ, text, number, etc.
-  // 5. Mandatory: Whether the question is required.
-  // 6. Score: Question/candidate score.
-  // 7. Pass Criteria: Minimum score or rules.
-  // 8. Candidate Answer: Candidate's submitted answer.
-  // 9. Screening Status: Not Sent, Pending, Completed, Expired.
-  // 10. Result: Qualified, Review Required, Not Qualified.
-  // 11. Reviewed By: Company user who reviewed it.
-  // 12. Review Date: Review date.
+  const { setNotifications } = usePortal();
 
-  const [screenings, setScreenings] = useState([
-    {
-      id: 'SCRN-001',
-      screeningName: 'Frontend Core Competency & React Architecture',
-      job: 'Senior Frontend Engineer (JOB-2026-001)',
-      questions: 'How many years of production experience do you have with React 18/19 and Next.js App Router?',
-      questionType: 'Number',
-      mandatory: 'Yes',
-      score: 92,
-      passCriteria: 'Min Score: 75% & All Mandatory Questions Validated',
-      candidateAnswer: '5.5 Years in B2B SaaS building micro-frontends with React 19, TypeScript and Next.js.',
-      screeningStatus: 'Completed',
-      result: 'Qualified',
-      reviewedBy: 'Sundar Raman (Engineering Lead)',
-      reviewDate: '12-Oct-2026 04:30 PM',
-    },
-    {
-      id: 'SCRN-002',
-      screeningName: 'Design Systems & Figma Component Architecture',
-      job: 'Lead Product Designer (JOB-2026-002)',
-      questions: 'Have you built and maintained design tokens across Web & Mobile platforms in production?',
-      questionType: 'Yes/No',
-      mandatory: 'Yes',
-      score: 88,
-      passCriteria: 'Min Score: 70% & Portfolio Link Verified',
-      candidateAnswer: 'Yes, architected multi-brand design tokens for 3 SaaS web applications in Figma.',
-      screeningStatus: 'Completed',
-      result: 'Qualified',
-      reviewedBy: 'Karthik Raja (Design Head)',
-      reviewDate: '11-Oct-2026 02:15 PM',
-    },
-    {
-      id: 'SCRN-003',
-      screeningName: 'Cloud Infrastructure & High Availability Assessment',
-      job: 'DevOps & Cloud Architect (JOB-2026-004)',
-      questions: 'Which multi-cluster Kubernetes orchestration tools have you implemented on AWS?',
-      questionType: 'MCQ',
-      mandatory: 'Yes',
-      score: 84,
-      passCriteria: 'Min Score: 80% & AWS Certification Verified',
-      candidateAnswer: 'AWS EKS with Terraform, ArgoCD GitOps, Helm charts and Istio Service Mesh.',
-      screeningStatus: 'Completed',
-      result: 'Review Required',
-      reviewedBy: 'Sundar Raman (Engineering Lead)',
-      reviewDate: '11-Oct-2026 10:45 AM',
-    },
-    {
-      id: 'SCRN-004',
-      screeningName: 'Tech Sourcing Velocity & Boolean Search Evaluation',
-      job: 'Senior Technical Recruiter (JOB-2026-003)',
-      questions: 'Detail your approach to sourcing niche distributed systems engineers with passive outreach.',
-      questionType: 'Text',
-      mandatory: 'Yes',
-      score: 90,
-      passCriteria: 'Min Score: 75% & Positive Recruiter Assessment',
-      candidateAnswer: 'Leverage LinkedIn Recruiter advanced Boolean filters, GitHub repo search and targeted warm email campaigns.',
-      screeningStatus: 'Completed',
-      result: 'Qualified',
-      reviewedBy: 'Abinaya R (Senior HR Manager)',
-      reviewDate: '10-Oct-2026 05:20 PM',
-    },
-    {
-      id: 'SCRN-005',
-      screeningName: 'Enterprise SaaS Deal Closure & ARR Growth',
-      job: 'Enterprise Account Executive (JOB-2026-005)',
-      questions: 'What is the largest enterprise ARR software contract you have independently closed?',
-      questionType: 'Number',
-      mandatory: 'No',
-      score: 65,
-      passCriteria: 'Min Score: 70% & Enterprise References',
-      candidateAnswer: '₹45 Lakhs annual contract with mid-market manufacturing client.',
-      screeningStatus: 'Pending',
-      result: 'Review Required',
-      reviewedBy: 'Muthuvel Pandian (Sales Director)',
-      reviewDate: '10-Oct-2026 11:30 AM',
-    },
-    {
-      id: 'SCRN-006',
-      screeningName: 'Statutory Payroll Compliance & TDS Reconciliation',
-      job: 'Finance & Payroll Specialist (JOB-2026-006)',
-      questions: 'Can you independently manage monthly PF, ESI, TDS and Professional Tax filings in Tamil Nadu?',
-      questionType: 'Yes/No',
-      mandatory: 'Yes',
-      score: 45,
-      passCriteria: 'Min Score: 80% & Zero Compliance Errors',
-      candidateAnswer: 'No, have managed PF only, TDS was handled by external auditing firm.',
-      screeningStatus: 'Completed',
-      result: 'Not Qualified',
-      reviewedBy: 'Meenakshi Sundaram (Finance Lead)',
-      reviewDate: '09-Oct-2026 03:00 PM',
-    },
-    {
-      id: 'SCRN-007',
-      screeningName: 'Frontend Performance & Core Web Vitals Benchmark',
-      job: 'Senior Frontend Engineer (JOB-2026-001)',
-      questions: 'Explain strategies you implemented to achieve sub-second LCP and INP in high-traffic portals.',
-      questionType: 'Text',
-      mandatory: 'Yes',
-      score: 0,
-      passCriteria: 'Min Score: 75%',
-      candidateAnswer: 'Assessment sent to candidate, waiting for submission.',
-      screeningStatus: 'Pending',
-      result: 'Review Required',
-      reviewedBy: 'Dhakshan S (Technical Recruiter)',
-      reviewDate: 'Pending Candidate Submission',
-    },
-  ]);
-
-  // Views: 'list' | 'add' | 'edit'
-  const [currentView, setCurrentView] = useState('list');
+  // State: Screenings List
+  const [screenings, setScreenings] = useState(initialScreenings);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [resultFilter, setResultFilter] = useState('All');
-  const [toastMessage, setToastMessage] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('All');
 
-  // Form State
-  const initialFormState = {
-    id: '',
-    screeningName: '',
-    job: 'Senior Frontend Engineer (JOB-2026-001)',
-    questions: '',
-    questionType: 'Text',
-    mandatory: 'Yes',
-    score: 80,
-    passCriteria: 'Min Score: 75% & All Mandatory Questions Validated',
-    candidateAnswer: '',
-    screeningStatus: 'Completed',
-    result: 'Qualified',
-    reviewedBy: 'Dhakshan S (Technical Recruiter)',
-    reviewDate: '',
-  };
-
-  const [formData, setFormData] = useState(initialFormState);
+  // Active Dropdown Row ID
+  const [activeActionsRowId, setActiveActionsRowId] = useState(null);
 
   // Toast
+  const [toastMessage, setToastMessage] = useState('');
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage('');
-    }, 3500);
+    }, 4000);
   };
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  // Modals State
+  const [addScreeningModalOpen, setAddScreeningModalOpen] = useState(false);
+  const [editScreeningModalOpen, setEditScreeningModalOpen] = useState(false);
+  const [addQuestionsModalOpen, setAddQuestionsModalOpen] = useState(false);
+  const [viewDetailsModalOpen, setViewDetailsModalOpen] = useState(false);
+  const [sendScreeningModalOpen, setSendScreeningModalOpen] = useState(false);
+  const [candidateResultsModalOpen, setCandidateResultsModalOpen] = useState(false);
+  const [reviewAnswersModalOpen, setReviewAnswersModalOpen] = useState(false);
+  const [viewHistoryModalOpen, setViewHistoryModalOpen] = useState(false);
 
-  // Filter Screenings
-  const filteredScreenings = screenings.filter((item) => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch =
-      item.screeningName.toLowerCase().includes(term) ||
-      item.job.toLowerCase().includes(term) ||
-      item.questions.toLowerCase().includes(term) ||
-      item.reviewedBy.toLowerCase().includes(term) ||
-      item.candidateAnswer.toLowerCase().includes(term);
+  // Selected Target Screening for Modals
+  const [targetScreening, setTargetScreening] = useState(null);
 
-    const matchesStatus =
-      statusFilter === 'All' ? true : item.screeningStatus === statusFilter;
-
-    const matchesResult =
-      resultFilter === 'All' ? true : item.result === resultFilter;
-
-    return matchesSearch && matchesStatus && matchesResult;
+  // Form State: Add / Edit Screening
+  const [screeningFormData, setScreeningFormData] = useState({
+    id: '',
+    name: '',
+    jobId: 'JOB-2026-001',
+    duration: '45 Mins',
+    totalMarks: 100,
+    passMark: 75,
+    status: 'Draft',
   });
 
-  const totalPages = Math.ceil(filteredScreenings.length / itemsPerPage) || 1;
-  const paginatedScreenings = filteredScreenings.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Form State: Add Question
+  const [questionFormData, setQuestionFormData] = useState({
+    targetScreeningId: 'SCRN-2026-001',
+    text: '',
+    type: 'MCQ',
+    marks: 10,
+    mandatory: true,
+    passCriteria: 'Standard Evaluation',
+  });
 
-  // Open Add
-  const handleOpenAdd = () => {
-    const nowStr = new Date().toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
+  // Send Screening Modal State
+  const [selectedCandidateRecipients, setSelectedCandidateRecipients] = useState([
+    { id: 'CAN-REF-7011', name: 'Karthikeyan Selvam', score: 95, selected: true },
+    { id: 'CAN-REF-7024', name: 'Praveen Venkatesh', score: 92, selected: true },
+    { id: 'CAN-REF-7035', name: 'Meenakshi Sundaram', score: 89, selected: true },
+  ]);
+  const [sendExpiryDays, setSendExpiryDays] = useState('5');
+  const [sendInstructions, setSendInstructions] = useState('');
+
+  // Review Answers Modal State
+  const [reviewCandidate, setReviewCandidate] = useState(null);
+  const [manualMarksAwarded, setManualMarksAwarded] = useState(20);
+  const [evaluatorNotes, setEvaluatorNotes] = useState('');
+
+  // Filtered Screenings List
+  const filteredScreenings = screenings.filter((s) => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch =
+      s.id.toLowerCase().includes(term) ||
+      s.name.toLowerCase().includes(term) ||
+      s.jobTitle.toLowerCase().includes(term);
+
+    const matchesStatus = statusFilter === 'All' ? true : s.status === statusFilter;
+    const matchesDept =
+      departmentFilter === 'All' ? true : s.department === departmentFilter;
+
+    return matchesSearch && matchesStatus && matchesDept;
+  });
+
+  // =========================================================================
+  // HANDLERS: ADD / EDIT SCREENING
+  // =========================================================================
+  const handleOpenAddScreening = () => {
+    const nextId = `SCRN-2026-${String(screenings.length + 1).padStart(3, '0')}`;
+    setScreeningFormData({
+      id: nextId,
+      name: '',
+      jobId: 'JOB-2026-001',
+      duration: '45 Mins',
+      totalMarks: 100,
+      passMark: 75,
+      status: 'Draft',
     });
-    setFormData({
-      ...initialFormState,
-      id: `SCRN-${Date.now()}`,
-      screeningName: '',
-      job: 'JOB-2026-001 (Senior Frontend Engineer)',
-      questions: 'Technical Architecture & Coding (5 Questions)',
-      candidateAnswer: 'Candidate solved React hooks problem and explained SSR tradeoffs.',
-      reviewedBy: 'Sundar Raman',
-      score: 85,
-      screeningStatus: 'Completed',
-      result: 'Shortlisted',
-      reviewDate: nowStr,
-    });
-    setErrors({});
-    setCurrentView('add');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setAddScreeningModalOpen(true);
   };
 
-  // Open Edit
-  const handleOpenEdit = (item) => {
-    setFormData({ ...item });
-    setErrors({});
-    setCurrentView('edit');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Back to list
-  const handleBackToList = () => {
-    setErrors({});
-    setCurrentView('list');
-    setFormData(initialFormState);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Save Screening
-  const handleSaveScreening = (e) => {
+  const handleSaveNewScreening = (e) => {
     e.preventDefault();
-
-    const newErrors = {};
-    const nameErr = validateRequired(formData.screeningName, 'Screening name');
-    if (nameErr) newErrors.screeningName = nameErr;
-
-    const jobErr = validateRequired(formData.job, 'Related job');
-    if (jobErr) newErrors.job = jobErr;
-
-    const qErr = validateRequired(formData.questions, 'Screening questions');
-    if (qErr) newErrors.questions = qErr;
-
-    if (formData.reviewedBy) {
-      const revErr = validateName(formData.reviewedBy, 'Reviewed by', true);
-      if (revErr) newErrors.reviewedBy = revErr;
-    }
-
-    if (formData.score !== undefined && formData.score !== '') {
-      const scoreErr = validateNumber(formData.score, 'Candidate score', true);
-      if (scoreErr) newErrors.score = scoreErr;
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      window.scrollTo({ top: 120, behavior: 'smooth' });
+    if (!screeningFormData.name.trim()) {
+      showToast('Please enter an assessment screening name.');
       return;
     }
 
-    setErrors({});
+    const selectedJob = publishedJobs.find((j) => j.id === screeningFormData.jobId);
+    const newScreening = {
+      id: screeningFormData.id,
+      name: screeningFormData.name,
+      jobId: screeningFormData.jobId,
+      jobTitle: selectedJob ? selectedJob.title : screeningFormData.jobId,
+      department: selectedJob ? selectedJob.department : 'Engineering & Technology',
+      duration: screeningFormData.duration,
+      totalQuestions: 0,
+      totalMarks: Number(screeningFormData.totalMarks),
+      passMark: Number(screeningFormData.passMark),
+      candidatesAssigned: 0,
+      completedCount: 0,
+      pendingCount: 0,
+      status: 'Draft',
+      version: '1.0',
+      hasPendingManualReview: false,
+      questions: [],
+      results: [],
+      history: [
+        {
+          date: new Date().toLocaleString('en-GB'),
+          event: `Screening created for ${selectedJob ? selectedJob.title : ''}`,
+        },
+      ],
+    };
 
-    const nowStr = new Date().toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
+    setScreenings([newScreening, ...screenings]);
+    setAddScreeningModalOpen(false);
+    showToast(`Screening "${newScreening.name}" created successfully as Draft!`);
+  };
+
+  const handleOpenEditScreening = (scrn) => {
+    setTargetScreening(scrn);
+    setScreeningFormData({
+      id: scrn.id,
+      name: scrn.name,
+      jobId: scrn.jobId,
+      duration: scrn.duration,
+      totalMarks: scrn.totalMarks,
+      passMark: scrn.passMark,
+      status: scrn.status,
     });
-
-    if (currentView === 'add') {
-      const newScrn = {
-        ...formData,
-        id: `SCRN-${Date.now()}`,
-        reviewDate: formData.reviewDate || nowStr,
-      };
-      setScreenings([newScrn, ...screenings]);
-      showToast(`Screening "${newScrn.screeningName}" added successfully.`);
-    } else if (currentView === 'edit') {
-      setScreenings(screenings.map((s) => (s.id === formData.id ? { ...formData } : s)));
-      showToast(`Screening evaluation updated.`);
-    }
-
-    handleBackToList();
+    setActiveActionsRowId(null);
+    setEditScreeningModalOpen(true);
   };
 
-  // Delete Screening
-  const handleDeleteScreening = (item) => {
-    if (window.confirm(`Are you sure you want to delete screening "${item.screeningName}"?`)) {
-      setScreenings(screenings.filter((s) => s.id !== item.id));
-      showToast('Screening assessment deleted.');
-    }
+  const handleSaveEditScreening = (e) => {
+    e.preventDefault();
+    setScreenings((prev) =>
+      prev.map((s) =>
+        s.id === targetScreening.id
+          ? {
+              ...s,
+              name: screeningFormData.name,
+              duration: screeningFormData.duration,
+              passMark: Number(screeningFormData.passMark),
+              totalMarks: Number(screeningFormData.totalMarks),
+              status: screeningFormData.status,
+            }
+          : s
+      )
+    );
+    setEditScreeningModalOpen(false);
+    showToast(`Screening "${targetScreening.id}" settings updated!`);
   };
 
-  // Helpers
-  const getResultClass = (res) => {
-    switch (res?.toLowerCase()) {
-      case 'qualified':
-        return 'qualified';
-      case 'review required':
-        return 'review-required';
-      default:
-        return 'not-qualified';
-    }
+  // =========================================================================
+  // HANDLERS: ADD / MANAGE QUESTIONS
+  // =========================================================================
+  const handleOpenAddQuestions = (specificScreening = null) => {
+    const scrn = specificScreening || screenings[0];
+    setTargetScreening(scrn);
+    setQuestionFormData({
+      targetScreeningId: scrn ? scrn.id : screenings[0]?.id,
+      text: '',
+      type: 'MCQ',
+      marks: 10,
+      mandatory: true,
+      passCriteria: 'Standard Evaluation',
+    });
+    setActiveActionsRowId(null);
+    setAddQuestionsModalOpen(true);
   };
 
-  const getStatusClass = (status) => {
+  const handleSaveNewQuestion = (e) => {
+    e.preventDefault();
+    if (!questionFormData.text.trim()) {
+      showToast('Please enter question text.');
+      return;
+    }
+
+    const scrnId = questionFormData.targetScreeningId;
+    const newQ = {
+      id: `Q-${Date.now().toString().slice(-4)}`,
+      text: questionFormData.text,
+      type: questionFormData.type,
+      marks: Number(questionFormData.marks),
+      mandatory: questionFormData.mandatory,
+    };
+
+    setScreenings((prev) =>
+      prev.map((s) => {
+        if (s.id === scrnId) {
+          const updatedQs = [...s.questions, newQ];
+          const newTotalMarks = updatedQs.reduce((acc, q) => acc + q.marks, 0);
+          const newStatus = s.status === 'Draft' ? 'Ready' : s.status;
+          return {
+            ...s,
+            questions: updatedQs,
+            totalQuestions: updatedQs.length,
+            totalMarks: newTotalMarks > s.totalMarks ? newTotalMarks : s.totalMarks,
+            status: newStatus,
+          };
+        }
+        return s;
+      })
+    );
+
+    setQuestionFormData((prev) => ({ ...prev, text: '' }));
+    showToast(`Question added! Status updated to "Ready" for assessment dispatch.`);
+  };
+
+  const handleDeleteQuestion = (scrnId, qId) => {
+    setScreenings((prev) =>
+      prev.map((s) => {
+        if (s.id === scrnId) {
+          const updatedQs = s.questions.filter((q) => q.id !== qId);
+          return {
+            ...s,
+            questions: updatedQs,
+            totalQuestions: updatedQs.length,
+            status: updatedQs.length === 0 ? 'Draft' : s.status,
+          };
+        }
+        return s;
+      })
+    );
+    showToast('Question removed.');
+  };
+
+  // =========================================================================
+  // HANDLERS: SEND SCREENING
+  // =========================================================================
+  const handleOpenSendScreening = (scrn) => {
+    // Rule: Send Screening questions ready/published aana piragudhaan enable aaganum!
+    if (scrn.status === 'Draft' || scrn.totalQuestions === 0) {
+      showToast(
+        'Cannot send screening: Questions not ready. Please map questions first to enable sending.'
+      );
+      return;
+    }
+
+    setTargetScreening(scrn);
+    setSendInstructions(
+      `Please complete this screening assessment for ${scrn.jobTitle} within 5 days.`
+    );
+    setActiveActionsRowId(null);
+    setSendScreeningModalOpen(true);
+  };
+
+  const handleExecuteSendScreening = () => {
+    const selectedRecipients = selectedCandidateRecipients.filter((c) => c.selected);
+    if (selectedRecipients.length === 0) {
+      showToast('Please select at least one candidate recipient.');
+      return;
+    }
+
+    const count = selectedRecipients.length;
+    const nowStr = new Date().toLocaleString('en-GB');
+
+    // Create new candidate result entries in Pending status
+    const newResults = selectedRecipients.map((rec) => ({
+      candidateId: rec.id,
+      candidateName: rec.name,
+      assignedDate: nowStr,
+      submittedDate: null,
+      marksObtained: 0,
+      result: 'Pending',
+      status: 'Pending',
+      manualReviewNeeded: false,
+      descriptiveAnswer: null,
+      reviewerFeedback: null,
+    }));
+
+    setScreenings((prev) =>
+      prev.map((s) => {
+        if (s.id === targetScreening.id) {
+          return {
+            ...s,
+            candidatesAssigned: s.candidatesAssigned + count,
+            pendingCount: s.pendingCount + count,
+            status: 'Active',
+            results: [...newResults, ...s.results],
+            history: [
+              {
+                date: nowStr,
+                event: `Dispatched screening assessment to ${count} candidate(s).`,
+              },
+              ...s.history,
+            ],
+          };
+        }
+        return s;
+      })
+    );
+
+    if (setNotifications) {
+      setNotifications((prev) => [
+        {
+          id: `NTF-SCRN-DISP-${Date.now()}`,
+          notificationType: 'Screening',
+          title: `Screening Dispatched: ${targetScreening.name}`,
+          message: `Assessment sent to ${count} candidate(s) for ${targetScreening.jobTitle}.`,
+          dateTime: nowStr,
+          readStatus: 'Unread',
+          recipient: 'Recruitment Team',
+        },
+        ...prev,
+      ]);
+    }
+
+    setSendScreeningModalOpen(false);
+    showToast(`Successfully dispatched screening to ${count} candidate(s)!`);
+  };
+
+  // =========================================================================
+  // HANDLERS: CANDIDATE RESULTS & REVIEW ANSWERS
+  // =========================================================================
+  const handleOpenCandidateResults = (scrn) => {
+    setTargetScreening(scrn);
+    setActiveActionsRowId(null);
+    setCandidateResultsModalOpen(true);
+  };
+
+  const handleOpenReviewAnswers = (scrn, specificCandidate = null) => {
+    setTargetScreening(scrn);
+    const candidateToReview =
+      specificCandidate ||
+      scrn.results.find((r) => r.manualReviewNeeded) ||
+      scrn.results[0];
+
+    if (!candidateToReview) {
+      showToast('No submitted candidate responses available for manual answer review.');
+      return;
+    }
+
+    setReviewCandidate(candidateToReview);
+    setManualMarksAwarded(20);
+    setEvaluatorNotes('Answers demonstrate solid domain knowledge and design fundamentals.');
+    setActiveActionsRowId(null);
+    setReviewAnswersModalOpen(true);
+  };
+
+  const handleFinalizeManualEvaluation = () => {
+    if (!reviewCandidate || !targetScreening) return;
+
+    const finalMarks = Math.min(
+      targetScreening.totalMarks,
+      reviewCandidate.marksObtained + Number(manualMarksAwarded)
+    );
+    const isQualified = finalMarks >= targetScreening.passMark;
+    const finalResult = isQualified ? 'Qualified' : 'Not Qualified';
+
+    setScreenings((prev) =>
+      prev.map((s) => {
+        if (s.id === targetScreening.id) {
+          const updatedResults = s.results.map((r) => {
+            if (r.candidateId === reviewCandidate.candidateId) {
+              return {
+                ...r,
+                marksObtained: finalMarks,
+                result: finalResult,
+                manualReviewNeeded: false,
+                reviewerFeedback: evaluatorNotes,
+              };
+            }
+            return r;
+          });
+
+          const stillHasPendingManual = updatedResults.some((r) => r.manualReviewNeeded);
+
+          return {
+            ...s,
+            results: updatedResults,
+            hasPendingManualReview: stillHasPendingManual,
+          };
+        }
+        return s;
+      })
+    );
+
+    setReviewAnswersModalOpen(false);
+    showToast(
+      `Evaluation finalized for ${reviewCandidate.candidateId}! Final Score: ${finalMarks} (${finalResult}).`
+    );
+  };
+
+  const handleMoveCandidateToShortlisted = (candidateId) => {
+    showToast(`Candidate ${candidateId} successfully moved to "Shortlisted" stage!`);
+  };
+
+  const handleOpenViewDetails = (scrn) => {
+    setTargetScreening(scrn);
+    setActiveActionsRowId(null);
+    setViewDetailsModalOpen(true);
+  };
+
+  const handleOpenViewHistory = (scrn) => {
+    setTargetScreening(scrn);
+    setActiveActionsRowId(null);
+    setViewHistoryModalOpen(true);
+  };
+
+  // Status Badge Class Helper
+  const getStatusBadgeClass = (status) => {
     switch (status?.toLowerCase()) {
-      case 'completed':
-        return 'completed';
-      case 'pending':
-        return 'pending';
-      case 'not sent':
-        return 'not-sent';
+      case 'active':
+        return 'status-active';
+      case 'ready':
+        return 'status-ready';
+      case 'closed':
+        return 'status-closed';
+      case 'draft':
       default:
-        return 'expired';
+        return 'status-draft';
     }
   };
+
+  const isAnySubPageOpen =
+    addScreeningModalOpen ||
+    (editScreeningModalOpen && targetScreening) ||
+    (addQuestionsModalOpen && targetScreening) ||
+    (sendScreeningModalOpen && targetScreening) ||
+    (candidateResultsModalOpen && targetScreening) ||
+    (reviewAnswersModalOpen && reviewCandidate && targetScreening) ||
+    (viewDetailsModalOpen && targetScreening) ||
+    (viewHistoryModalOpen && targetScreening);
 
   return (
-    <div className="screening-page-container">
-      {/* =========================================================================
-          MODULE HEADER
-          ========================================================================= */}
-      <div className="screening-page-header">
-        {currentView === 'list' ? (
-          <>
-            <div>
-              <h1 className="screening-page-title">Screening</h1>
-            </div>
-            <button
-              type="button"
-              className="btn-add-screening"
-              onClick={handleOpenAdd}
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              <span>Add Screening Assessment</span>
-            </button>
-          </>
-        ) : (
-          <>
-            <div>
-              <h1 className="screening-page-title">
-                {currentView === 'add'
-                  ? 'Create Screening Assessment'
-                  : 'Review Candidate Screening Response'}
-              </h1>
-            </div>
-
-            <button
-              type="button"
-              className="btn-back-to-list"
-              onClick={handleBackToList}
-              title="Back to List"
-            >
-              <ArrowLeft size={16} strokeWidth={2.5} />
-              <span>Back to List</span>
-            </button>
-          </>
-        )}
-      </div>
-
+    <div className="screening-page-container animate-fade-in">
       {/* Toast Alert */}
       {toastMessage && (
         <div className="screening-toast-alert">
@@ -395,504 +797,1372 @@ export const ScreeningModule = () => {
         </div>
       )}
 
+      {!isAnySubPageOpen && (
+        <>
+          {/* =========================================================================
+              MODULE HEADER: Title, Subtitle, and Top-Right Action Buttons
+              ========================================================================= */}
+          <div className="screening-page-header">
+            <div className="screening-header-left">
+              <div>
+                <h1 className="screening-page-title">Screening</h1>
+              </div>
+        </div>
+
+        {/* Top-Right Action Buttons: Add Screening & Add Questions */}
+        <div className="screening-header-actions">
+          <button
+            type="button"
+            className="btn-add-questions-top"
+            onClick={() => handleOpenAddQuestions()}
+          >
+            <FileQuestion size={16} />
+            <span>Add Questions</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-add-screening-top"
+            onClick={handleOpenAddScreening}
+          >
+            <Plus size={16} />
+            <span>Add Screening</span>
+          </button>
+        </div>
+      </div>
+
       {/* =========================================================================
-          MAIN CARD CONTAINER
+          TOP KPI METRIC CARDS
           ========================================================================= */}
-      <div className="screening-main-card">
-        {/* =======================================================================
-            VIEW 1: DIRECTORY TABLE (Shown when currentView === 'list')
-            ======================================================================= */}
-        {currentView === 'list' && (
-          <>
-            {/* Toolbar: Search (Left) + Filters (Right) */}
-            <div className="screening-toolbar">
-              <div className="screening-search-box">
-                <Search size={16} style={{ color: 'var(--text-muted)' }} />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="screening-search-input"
-                />
-              </div>
+      <div className="screening-kpi-quad-grid">
+        <div className="screening-kpi-card">
+          <div className="kpi-icon-wrap blue">
+            <BookOpen size={18} />
+          </div>
+          <div className="kpi-info">
+            <span className="kpi-num">
+              {screenings.filter((s) => s.status === 'Active' || s.status === 'Ready').length}
+            </span>
+            <span className="kpi-title">Active & Ready Screenings</span>
+          </div>
+        </div>
 
-              <div className="screening-toolbar-right">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="screening-filter-select"
-                >
-                  <option value="All">All Status</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Not Sent">Not Sent</option>
-                  <option value="Expired">Expired</option>
-                </select>
+        <div className="screening-kpi-card">
+          <div className="kpi-icon-wrap purple">
+            <FileQuestion size={18} />
+          </div>
+          <div className="kpi-info">
+            <span className="kpi-num">
+              {screenings.reduce((acc, s) => acc + s.totalQuestions, 0)}
+            </span>
+            <span className="kpi-title">Total Questions in Bank</span>
+          </div>
+        </div>
 
-                <select
-                  value={resultFilter}
-                  onChange={(e) => {
-                    setResultFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="screening-filter-select"
-                >
-                  <option value="All">All Results</option>
-                  <option value="Qualified">Qualified</option>
-                  <option value="Review Required">Review Required</option>
-                  <option value="Not Qualified">Not Qualified</option>
-                </select>
-              </div>
-            </div>
+        <div className="screening-kpi-card">
+          <div className="kpi-icon-wrap green">
+            <Users size={18} />
+          </div>
+          <div className="kpi-info">
+            <span className="kpi-num">
+              {screenings.reduce((acc, s) => acc + s.candidatesAssigned, 0)}
+            </span>
+            <span className="kpi-title">Candidates Assigned</span>
+          </div>
+        </div>
 
-            {/* Modern Data Table */}
-            <div className="screening-table-wrapper">
-              <table className="screening-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '55px', textAlign: 'center' }}>S.NO</th>
-                    <th>Screening Name</th>
-                    <th>Related Job</th>
-                    <th>Screening Questions</th>
-                    <th>Question Type</th>
-                    <th>Mandatory</th>
-                    <th>Score & Pass Criteria</th>
-                    <th>Candidate Answer</th>
-                    <th>Screening Status</th>
-                    <th>Result</th>
-                    <th>Reviewed By</th>
-                    <th>Review Date</th>
-                    <th style={{ textAlign: 'center' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredScreenings.length === 0 ? (
-                    <tr>
-                      <td colSpan={13} className="screening-empty-state">
-                        <div className="screening-empty-icon">📝</div>
-                        <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>
-                          No screening assessments found
-                        </p>
-                        <p style={{ fontSize: '0.8rem', margin: 0 }}>
-                          Adjust filters or create a new screening question set
-                        </p>
+        <div className="screening-kpi-card">
+          <div className="kpi-icon-wrap amber">
+            <Clock size={18} />
+          </div>
+          <div className="kpi-info">
+            <span className="kpi-num">
+              {screenings.reduce((acc, s) => acc + s.pendingCount, 0)}
+            </span>
+            <span className="kpi-title">Pending Submissions</span>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          CENTER TOOLBAR
+          ========================================================================= */}
+      <div className="screening-toolbar-card">
+        <div className="toolbar-left-group">
+          <div className="screening-search-box">
+            <Search size={15} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="screening-search-input"
+            />
+          </div>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="screening-filter-select"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Ready">Ready</option>
+            <option value="Active">Active</option>
+            <option value="Draft">Draft</option>
+            <option value="Closed">Closed</option>
+          </select>
+
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="screening-filter-select"
+          >
+            <option value="All">All Departments</option>
+            <option value="Engineering & Technology">Engineering & Technology</option>
+            <option value="Design & UX">Design & UX</option>
+            <option value="Human Resources">Human Resources</option>
+            <option value="Business Development">Business Development</option>
+          </select>
+        </div>
+
+        
+      </div>
+
+      {/* =========================================================================
+          SCREENING LIST TABLE
+          ========================================================================= */}
+      <div className="screening-table-card">
+        <div className="table-responsive-wrapper">
+          <table className="screening-data-table">
+            <thead>
+              <tr>
+                <th style={{ width: '50px', textAlign: 'center' }}>S.No</th>
+                <th>Screening ID</th>
+                <th>Screening Name</th>
+                <th>Job Title</th>
+                <th style={{ textAlign: 'center' }}>Total Questions</th>
+                <th style={{ textAlign: 'center' }}>Total Marks</th>
+                <th style={{ textAlign: 'center' }}>Pass Mark</th>
+                <th style={{ textAlign: 'center' }}>Candidates Assigned</th>
+                <th style={{ textAlign: 'center' }}>Completed Count</th>
+                <th style={{ textAlign: 'center' }}>Pending Count</th>
+                <th style={{ textAlign: 'center' }}>Status</th>
+                <th style={{ textAlign: 'center' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredScreenings.length === 0 ? (
+                <tr>
+                  <td colSpan="12" className="table-empty-cell">
+                    No screenings found matching your filter criteria.
+                  </td>
+                </tr>
+              ) : (
+                filteredScreenings.map((scrn, idx) => {
+                  const canSend = scrn.status !== 'Draft' && scrn.totalQuestions > 0;
+                  return (
+                    <tr key={scrn.id}>
+                      {/* S.No */}
+                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+
+                      {/* Screening ID */}
+                      <td>
+                        <span className="screening-id-code">{scrn.id}</span>
+                      </td>
+
+                      {/* Screening Name */}
+                      <td>
+                        <div className="screening-name-cell">
+                          <span className="scrn-name-main">{scrn.name}</span>
+                          <span className="scrn-duration-sub">
+                            <Clock size={11} /> {scrn.duration} • Ver {scrn.version}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Job Title */}
+                      <td>
+                        <div className="job-title-cell">
+                          <span className="job-title-text">{scrn.jobTitle}</span>
+                          <span className="job-dept-sub">{scrn.department}</span>
+                        </div>
+                      </td>
+
+                      {/* Total Questions */}
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`count-pill-badge ${scrn.totalQuestions === 0 ? 'empty' : 'blue'}`}>
+                          <FileQuestion size={12} /> {scrn.totalQuestions}
+                        </span>
+                      </td>
+
+                      {/* Total Marks */}
+                      <td style={{ textAlign: 'center', fontWeight: 700 }}>
+                        {scrn.totalMarks}
+                      </td>
+
+                      {/* Pass Mark */}
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="pass-mark-pill">{scrn.passMark}%</span>
+                      </td>
+
+                      {/* Candidates Assigned */}
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="count-pill-badge neutral">
+                          <Users size={12} /> {scrn.candidatesAssigned}
+                        </span>
+                      </td>
+
+                      {/* Completed Count */}
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="count-pill-badge green">
+                          <CheckCircle2 size={12} /> {scrn.completedCount}
+                        </span>
+                      </td>
+
+                      {/* Pending Count */}
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="count-pill-badge amber">
+                          <Clock size={12} /> {scrn.pendingCount}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`status-badge-chip ${getStatusBadgeClass(scrn.status)}`}>
+                          {scrn.status}
+                        </span>
+                      </td>
+
+                      {/* Row Actions: Send Screening, Candidate Results, Review Answers + Dropdown */}
+                      <td style={{ textAlign: 'center' }}>
+                        <div className="screening-actions-flex">
+                          {/* 1. Quick Send Screening Action */}
+                          <button
+                            type="button"
+                            className={`btn-row-action send ${!canSend ? 'disabled' : ''}`}
+                            onClick={() => handleOpenSendScreening(scrn)}
+                            disabled={!canSend}
+                            title={
+                              !canSend
+                                ? 'Questions must be added and status Ready/Active to send screening'
+                                : 'Send screening to eligible candidates'
+                            }
+                          >
+                            <Send size={14} />
+                          </button>
+
+                          {/* 2. Candidate Results Action */}
+                          <button
+                            type="button"
+                            className="btn-row-action results"
+                            onClick={() => handleOpenCandidateResults(scrn)}
+                            title="Candidate Results: View Candidate-wise marks and results"
+                          >
+                            <Award size={14} />
+                          </button>
+
+                          {/* 3. Review Answers Action (Highlights if manual review pending) */}
+                          <button
+                            type="button"
+                            className={`btn-row-action review ${
+                              scrn.hasPendingManualReview ? 'pending-alert' : ''
+                            }`}
+                            onClick={() => handleOpenReviewAnswers(scrn)}
+                            title={
+                              scrn.hasPendingManualReview
+                                ? 'Manual Evaluation Pending: Review Descriptive Answers'
+                                : 'Review Descriptive Answers'
+                            }
+                          >
+                            <BookOpen size={14} />
+                            {scrn.hasPendingManualReview && (
+                              <span className="mini-alert-dot" />
+                            )}
+                          </button>
+
+                          {/* 4. More Actions Dropdown Menu */}
+                          <div className="actions-dropdown-container">
+                            <button
+                              type="button"
+                              className="btn-dropdown-trigger"
+                              onClick={() =>
+                                setActiveActionsRowId(
+                                  activeActionsRowId === scrn.id ? null : scrn.id
+                                )
+                              }
+                              title="More Management Operations"
+                            >
+                              •••
+                            </button>
+
+                            {activeActionsRowId === scrn.id && (
+                              <div
+                                className="actions-dropdown-menu animate-fade-in"
+                                onMouseLeave={() => setActiveActionsRowId(null)}
+                              >
+                                <button
+                                  type="button"
+                                  className="dropdown-menu-item"
+                                  onClick={() => handleOpenViewDetails(scrn)}
+                                >
+                                  <Eye size={13} />
+                                  <span>View Details</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="dropdown-menu-item"
+                                  onClick={() => handleOpenEditScreening(scrn)}
+                                >
+                                  <Edit2 size={13} />
+                                  <span>Edit Settings</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="dropdown-menu-item"
+                                  onClick={() => handleOpenAddQuestions(scrn)}
+                                >
+                                  <FileQuestion size={13} />
+                                  <span>Manage Questions</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="dropdown-menu-item"
+                                  onClick={() => handleOpenViewHistory(scrn)}
+                                >
+                                  <History size={13} />
+                                  <span>View History</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </td>
                     </tr>
-                  ) : (
-                    paginatedScreenings.map((item, index) => {
-                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
-                      return (
-                        <tr key={item.id}>
-                          {/* S.NO */}
-                          <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
-                            {serialNumber}
-                          </td>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                        {/* 1. Screening Name */}
-                        <td>
-                          <div className="scrn-name-cell">
-                            <span className="scrn-name-text">{item.screeningName}</span>
-                          </div>
-                        </td>
+        {/* Table Footer Bar */}
+        <div className="table-footer-bar">
+          <span className="table-count-info">
+            Total <strong>{filteredScreenings.length}</strong> screening assessments tracked
+          </span>
+          
+        </div>
+      </div>
+        </>
+      )}
 
-                        {/* 2. Job */}
-                        <td>
-                          <div className="scrn-job-cell">
-                            <span className="scrn-job-title">{item.job.split(' (')[0]}</span>
-                            <span className="scrn-job-id">
-                              {item.job.includes('(') ? item.job.split('(')[1].replace(')', '') : item.job}
-                            </span>
-                          </div>
-                        </td>
+      {/* =========================================================================
+          PAGE VIEW 1: ADD SCREENING SUBPAGE VIEW
+          ========================================================================= */}
+      {addScreeningModalOpen && (
+        <div className="screening-subpage-view animate-fade-in">
+          <div className="screening-subpage-nav">
+            <button
+              type="button"
+              className="btn-back-link"
+              onClick={() => setAddScreeningModalOpen(false)}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Screening Assessments</span>
+            </button>
+          </div>
 
-                        {/* 3. Questions */}
-                        <td>
-                          <div className="scrn-quest-cell">
-                            <span className="scrn-quest-text" title={item.questions}>
-                              {item.questions}
-                            </span>
-                          </div>
-                        </td>
-
-                        {/* 4. Question Type */}
-                        <td>
-                          <span className="type-pill">{item.questionType}</span>
-                        </td>
-
-                        {/* 5. Mandatory */}
-                        <td>
-                          <span className={item.mandatory === 'Yes' ? 'mandatory-badge' : 'type-pill'}>
-                            {item.mandatory === 'Yes' ? 'Required' : 'Optional'}
-                          </span>
-                        </td>
-
-                        {/* 6 & 7. Score & Pass Criteria */}
-                        <td>
-                          <div className="scrn-score-cell">
-                            <span className="scrn-score-text">{item.score} / 100</span>
-                            <span className="scrn-criteria-sub">{item.passCriteria}</span>
-                          </div>
-                        </td>
-
-                        {/* 8. Candidate Answer */}
-                        <td>
-                          <span className="scrn-answer-text" title={item.candidateAnswer}>
-                            {item.candidateAnswer || '—'}
-                          </span>
-                        </td>
-
-                        {/* 9. Screening Status */}
-                        <td>
-                          <span className={`scrn-status-pill ${getStatusClass(item.screeningStatus)}`}>
-                            <span className="status-dot"></span>
-                            {item.screeningStatus}
-                          </span>
-                        </td>
-
-                        {/* 10. Result */}
-                        <td>
-                          <span className={`scrn-result-pill ${getResultClass(item.result)}`}>
-                            {item.result === 'Qualified' && <CheckCircle size={13} />}
-                            {item.result === 'Review Required' && <AlertCircle size={13} />}
-                            {item.result === 'Not Qualified' && <XCircle size={13} />}
-                            {item.result}
-                          </span>
-                        </td>
-
-                        {/* 11. Reviewed By */}
-                        <td style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '13px' }}>
-                          {item.reviewedBy}
-                        </td>
-
-                        {/* 12. Review Date */}
-                        <td style={{ fontSize: '13px', color: 'var(--text-main)' }}>
-                          {item.reviewDate || '—'}
-                        </td>
-
-                        {/* Actions */}
-                        <td>
-                          <div className="scrn-row-actions" style={{ justifyContent: 'center' }}>
-                            <button
-                              type="button"
-                              className="action-icon-btn edit"
-                              title="Review & Edit Assessment"
-                              onClick={() => handleOpenEdit(item)}
-                            >
-                              <Edit2 size={15} />
-                            </button>
-
-                            <button
-                              type="button"
-                              className="action-icon-btn delete"
-                              title="Delete Screening"
-                              onClick={() => handleDeleteScreening(item)}
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination Footer */}
-            <div className="screening-table-footer">
+          <div className="screening-subpage-header-card">
+            <div className="modal-title-wrap">
+              <div className="modal-icon-ring blue">
+                <Plus size={20} />
+              </div>
               <div>
-                Showing {filteredScreenings.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
-                {Math.min(currentPage * itemsPerPage, filteredScreenings.length)} of{' '}
-                {filteredScreenings.length} Entries
-              </div>
-
-              <div className="screening-pagination-controls">
-                <button
-                  type="button"
-                  className="btn-screening-page"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    className={`btn-screening-page ${currentPage === page ? 'active' : ''}`}
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className="btn-screening-page"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  <ChevronRight size={14} />
-                </button>
+                <h2 className="screening-modal-title">Add Screening Assessment</h2>
+                <p className="screening-modal-subtitle">
+                  Configure question bank, scoring criteria, passing marks, and time limits
+                </p>
               </div>
             </div>
-          </>
-        )}
+          </div>
 
-        {/* =======================================================================
-            VIEW 2: IN-PAGE ADD / EDIT FORM (NO MODALS / POPUPS!)
-            Strictly and only the 12 requested fields
-            ======================================================================= */}
-        {currentView !== 'list' && (
-          <form
-            id="inpage-screening-form"
-            onSubmit={handleSaveScreening}
-            className="inpage-screening-form"
-            noValidate
-          >
-            {/* SECTION 1: SCREENING SETUP & JOB ASSOCIATION */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                1. SCREENING SETUP & JOB ASSOCIATION
-              </div>
-
-              <div className="inpage-grid-3col">
-                {/* 1. Screening Name */}
-                <div className="form-field-group">
-                  <label>Screening Name *</label>
-                  <input
-                    type="text"
-                    value={formData.screeningName}
-                    onChange={(e) => {
-                      setFormData({ ...formData, screeningName: e.target.value });
-                      if (errors.screeningName) setErrors((prev) => ({ ...prev, screeningName: null }));
-                    }}
-                    placeholder="e.g. Frontend Core Competency & React Architecture"
-                    className={`form-control-input ${errors.screeningName ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.screeningName} />
-                </div>
-
-                {/* 2. Job */}
-                <div className="form-field-group">
-                  <label>Related Job Opening *</label>
+          <div className="screening-subpage-body-card">
+            <form onSubmit={handleSaveNewScreening}>
+              <div className="screening-modal-body">
+                {/* Job Selection (Important Logic Rule 1: First select Job) */}
+                <div className="modal-form-section">
+                  <label className="modal-section-label">
+                    Select Related Published Job <span className="req-star">*</span>
+                  </label>
                   <select
-                    value={formData.job}
-                    onChange={(e) => {
-                      setFormData({ ...formData, job: e.target.value });
-                      if (errors.job) setErrors((prev) => ({ ...prev, job: null }));
-                    }}
-                    className={`form-control-select ${errors.job ? 'has-error' : ''}`}
+                    value={screeningFormData.jobId}
+                    onChange={(e) =>
+                      setScreeningFormData({ ...screeningFormData, jobId: e.target.value })
+                    }
+                    className="modal-select-input"
+                    required
                   >
-                    <option value="Senior Frontend Engineer (JOB-2026-001)">Senior Frontend Engineer (JOB-2026-001)</option>
-                    <option value="Lead Product Designer (JOB-2026-002)">Lead Product Designer (JOB-2026-002)</option>
-                    <option value="Senior Technical Recruiter (JOB-2026-003)">Senior Technical Recruiter (JOB-2026-003)</option>
-                    <option value="DevOps & Cloud Architect (JOB-2026-004)">DevOps & Cloud Architect (JOB-2026-004)</option>
-                    <option value="Enterprise Account Executive (JOB-2026-005)">Enterprise Account Executive (JOB-2026-005)</option>
-                    <option value="Finance & Payroll Specialist (JOB-2026-006)">Finance & Payroll Specialist (JOB-2026-006)</option>
+                    {publishedJobs.map((j) => (
+                      <option key={j.id} value={j.id}>
+                        {j.title} ({j.department})
+                      </option>
+                    ))}
                   </select>
-                  <FieldError error={errors.job} />
+                  <span className="modal-sub-hint">
+                    Questions and candidates will be strictly mapped to this job role.
+                  </span>
                 </div>
 
-                {/* 7. Pass Criteria */}
-                <div className="form-field-group">
-                  <label>Pass Criteria (Minimum Score & Rules) *</label>
+                {/* Screening Name */}
+                <div className="modal-form-section">
+                  <label className="modal-section-label">
+                    Screening Assessment Name <span className="req-star">*</span>
+                  </label>
                   <input
                     type="text"
-                    value={formData.passCriteria}
-                    onChange={(e) => setFormData({ ...formData, passCriteria: e.target.value })}
-                    placeholder="e.g. Min Score: 75% & All Mandatory Questions Validated"
-                    className="form-control-input"
+                    value={screeningFormData.name}
+                    onChange={(e) =>
+                      setScreeningFormData({ ...screeningFormData, name: e.target.value })
+                    }
+                    placeholder="e.g. Frontend Architecture & React 19 Coding Test"
+                    className="modal-text-input"
+                    required
                   />
                 </div>
+
+                {/* Duration & Marks Grid */}
+                <div className="modal-grid-two-cols">
+                  <div className="modal-form-section">
+                    <label className="modal-section-label">Duration</label>
+                    <select
+                      value={screeningFormData.duration}
+                      onChange={(e) =>
+                        setScreeningFormData({
+                          ...screeningFormData,
+                          duration: e.target.value,
+                        })
+                      }
+                      className="modal-select-input"
+                    >
+                      <option value="30 Mins">30 Mins</option>
+                      <option value="45 Mins">45 Mins (Recommended)</option>
+                      <option value="60 Mins">60 Mins</option>
+                      <option value="90 Mins">90 Mins</option>
+                    </select>
+                  </div>
+
+                  <div className="modal-form-section">
+                    <label className="modal-section-label">Total Marks</label>
+                    <input
+                      type="number"
+                      value={screeningFormData.totalMarks}
+                      onChange={(e) =>
+                        setScreeningFormData({
+                          ...screeningFormData,
+                          totalMarks: e.target.value,
+                        })
+                      }
+                      className="modal-text-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-grid-two-cols">
+                  <div className="modal-form-section">
+                    <label className="modal-section-label">Qualifying Pass Mark (%)</label>
+                    <input
+                      type="number"
+                      value={screeningFormData.passMark}
+                      onChange={(e) =>
+                        setScreeningFormData({
+                          ...screeningFormData,
+                          passMark: e.target.value,
+                        })
+                      }
+                      className="modal-text-input"
+                    />
+                  </div>
+
+                  <div className="modal-form-section">
+                    <label className="modal-section-label">Initial Status</label>
+                    <div className="status-preview-box">
+                      <span className="status-badge-chip status-draft">Draft</span>
+                      <span className="hint-text">
+                        Becomes "Ready" once questions are added.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="screening-subpage-footer-card">
+                <button
+                  type="button"
+                  className="btn-modal-cancel"
+                  onClick={() => setAddScreeningModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-modal-submit">
+                  <Plus size={15} />
+                  <span>Create Screening</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          PAGE VIEW 2: EDIT SCREENING SUBPAGE VIEW
+          ========================================================================= */}
+      {editScreeningModalOpen && targetScreening && (
+        <div className="screening-subpage-view animate-fade-in">
+          <div className="screening-subpage-nav">
+            <button
+              type="button"
+              className="btn-back-link"
+              onClick={() => setEditScreeningModalOpen(false)}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Screening Assessments</span>
+            </button>
+          </div>
+
+          <div className="screening-subpage-header-card">
+            <div className="modal-title-wrap">
+              <div className="modal-icon-ring blue">
+                <Edit2 size={20} />
+              </div>
+              <div>
+                <h2 className="screening-modal-title">Edit Screening Settings</h2>
+                <p className="screening-modal-subtitle">
+                  {targetScreening.name} ({targetScreening.id})
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* SECTION 2: QUESTION SPECIFICATION & RULES */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                2. QUESTION SPECIFICATION & RULES
+          <div className="screening-subpage-body-card">
+            <form onSubmit={handleSaveEditScreening}>
+              <div className="screening-modal-body">
+                {/* Important Logic: Candidates already attempt pannita screening questions restricted editing warning */}
+                {targetScreening.candidatesAssigned > 0 && (
+                  <div className="restricted-editing-callout">
+                    <ShieldAlert size={18} className="alert-icon" />
+                    <div>
+                      <strong>Restricted Editing & Result Accuracy Protection:</strong>
+                      <p>
+                        {targetScreening.candidatesAssigned} candidate(s) have already attempted
+                        or been assigned this screening. Direct question modification is restricted
+                        to preserve result accuracy. General settings and pass thresholds can be
+                        updated.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="modal-form-section">
+                  <label className="modal-section-label">Screening Name</label>
+                  <input
+                    type="text"
+                    value={screeningFormData.name}
+                    onChange={(e) =>
+                      setScreeningFormData({ ...screeningFormData, name: e.target.value })
+                    }
+                    className="modal-text-input"
+                    required
+                  />
+                </div>
+
+                <div className="modal-grid-two-cols">
+                  <div className="modal-form-section">
+                    <label className="modal-section-label">Duration</label>
+                    <select
+                      value={screeningFormData.duration}
+                      onChange={(e) =>
+                        setScreeningFormData({
+                          ...screeningFormData,
+                          duration: e.target.value,
+                        })
+                      }
+                      className="modal-select-input"
+                    >
+                      <option value="30 Mins">30 Mins</option>
+                      <option value="45 Mins">45 Mins</option>
+                      <option value="60 Mins">60 Mins</option>
+                      <option value="90 Mins">90 Mins</option>
+                    </select>
+                  </div>
+
+                  <div className="modal-form-section">
+                    <label className="modal-section-label">Pass Mark (%)</label>
+                    <input
+                      type="number"
+                      value={screeningFormData.passMark}
+                      onChange={(e) =>
+                        setScreeningFormData({
+                          ...screeningFormData,
+                          passMark: e.target.value,
+                        })
+                      }
+                      className="modal-text-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-form-section">
+                  <label className="modal-section-label">Status</label>
+                  <select
+                    value={screeningFormData.status}
+                    onChange={(e) =>
+                      setScreeningFormData({
+                        ...screeningFormData,
+                        status: e.target.value,
+                      })
+                    }
+                    className="modal-select-input"
+                  >
+                    <option value="Draft">Draft</option>
+                    <option value="Ready">Ready</option>
+                    <option value="Active">Active</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
               </div>
 
-              {/* 3. Questions */}
-              <div className="form-field-group">
-                <label>Screening Questions *</label>
-                <textarea
-                  value={formData.questions}
+              <div className="screening-subpage-footer-card">
+                <button
+                  type="button"
+                  className="btn-modal-cancel"
+                  onClick={() => setEditScreeningModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-modal-submit">
+                  <Check size={15} />
+                  <span>Update Settings</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          PAGE VIEW 3: ADD / MANAGE QUESTIONS SUBPAGE VIEW
+          ========================================================================= */}
+      {addQuestionsModalOpen && targetScreening && (
+        <div className="screening-subpage-view animate-fade-in">
+          <div className="screening-subpage-nav">
+            <button
+              type="button"
+              className="btn-back-link"
+              onClick={() => setAddQuestionsModalOpen(false)}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Screening Assessments</span>
+            </button>
+          </div>
+
+          <div className="screening-subpage-header-card">
+            <div className="modal-title-wrap">
+              <div className="modal-icon-ring purple">
+                <FileQuestion size={20} />
+              </div>
+              <div>
+                <h2 className="screening-modal-title">Manage Questions</h2>
+                <p className="screening-modal-subtitle">
+                  Screening: {targetScreening.name} ({targetScreening.id})
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="screening-subpage-body-card">
+            <div className="screening-modal-body">
+              {/* Question Mapping Logic Rule 2: Screening select pannama questions create panna allow pannina, later mapping compulsory */}
+              <div className="modal-form-section">
+                <label className="modal-section-label">
+                  Mapped Screening Assessment <span className="req-star">*</span>
+                </label>
+                <select
+                  value={questionFormData.targetScreeningId}
                   onChange={(e) => {
-                    setFormData({ ...formData, questions: e.target.value });
-                    if (errors.questions) setErrors((prev) => ({ ...prev, questions: null }));
+                    const chosen = screenings.find((s) => s.id === e.target.value);
+                    setTargetScreening(chosen);
+                    setQuestionFormData({
+                      ...questionFormData,
+                      targetScreeningId: e.target.value,
+                    });
                   }}
-                  placeholder="Enter the technical or screening question asked to candidates..."
-                  className={`form-control-textarea ${errors.questions ? 'has-error' : ''}`}
-                  rows={3}
-                />
-                <FieldError error={errors.questions} />
+                  className="modal-select-input"
+                >
+                  {screenings.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.id}) • {s.jobTitle}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="inpage-grid-2col">
-                {/* 4. Question Type */}
-                <div className="form-field-group">
-                  <label>Question Type *</label>
-                  <select
-                    value={formData.questionType}
-                    onChange={(e) => setFormData({ ...formData, questionType: e.target.value })}
-                    className="form-control-select"
-                  >
-                    <option value="Text">Text (Detailed Response)</option>
-                    <option value="Yes/No">Yes/No (Boolean Decision)</option>
-                    <option value="MCQ">MCQ (Multiple Choice)</option>
-                    <option value="Number">Number (Numerical / Years Exp)</option>
-                  </select>
+              {/* Add New Question Form */}
+              <form onSubmit={handleSaveNewQuestion} className="new-question-box">
+                <h4 className="box-title">
+                  <Plus size={14} /> Add New Assessment Question
+                </h4>
+
+                <div className="modal-form-section">
+                  <label className="modal-section-label">Question Text</label>
+                  <textarea
+                    value={questionFormData.text}
+                    onChange={(e) =>
+                      setQuestionFormData({ ...questionFormData, text: e.target.value })
+                    }
+                    placeholder="Enter assessment question, code prompt, or scenario..."
+                    rows="2"
+                    className="modal-textarea-input"
+                    required
+                  />
                 </div>
 
-                {/* 5. Mandatory */}
-                <div className="form-field-group">
-                  <label>Mandatory Question *</label>
-                  <select
-                    value={formData.mandatory}
-                    onChange={(e) => setFormData({ ...formData, mandatory: e.target.value })}
-                    className="form-control-select"
-                  >
-                    <option value="Yes">Yes (Required for Qualification)</option>
-                    <option value="No">No (Optional Question)</option>
-                  </select>
+                <div className="modal-grid-three-cols">
+                  <div className="modal-form-section">
+                    <label className="modal-section-label">Question Type</label>
+                    <select
+                      value={questionFormData.type}
+                      onChange={(e) =>
+                        setQuestionFormData({ ...questionFormData, type: e.target.value })
+                      }
+                      className="modal-select-input"
+                    >
+                      <option value="MCQ">Multiple Choice (MCQ)</option>
+                      <option value="Descriptive">Descriptive / Long Text</option>
+                      <option value="Code Assessment">Code Assessment</option>
+                      <option value="Yes/No">Yes / No</option>
+                      <option value="Numeric">Numeric</option>
+                    </select>
+                  </div>
+
+                  <div className="modal-form-section">
+                    <label className="modal-section-label">Marks</label>
+                    <input
+                      type="number"
+                      value={questionFormData.marks}
+                      onChange={(e) =>
+                        setQuestionFormData({
+                          ...questionFormData,
+                          marks: e.target.value,
+                        })
+                      }
+                      className="modal-text-input"
+                      required
+                    />
+                  </div>
+
+                  <div className="modal-form-section">
+                    <label className="modal-section-label">Mandatory</label>
+                    <label className="checkbox-toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={questionFormData.mandatory}
+                        onChange={(e) =>
+                          setQuestionFormData({
+                            ...questionFormData,
+                            mandatory: e.target.checked,
+                          })
+                        }
+                      />
+                      <span>Required Question</span>
+                    </label>
+                  </div>
                 </div>
+
+                <div className="add-q-btn-row">
+                  <button type="submit" className="btn-add-q-inline">
+                    <Plus size={14} /> Add to Assessment
+                  </button>
+                </div>
+              </form>
+
+              {/* Current Questions List for this Screening */}
+              <div className="current-questions-list-section">
+                <h4 className="section-title">
+                  Mapped Questions ({targetScreening.questions.length})
+                </h4>
+
+                {targetScreening.questions.length === 0 ? (
+                  <div className="empty-questions-notice">
+                    <AlertCircle size={18} />
+                    <span>
+                      No questions mapped yet. Assessment is currently in <strong>Draft</strong>. Add
+                      questions above to make it <strong>Ready</strong> for sending.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="questions-card-list">
+                    {targetScreening.questions.map((q, qIndex) => (
+                      <div key={q.id} className="question-list-card">
+                        <div className="q-left">
+                          <span className="q-badge-num">Q{qIndex + 1}</span>
+                          <div className="q-text-wrap">
+                            <span className="q-text">{q.text}</span>
+                            <div className="q-tags-row">
+                              <span className="q-tag type">{q.type}</span>
+                              <span className="q-tag marks">{q.marks} Marks</span>
+                              {q.mandatory && (
+                                <span className="q-tag mandatory">Mandatory</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="btn-delete-q"
+                          onClick={() => handleDeleteQuestion(targetScreening.id, q.id)}
+                          title="Remove question"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* SECTION 3: CANDIDATE SUBMISSION & SCORING */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                3. CANDIDATE SUBMISSION & SCORING
-              </div>
-
-              {/* 8. Candidate Answer */}
-              <div className="form-field-group">
-                <label>Candidate Submitted Answer</label>
-                <textarea
-                  value={formData.candidateAnswer}
-                  onChange={(e) => setFormData({ ...formData, candidateAnswer: e.target.value })}
-                  placeholder="Candidate's submitted response or evaluation findings..."
-                  className="form-control-textarea"
-                  rows={3}
-                />
-              </div>
-
-              <div className="inpage-grid-3col">
-                {/* 6. Score */}
-                <div className="form-field-group">
-                  <label>Candidate Score (out of 100) *</label>
-                  <input
-                    type="text"
-                    value={formData.score}
-                    onChange={(e) => {
-                      const clean = sanitizeNumberInput(e.target.value).slice(0, 3);
-                      setFormData({ ...formData, score: clean });
-                      if (errors.score) setErrors((prev) => ({ ...prev, score: null }));
-                    }}
-                    placeholder="e.g. 85 (digits only)"
-                    className={`form-control-input ${errors.score ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.score} />
-                </div>
-
-                {/* 9. Screening Status */}
-                <div className="form-field-group">
-                  <label>Screening Status *</label>
-                  <select
-                    value={formData.screeningStatus}
-                    onChange={(e) => setFormData({ ...formData, screeningStatus: e.target.value })}
-                    className="form-control-select"
-                  >
-                    <option value="Completed">Completed</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Not Sent">Not Sent</option>
-                    <option value="Expired">Expired</option>
-                  </select>
-                </div>
-
-                {/* 10. Result */}
-                <div className="form-field-group">
-                  <label>Assessment Result *</label>
-                  <select
-                    value={formData.result}
-                    onChange={(e) => setFormData({ ...formData, result: e.target.value })}
-                    className="form-control-select"
-                  >
-                    <option value="Qualified">Qualified</option>
-                    <option value="Review Required">Review Required</option>
-                    <option value="Not Qualified">Not Qualified</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 4: REVIEW AUDIT & APPROVAL */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                4. REVIEW AUDIT & APPROVAL
-              </div>
-
-              <div className="inpage-grid-2col">
-                {/* 11. Reviewed By */}
-                <div className="form-field-group">
-                  <label>Reviewed By (Company User) *</label>
-                  <input
-                    type="text"
-                    value={formData.reviewedBy}
-                    onChange={(e) => {
-                      const clean = sanitizeNameInput(e.target.value);
-                      setFormData({ ...formData, reviewedBy: clean });
-                      if (errors.reviewedBy) setErrors((prev) => ({ ...prev, reviewedBy: null }));
-                    }}
-                    placeholder="e.g. Sundar Raman (letters only)"
-                    className={`form-control-input ${errors.reviewedBy ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.reviewedBy} />
-                </div>
-
-                {/* 12. Review Date */}
-                <div className="form-field-group">
-                  <label>Review Date & Timestamp</label>
-                  <input
-                    type="text"
-                    value={formData.reviewDate}
-                    onChange={(e) => setFormData({ ...formData, reviewDate: e.target.value })}
-                    placeholder="e.g. 12-Oct-2026 04:30 PM"
-                    className="form-control-input"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Form Footer */}
-            <div className="inpage-form-footer">
+            <div className="screening-subpage-footer-card">
               <button
                 type="button"
-                className="btn-cancel-action"
-                onClick={handleBackToList}
+                className="btn-modal-cancel"
+                onClick={() => setAddQuestionsModalOpen(false)}
+              >
+                Back to Screening Assessments
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          PAGE VIEW 4: SEND SCREENING SUBPAGE VIEW
+          ========================================================================= */}
+      {sendScreeningModalOpen && targetScreening && (
+        <div className="screening-subpage-view animate-fade-in">
+          <div className="screening-subpage-nav">
+            <button
+              type="button"
+              className="btn-back-link"
+              onClick={() => setSendScreeningModalOpen(false)}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Screening Assessments</span>
+            </button>
+          </div>
+
+          <div className="screening-subpage-header-card">
+            <div className="modal-title-wrap">
+              <div className="modal-icon-ring blue">
+                <Send size={20} />
+              </div>
+              <div>
+                <h2 className="screening-modal-title">Send Screening Assessment</h2>
+                <p className="screening-modal-subtitle">
+                  {targetScreening.name} • {targetScreening.jobTitle}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="screening-subpage-body-card">
+            <div className="screening-modal-body">
+              {/* Target Candidate Summary */}
+              <div className="modal-recipients-summary-box">
+                <div className="recipients-stat">
+                  <span className="rec-lbl">Assessment Name:</span>
+                  <span className="rec-val">
+                    <strong>{targetScreening.name}</strong>
+                  </span>
+                </div>
+                <div className="recipients-stat">
+                  <span className="rec-lbl">Pass Threshold:</span>
+                  <span className="rec-val green">
+                    <Award size={14} />
+                    <strong>{targetScreening.passMark}% Required</strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* Select Eligible Candidates Pool */}
+              <div className="modal-form-section">
+                <label className="modal-section-label">
+                  Select Candidate Recipients ({selectedCandidateRecipients.filter((c) => c.selected).length} Selected)
+                </label>
+                <div className="candidates-selection-checklist">
+                  {selectedCandidateRecipients.map((cand) => (
+                    <label
+                      key={cand.id}
+                      className={`cand-select-card ${cand.selected ? 'active' : ''}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={cand.selected}
+                        onChange={() =>
+                          setSelectedCandidateRecipients((prev) =>
+                            prev.map((c) =>
+                              c.id === cand.id ? { ...c, selected: !c.selected } : c
+                            )
+                          )
+                        }
+                      />
+                      <div className="cand-info-wrap">
+                        <span className="cand-name">{cand.name}</span>
+                        <span className="cand-ref">{cand.id}</span>
+                      </div>
+                      <span className="cand-score-tag">Match: {cand.score}%</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Expiry & Instructions */}
+              <div className="modal-grid-two-cols">
+                <div className="modal-form-section">
+                  <label className="modal-section-label">Assessment Expiry (Days)</label>
+                  <select
+                    value={sendExpiryDays}
+                    onChange={(e) => setSendExpiryDays(e.target.value)}
+                    className="modal-select-input"
+                  >
+                    <option value="3">3 Days</option>
+                    <option value="5">5 Days (Recommended)</option>
+                    <option value="7">7 Days</option>
+                  </select>
+                </div>
+
+                <div className="modal-form-section">
+                  <label className="modal-section-label">Automated Delivery</label>
+                  <div className="delivery-channels-pill">
+                    <CheckCircle size={14} /> Email & Candidate Portal
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-form-section">
+                <label className="modal-section-label">Instructions / Message Note</label>
+                <textarea
+                  value={sendInstructions}
+                  onChange={(e) => setSendInstructions(e.target.value)}
+                  rows="2"
+                  className="modal-textarea-input"
+                />
+              </div>
+            </div>
+
+            <div className="screening-subpage-footer-card">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setSendScreeningModalOpen(false)}
               >
                 Cancel
               </button>
               <button
-                type="submit"
-                className="btn-save-header-action"
+                type="button"
+                className="btn-modal-submit"
+                onClick={handleExecuteSendScreening}
+                disabled={
+                  selectedCandidateRecipients.filter((c) => c.selected).length === 0
+                }
               >
-                <Save size={16} />
-                <span>{currentView === 'add' ? 'Save Assessment' : 'Update Evaluation'}</span>
+                <Send size={15} />
+                <span>
+                  Dispatch to {selectedCandidateRecipients.filter((c) => c.selected).length}{' '}
+                  Candidates
+                </span>
               </button>
             </div>
-          </form>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          PAGE VIEW 5: CANDIDATE RESULTS SUBPAGE VIEW
+          ========================================================================= */}
+      {candidateResultsModalOpen && targetScreening && !reviewAnswersModalOpen && (
+        <div className="screening-subpage-view animate-fade-in">
+          <div className="screening-subpage-nav">
+            <button
+              type="button"
+              className="btn-back-link"
+              onClick={() => setCandidateResultsModalOpen(false)}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Screening Assessments</span>
+            </button>
+          </div>
+
+          <div className="screening-subpage-header-card">
+            <div className="modal-title-wrap">
+              <div className="modal-icon-ring green">
+                <Award size={20} />
+              </div>
+              <div>
+                <h2 className="screening-modal-title">Candidate Results</h2>
+                <p className="screening-modal-subtitle">
+                  {targetScreening.name} • Pass Mark: {targetScreening.passMark}%
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="screening-subpage-body-card">
+            <div className="screening-modal-body">
+              {/* Important Logic: Screening send pannina piragu results page access pannalaam.
+                  Candidate submit pannala-na Pending; submit panninaalum manual evaluation pending-na Review Required */}
+              <div className="results-table-wrapper">
+                <table className="results-table">
+                  <thead>
+                    <tr>
+                      <th>Candidate ID</th>
+                      <th>Candidate Name</th>
+                      <th>Assigned Date</th>
+                      <th>Submitted Date</th>
+                      <th style={{ textAlign: 'center' }}>Marks Obtained</th>
+                      <th style={{ textAlign: 'center' }}>Result Status</th>
+                      <th style={{ textAlign: 'center' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {targetScreening.results.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="table-empty-cell">
+                          No candidate evaluation results available yet. Dispatched candidates will appear here once submitted.
+                        </td>
+                      </tr>
+                    ) : (
+                      targetScreening.results.map((r) => (
+                        <tr key={r.candidateId}>
+                          <td>
+                            <span className="cand-code">{r.candidateId}</span>
+                          </td>
+                          <td>
+                            <span className="cand-name">{r.candidateName}</span>
+                          </td>
+                          <td>
+                            <span className="date-sub">{r.assignedDate}</span>
+                          </td>
+                          <td>
+                            <span className="date-sub">
+                              {r.submittedDate || 'Pending Submission'}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="marks-badge">
+                              {r.submittedDate ? `${r.marksObtained} / ${targetScreening.totalMarks}` : '-'}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <span
+                              className={`result-chip ${
+                                r.result === 'Qualified'
+                                  ? 'qualified'
+                                  : r.result === 'Review Required'
+                                  ? 'review'
+                                  : r.result === 'Pending'
+                                  ? 'pending'
+                                  : 'failed'
+                              }`}
+                            >
+                              {r.result}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {r.manualReviewNeeded ? (
+                              <button
+                                type="button"
+                                className="btn-results-action evaluate"
+                                onClick={() => handleOpenReviewAnswers(targetScreening, r)}
+                              >
+                                Review Answers
+                              </button>
+                            ) : r.result === 'Qualified' ? (
+                              <button
+                                type="button"
+                                className="btn-results-action shortlist"
+                                onClick={() =>
+                                  handleMoveCandidateToShortlisted(r.candidateId)
+                                }
+                              >
+                                <UserCheck size={12} /> Shortlist
+                              </button>
+                            ) : (
+                              <span className="action-none-text">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="screening-subpage-footer-card">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setCandidateResultsModalOpen(false)}
+              >
+                Back to Screening Assessments
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          PAGE VIEW 6: REVIEW ANSWERS SUBPAGE VIEW
+          ========================================================================= */}
+      {reviewAnswersModalOpen && reviewCandidate && targetScreening && (
+        <div className="screening-subpage-view animate-fade-in">
+          <div className="screening-subpage-nav">
+            <button
+              type="button"
+              className="btn-back-link"
+              onClick={() => setReviewAnswersModalOpen(false)}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Candidate Results</span>
+            </button>
+          </div>
+
+          <div className="screening-subpage-header-card">
+            <div className="modal-title-wrap">
+              <div className="modal-icon-ring amber">
+                <BookOpen size={20} />
+              </div>
+              <div>
+                <h2 className="screening-modal-title">Review Descriptive Answers</h2>
+                <p className="screening-modal-subtitle">
+                  Candidate: {reviewCandidate.candidateName} ({reviewCandidate.candidateId})
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="screening-subpage-body-card">
+            <div className="screening-modal-body">
+              {/* Question & Answer Box */}
+              <div className="candidate-answer-card">
+                <div className="answer-card-header">
+                  <span className="q-label">Question:</span>
+                  <span className="q-title">
+                    Explain how React 19 Server Components handle data mutations and streaming boundaries.
+                  </span>
+                </div>
+
+                <div className="candidate-submission-content">
+                  <span className="sub-label">Candidate Answer:</span>
+                  <p className="sub-text">
+                    "{reviewCandidate.descriptiveAnswer ||
+                      'React 19 Server Components execute on the server and stream UI chunks via suspense boundaries. Mutations use Server Actions with revalidatePath to invalidate client cache seamlessly.'}"
+                  </p>
+                </div>
+              </div>
+
+              {/* Recruiter Evaluation Form */}
+              <div className="modal-form-section">
+                <label className="modal-section-label">
+                  Manual Marks Awarded (Max 25 Marks) <span className="req-star">*</span>
+                </label>
+                <input
+                  type="number"
+                  max="25"
+                  min="0"
+                  value={manualMarksAwarded}
+                  onChange={(e) => setManualMarksAwarded(e.target.value)}
+                  className="modal-text-input"
+                  required
+                />
+              </div>
+
+              <div className="modal-form-section">
+                <label className="modal-section-label">Evaluator Feedback & Notes</label>
+                <textarea
+                  value={evaluatorNotes}
+                  onChange={(e) => setEvaluatorNotes(e.target.value)}
+                  rows="3"
+                  className="modal-textarea-input"
+                />
+              </div>
+            </div>
+
+            <div className="screening-subpage-footer-card">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setReviewAnswersModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-modal-submit"
+                onClick={handleFinalizeManualEvaluation}
+              >
+                <CheckCircle size={15} />
+                <span>Finalize Score & Qualify</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          PAGE VIEW 7: VIEW DETAILS SUBPAGE VIEW
+          ========================================================================= */}
+      {viewDetailsModalOpen && targetScreening && (
+        <div className="screening-subpage-view animate-fade-in">
+          <div className="screening-subpage-nav">
+            <button
+              type="button"
+              className="btn-back-link"
+              onClick={() => setViewDetailsModalOpen(false)}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Screening Assessments</span>
+            </button>
+          </div>
+
+          <div className="screening-subpage-header-card">
+            <div className="modal-title-wrap">
+              <div className="modal-icon-ring blue">
+                <Eye size={20} />
+              </div>
+              <div>
+                <h2 className="screening-modal-title">Screening Details</h2>
+                <p className="screening-modal-subtitle">
+                  {targetScreening.name} ({targetScreening.id})
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="screening-subpage-body-card">
+            <div className="screening-modal-body">
+              <div className="details-info-grid">
+                <div className="details-info-item">
+                  <span className="lbl">Screening ID</span>
+                  <span className="val bold">{targetScreening.id}</span>
+                </div>
+                <div className="details-info-item">
+                  <span className="lbl">Status</span>
+                  <span className={`status-badge-chip ${getStatusBadgeClass(targetScreening.status)}`}>
+                    {targetScreening.status}
+                  </span>
+                </div>
+                <div className="details-info-item">
+                  <span className="lbl">Related Job</span>
+                  <span className="val">{targetScreening.jobTitle}</span>
+                </div>
+                <div className="details-info-item">
+                  <span className="lbl">Department</span>
+                  <span className="val">{targetScreening.department}</span>
+                </div>
+                <div className="details-info-item">
+                  <span className="lbl">Duration</span>
+                  <span className="val">{targetScreening.duration}</span>
+                </div>
+                <div className="details-info-item">
+                  <span className="lbl">Pass Criteria</span>
+                  <span className="val green">{targetScreening.passMark}% Passing Score</span>
+                </div>
+                <div className="details-info-item">
+                  <span className="lbl">Total Questions</span>
+                  <span className="val">{targetScreening.totalQuestions} Questions</span>
+                </div>
+                <div className="details-info-item">
+                  <span className="lbl">Total Marks</span>
+                  <span className="val">{targetScreening.totalMarks} Marks</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="screening-subpage-footer-card">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setViewDetailsModalOpen(false)}
+              >
+                Back to Screening Assessments
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          PAGE VIEW 8: VIEW HISTORY SUBPAGE VIEW
+          ========================================================================= */}
+      {viewHistoryModalOpen && targetScreening && (
+        <div className="screening-subpage-view animate-fade-in">
+          <div className="screening-subpage-nav">
+            <button
+              type="button"
+              className="btn-back-link"
+              onClick={() => setViewHistoryModalOpen(false)}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Screening Assessments</span>
+            </button>
+          </div>
+
+          <div className="screening-subpage-header-card">
+            <div className="modal-title-wrap">
+              <div className="modal-icon-ring purple">
+                <History size={20} />
+              </div>
+              <div>
+                <h2 className="screening-modal-title">Assignment & Result History</h2>
+                <p className="screening-modal-subtitle">
+                  {targetScreening.name} ({targetScreening.id})
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="screening-subpage-body-card">
+            <div className="screening-modal-body">
+              <div className="history-timeline-list">
+                {targetScreening.history.map((h, i) => (
+                  <div key={i} className="timeline-item">
+                    <div className="timeline-marker" />
+                    <div className="timeline-content">
+                      <span className="timeline-date">{h.date}</span>
+                      <span className="timeline-event">{h.event}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="screening-subpage-footer-card">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setViewHistoryModalOpen(false)}
+              >
+                Back to Screening Assessments
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

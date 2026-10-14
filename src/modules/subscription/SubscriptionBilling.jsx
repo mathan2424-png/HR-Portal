@@ -554,52 +554,51 @@ export const SubscriptionBilling = () => {
 
                           {/* 9. Invoices */}
                           <td>
-                            <div className="sub-invoice-cell">
-                              <div className="sub-invoice-meta">
-                                <span className="sub-inv-number">{sub.invoice.invoiceNo}</span>
-                                <span className="sub-inv-date">{sub.invoice.date}</span>
-                              </div>
-                              <button
-                                type="button"
-                                className="btn-invoice-download"
-                                onClick={() => handleDownloadInvoice(sub.invoice)}
-                                title={`Download Invoice ${sub.invoice.invoiceNo} as PDF`}
-                              >
-                                <Download size={13} />
-                                <span>PDF</span>
-                              </button>
+                            <div className="sub-invoice-meta">
+                              <span className="sub-inv-number">{sub.invoice.invoiceNo}</span>
+                              <span className="sub-inv-date">{sub.invoice.date}</span>
                             </div>
                           </td>
 
-                          {/* 10. Upgrade / Renew / View Actions */}
+                          {/* 10. Upgrade / Renew / View / Download Actions */}
                           <td style={{ textAlign: 'center' }}>
                             <div className="sub-row-actions">
+                              <button
+                                type="button"
+                                className="btn-action-icon invoice"
+                                onClick={() => handleDownloadInvoice(sub.invoice)}
+                                title={`Download Invoice ${sub.invoice.invoiceNo} (PDF)`}
+                                aria-label={`Download Invoice ${sub.invoice.invoiceNo} (PDF)`}
+                              >
+                                <Download size={14} />
+                              </button>
                               {sub.status === 'Active' ? (
                                 <button
                                   type="button"
-                                  className="btn-row-action upgrade"
+                                  className="btn-action-icon upgrade"
                                   onClick={() => handleOpenUpgrade(sub)}
                                   title="Upgrade Plan"
+                                  aria-label="Upgrade Plan"
                                 >
-                                  <Zap size={13} />
-                                  <span>Upgrade</span>
+                                  <Zap size={14} />
                                 </button>
                               ) : (
                                 <button
                                   type="button"
-                                  className="btn-row-action renew"
+                                  className="btn-action-icon renew"
                                   onClick={() => handleOpenRenew(sub)}
                                   title="Renew Plan"
+                                  aria-label="Renew Plan"
                                 >
-                                  <RefreshCw size={13} />
-                                  <span>Renew</span>
+                                  <RefreshCw size={14} />
                                 </button>
                               )}
                               <button
                                 type="button"
-                                className="btn-row-action view"
+                                className="btn-action-icon view"
                                 onClick={() => handleOpenView(sub)}
                                 title="View Plan Details & Full Usage"
+                                aria-label="View Plan Details & Full Usage"
                               >
                                 <Eye size={14} />
                               </button>

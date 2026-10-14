@@ -102,14 +102,15 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  padding-left: 850px;
 }
 
 .login-card {
   width: 100%;
   max-width: 440px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.86) 0%, rgba(240, 245, 255, 0.78) 100%);
-  backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  background: linear-gradient(145deg, rgb(255 255 255 / 62%) 0%, rgb(240 245 255 / 69%) 100%);
+  backdrop-filter: blur(2px) saturate(200%);
+  -webkit-backdrop-filter: blur(2px) saturate(600%);
   border: 1.8px solid rgba(255, 255, 255, 0.95);
   border-radius: 28px;
   box-shadow:

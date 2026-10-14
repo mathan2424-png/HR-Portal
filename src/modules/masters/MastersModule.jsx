@@ -87,14 +87,14 @@ const DEFAULT_CATEGORIES = {
     label: 'Primary Job Locations',
     singular: 'Location',
     items: [
-      { id: 'LOC-01', title: 'Chennai', startDate: '2026-01-01', status: 'Active' },
-      { id: 'LOC-02', title: 'Coimbatore', startDate: '2026-01-10', status: 'Active' },
-      { id: 'LOC-03', title: 'Madurai', startDate: '2026-01-15', status: 'Active' },
-      { id: 'LOC-04', title: 'Tiruchirappalli', startDate: '2026-02-01', status: 'Active' },
-      { id: 'LOC-05', title: 'Salem', startDate: '2026-02-10', status: 'Active' },
-      { id: 'LOC-06', title: 'Tirunelveli', startDate: '2026-02-15', status: 'Active' },
-      { id: 'LOC-07', title: 'Bengaluru', startDate: '2026-01-05', status: 'Active' },
-      { id: 'LOC-08', title: 'Hyderabad', startDate: '2026-01-20', status: 'Active' },
+      { id: 'LOC-01', title: 'Chennai', status: 'Active' },
+      { id: 'LOC-02', title: 'Coimbatore', status: 'Active' },
+      { id: 'LOC-03', title: 'Madurai', status: 'Active' },
+      { id: 'LOC-04', title: 'Tiruchirappalli', status: 'Active' },
+      { id: 'LOC-05', title: 'Salem', status: 'Active' },
+      { id: 'LOC-06', title: 'Tirunelveli', status: 'Active' },
+      { id: 'LOC-07', title: 'Bengaluru', status: 'Active' },
+      { id: 'LOC-08', title: 'Hyderabad', status: 'Active' },
     ],
   },
   'employment-types': {
@@ -102,11 +102,11 @@ const DEFAULT_CATEGORIES = {
     label: 'Employment Types',
     singular: 'Employment Type',
     items: [
-      { id: 'ET-01', title: 'Full Time', startDate: '2026-01-01', status: 'Active' },
-      { id: 'ET-02', title: 'Part Time', startDate: '2026-01-01', status: 'Active' },
-      { id: 'ET-03', title: 'Contract', startDate: '2026-01-15', status: 'Active' },
-      { id: 'ET-04', title: 'Internship', startDate: '2026-02-01', status: 'Active' },
-      { id: 'ET-05', title: 'Freelance', startDate: '2026-02-15', status: 'Active' },
+      { id: 'ET-01', title: 'Full Time', status: 'Active' },
+      { id: 'ET-02', title: 'Part Time', status: 'Active' },
+      { id: 'ET-03', title: 'Contract', status: 'Active' },
+      { id: 'ET-04', title: 'Internship', status: 'Active' },
+      { id: 'ET-05', title: 'Freelance', status: 'Active' },
     ],
   },
   'work-modes': {
@@ -114,10 +114,10 @@ const DEFAULT_CATEGORIES = {
     label: 'Work Modes',
     singular: 'Work Mode',
     items: [
-      { id: 'WM-01', title: 'On-Site', startDate: '2026-01-01', status: 'Active' },
-      { id: 'WM-02', title: 'Hybrid', startDate: '2026-01-01', status: 'Active' },
-      { id: 'WM-03', title: 'Remote', startDate: '2026-01-01', status: 'Active' },
-      { id: 'WM-04', title: 'Flexible', startDate: '2026-01-15', status: 'Active' },
+      { id: 'WM-01', title: 'On-Site', status: 'Active' },
+      { id: 'WM-02', title: 'Hybrid', status: 'Active' },
+      { id: 'WM-03', title: 'Remote', status: 'Active' },
+      { id: 'WM-04', title: 'Flexible', status: 'Active' },
     ],
   },
   'qualifications': {
@@ -562,7 +562,7 @@ export const MastersModule = () => {
               <tr>
                 <th style={{ width: '85px', textAlign: 'center' }}>S.NO</th>
                 <th>TITLE</th>
-                <th style={{ width: '180px' }}>START DATE</th>
+                <th style={{ width: '180px' }}>CREATED DATE</th>
                 <th style={{ width: '150px', textAlign: 'center' }}>STATUS</th>
                 <th style={{ width: '130px', textAlign: 'center' }}>ACTION</th>
               </tr>
@@ -590,7 +590,7 @@ export const MastersModule = () => {
                         <span className="master-title-cell">{item.title}</span>
                       </td>
 
-                      {/* 3. START DATE */}
+                      {/* 3. CREATED DATE */}
                       <td>
                         <span className="master-date-cell">
                           {formatDisplayDate(item.startDate)}

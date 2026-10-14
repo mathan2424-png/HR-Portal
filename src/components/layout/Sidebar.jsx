@@ -50,7 +50,18 @@ const navItems = [
   { path: '/screenings', label: 'Screening', icon: ClipboardCheck },
   { path: '/interviews', label: 'Interviews', icon: CalendarCheck },
   { path: '/offers', label: 'Offers & Hiring', icon: FileCheck },
-  { path: '/reports', label: 'Recruitment Reports', icon: BarChart3 },
+  {
+    path: '/reports',
+    label: 'Recruitment Reports',
+    icon: BarChart3,
+    hasDropdown: true,
+    children: [
+      { path: '/reports?tab=overview', label: 'Recruitment Overview', tab: 'overview' },
+      { path: '/reports?tab=matching', label: 'Candidate & Matching Report', tab: 'matching' },
+      { path: '/reports?tab=screening', label: 'Screening Report', tab: 'screening' },
+      { path: '/reports?tab=interviews', label: 'Interviews & Hiring Report', tab: 'interviews' },
+    ],
+  },
   { path: '/settings', label: 'Settings & Security', icon: Settings },
   { path: '/audit-log', label: 'Company Audit Log', icon: ScrollText },
 ];
@@ -62,10 +73,13 @@ export const Sidebar = () => {
 
   const isMastersActive =
     location.pathname.startsWith('/masters') || location.pathname.startsWith('/taxonomy');
+  const isReportsActive =
+    location.pathname.startsWith('/reports') || location.pathname.startsWith('/recruitment-reports');
 
   const [mastersOpen, setMastersOpen] = useState(isMastersActive);
+  const [reportsOpen, setReportsOpen] = useState(isReportsActive);
 
-  // Auto-expand Masters if user navigates to any master route, collapse when navigating outside
+  // Auto-expand if user navigates to any sub-route
   useEffect(() => {
     if (isMastersActive) {
       setMastersOpen(true);
@@ -74,23 +88,36 @@ export const Sidebar = () => {
     }
   }, [isMastersActive]);
 
-  const handleMastersToggle = (e) => {
+  useEffect(() => {
+    if (isReportsActive) {
+      setReportsOpen(true);
+    } else {
+      setReportsOpen(false);
+    }
+  }, [isReportsActive]);
+
+  const handleDropdownToggle = (item, e) => {
     e.preventDefault();
+    const isMasters = item.path === '/masters';
+    const isOpen = isMasters ? mastersOpen : reportsOpen;
+    const setOpen = isMasters ? setMastersOpen : setReportsOpen;
+    const isActive = isMasters ? isMastersActive : isReportsActive;
+
     if (sidebarCollapsed) {
       setSidebarCollapsed(false);
-      setMastersOpen(true);
-      navigate('/masters');
+      setOpen(true);
+      navigate(item.path);
       return;
     }
-    setMastersOpen((prev) => !prev);
-    // If not currently on masters, navigate to masters
-    if (!isMastersActive) {
-      navigate('/masters');
+    setOpen((prev) => !prev);
+    if (!isActive) {
+      navigate(item.path);
     }
   };
 
   const handleOutsideNavClick = () => {
     setMastersOpen(false);
+    setReportsOpen(false);
   };
 
   return (
@@ -106,12 +133,16 @@ export const Sidebar = () => {
           const Icon = item.icon;
 
           if (item.hasDropdown) {
+            const isMasters = item.path === '/masters';
+            const isItemActive = isMasters ? isMastersActive : isReportsActive;
+            const isOpen = isMasters ? mastersOpen : reportsOpen;
+
             return (
               <div key={item.path} className="nav-dropdown-group">
                 <button
                   type="button"
-                  className={`nav-dropdown-toggle ${isMastersActive ? 'active' : ''}`}
-                  onClick={handleMastersToggle}
+                  className={`nav-dropdown-toggle ${isItemActive ? 'active' : ''}`}
+                  onClick={(e) => handleDropdownToggle(item, e)}
                   title={sidebarCollapsed ? item.label : undefined}
                 >
                   <div className="nav-dropdown-toggle-left">
@@ -125,22 +156,22 @@ export const Sidebar = () => {
                   {!sidebarCollapsed && (
                     <ChevronDown
                       size={16}
-                      className={`nav-chevron ${mastersOpen ? 'open' : ''}`}
+                      className={`nav-chevron ${isOpen ? 'open' : ''}`}
                     />
                   )}
                 </button>
 
                 {/* Submenu Dropdown */}
-                {!sidebarCollapsed && mastersOpen && (
+                {!sidebarCollapsed && isOpen && (
                   <div className="nav-submenu-list">
                     {item.children.map((subItem) => {
                       const searchParams = new URLSearchParams(location.search);
                       const currentTab = searchParams.get('tab');
                       const isSubActive =
-                        isMastersActive &&
+                        isItemActive &&
                         (currentTab
                           ? subItem.tab === currentTab
-                          : subItem.path === '/masters');
+                          : subItem.tab === 'overview' || subItem.path === item.path);
 
                       return (
                         <Link
