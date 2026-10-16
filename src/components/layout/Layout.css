@@ -1,7 +1,9 @@
 .portal-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   width: 100%;
+  overflow: hidden;
   background-color: var(--bg-app);
   background-image: 
     radial-gradient(ellipse 60% 40% at 20% 0%, rgba(37, 99, 235, 0.045) 0%, transparent 70%),
@@ -14,12 +16,17 @@
   display: flex;
   flex-direction: column;
   min-width: 0; /* Prevents overflow */
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
 .portal-content-area {
   flex: 1;
-  padding: 2rem;
+  min-height: 0;
+  padding: 1.75rem 2rem 5.5rem 2rem;
   overflow-y: auto;
+  overflow-x: hidden;
   max-width: 1600px;
   width: 100%;
   margin: 0 auto;
@@ -27,6 +34,6 @@
 
 @media (max-width: 768px) {
   .portal-content-area {
-    padding: 1.25rem;
+    padding: 1.25rem 1rem 5.5rem 1rem;
   }
 }

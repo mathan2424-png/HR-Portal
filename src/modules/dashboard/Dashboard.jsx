@@ -596,7 +596,6 @@ export const Dashboard = () => {
             </div>
             <div>
               <h2 className="alerts-heading">Important Alerts & Pending Items</h2>
-              <p className="alerts-subtext">Quick view of what needs your attention</p>
             </div>
           </div>
           <Link to="/notifications" className="alerts-count-tag" title="View all active notifications">

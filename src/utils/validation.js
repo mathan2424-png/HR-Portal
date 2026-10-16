@@ -68,8 +68,9 @@ export const validateNumber = (value, label = 'Field', isRequired = true, minDig
 
 /**
  * Validates mobile/phone number fields.
+ * Strictly enforces exactly 10 digits and valid starting digit (6, 7, 8, 9).
  */
-export const validatePhone = (value, label = 'Phone Number', isRequired = true) => {
+export const validatePhone = (value, label = 'Mobile Number', isRequired = true) => {
   const trimmed = (value || '').trim();
   if (!trimmed) {
     return isRequired ? `${label} is required` : null;
@@ -78,11 +79,11 @@ export const validatePhone = (value, label = 'Phone Number', isRequired = true) 
   if (!digitsOnly) {
     return `${label} must contain numbers only`;
   }
-  if (digitsOnly.length < 10) {
-    return `${label} must be at least 10 digits`;
+  if (digitsOnly.length !== 10) {
+    return `${label} must be exactly 10 digits`;
   }
-  if (digitsOnly.length > 15) {
-    return `${label} cannot exceed 15 digits`;
+  if (!/^[6-9]\d{9}$/.test(digitsOnly)) {
+    return `Enter a valid 10-digit ${label.toLowerCase()} starting with 6, 7, 8, or 9`;
   }
   return null;
 };
@@ -113,13 +114,11 @@ export const sanitizeNumberInput = (value) => {
   return value.replace(/\D/g, '');
 };
 
-// Allows digits and optional leading plus sign
+// Restricts phone input to digits only, maximum 10 digits
 export const sanitizePhoneInput = (value) => {
   if (!value) return '';
-  // Keep + only if it's the very first character
-  const hasPlus = value.startsWith('+');
-  const digits = value.replace(/\D/g, '');
-  return hasPlus ? `+${digits}` : digits;
+  // Digits only, max 10 characters
+  return value.replace(/\D/g, '').slice(0, 10);
 };
 
 // Restricts input to decimals / amounts

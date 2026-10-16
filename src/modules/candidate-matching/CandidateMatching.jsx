@@ -600,6 +600,15 @@ export const CandidateMatching = () => {
     return searchMatch && scoreMatch && availMatch && locMatch;
   });
 
+  // Candidate Matching Pagination State (8 items per page)
+  const [candidatesPage, setCandidatesPage] = useState(1);
+  const candidatesPerPage = 8;
+  const totalCandidatesPages = Math.ceil(filteredCandidates.length / candidatesPerPage) || 1;
+  const paginatedCandidates = filteredCandidates.slice(
+    (candidatesPage - 1) * candidatesPerPage,
+    candidatesPage * candidatesPerPage
+  );
+
   // Select all or deselect in candidate list
   const handleToggleSelectAll = () => {
     if (selectedCandidateIds.length === filteredCandidates.length) {
@@ -819,6 +828,15 @@ export const CandidateMatching = () => {
 
     return searchMatch && statusMatch;
   });
+
+  // Alert History Pagination State (8 items per page)
+  const [historyPage, setHistoryPage] = useState(1);
+  const historyPerPage = 8;
+  const totalHistoryPages = Math.ceil(filteredHistory.length / historyPerPage) || 1;
+  const paginatedHistory = filteredHistory.slice(
+    (historyPage - 1) * historyPerPage,
+    historyPage * historyPerPage
+  );
 
   // Score styling helper
   const getScoreBadgeClass = (score) => {
@@ -1129,6 +1147,7 @@ export const CandidateMatching = () => {
                         title="Select All"
                       />
                     </th>
+                    <th style={{ width: '50px', textAlign: 'center' }}>S.NO</th>
                     <th>Candidate Reference</th>
                     <th>Match Score</th>
                     <th>Skills Match</th>
@@ -1142,13 +1161,14 @@ export const CandidateMatching = () => {
                 <tbody>
                   {filteredCandidates.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="table-empty-cell">
+                      <td colSpan="10" className="table-empty-cell">
                         No matched candidates found matching your filter criteria.
                       </td>
                     </tr>
                   ) : (
-                    filteredCandidates.map((cand) => {
+                    paginatedCandidates.map((cand, index) => {
                       const isSelected = selectedCandidateIds.includes(cand.id);
+                      const serialNumber = (candidatesPage - 1) * candidatesPerPage + index + 1;
                       return (
                         <tr key={cand.id} className={isSelected ? 'row-selected' : ''}>
                           {/* Checkbox */}
@@ -1159,6 +1179,9 @@ export const CandidateMatching = () => {
                               onChange={() => handleToggleCandidate(cand.id)}
                             />
                           </td>
+
+                          {/* S.NO */}
+                          <td style={{ textAlign: 'center', fontWeight: 600 }}>{serialNumber}</td>
 
                           {/* Candidate Reference */}
                           <td>
@@ -1261,13 +1284,41 @@ export const CandidateMatching = () => {
               </table>
             </div>
 
-            {/* Table Footer Info */}
-            <div className="table-footer-bar">
-              <span className="table-count-info">
-                Showing {filteredCandidates.length} eligible candidates for{' '}
-                <strong>{selectedJob.title}</strong>
-              </span>
-              
+            {/* Pagination Footer */}
+            <div className="companies-pagination-row">
+              <div className="pagination-entries-count">
+                Showing {filteredCandidates.length > 0 ? (candidatesPage - 1) * candidatesPerPage + 1 : 0} to{' '}
+                {Math.min(candidatesPage * candidatesPerPage, filteredCandidates.length)} of{' '}
+                {filteredCandidates.length} Entries
+              </div>
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${candidatesPage === 1 ? 'disabled' : ''}`}
+                  disabled={candidatesPage === 1}
+                  onClick={() => setCandidatesPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalCandidatesPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-btn ${candidatesPage === page ? 'active' : ''}`}
+                    onClick={() => setCandidatesPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${candidatesPage === totalCandidatesPages ? 'disabled' : ''}`}
+                  disabled={candidatesPage === totalCandidatesPages}
+                  onClick={() => setCandidatesPage((p) => Math.min(totalCandidatesPages, p + 1))}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1334,10 +1385,12 @@ export const CandidateMatching = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredHistory.map((item, idx) => (
+                    paginatedHistory.map((item, idx) => {
+                      const serialNumber = (historyPage - 1) * historyPerPage + idx + 1;
+                      return (
                       <tr key={item.id}>
                         {/* S.NO */}
-                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{serialNumber}</td>
 
                         {/* Alert ID */}
                         <td>
@@ -1430,19 +1483,48 @@ export const CandidateMatching = () => {
                           </div>
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
 
-            <div className="table-footer-bar">
-              <span className="table-count-info">
-                Total <strong>{filteredHistory.length}</strong> alert dispatch records tracked
-              </span>
-              <span className="table-note-info">
-                * Real-time delivery logs, automated bounce handling, and multi-channel audit trail
-              </span>
+            {/* Pagination Footer */}
+            <div className="companies-pagination-row">
+              <div className="pagination-entries-count">
+                Showing {filteredHistory.length > 0 ? (historyPage - 1) * historyPerPage + 1 : 0} to{' '}
+                {Math.min(historyPage * historyPerPage, filteredHistory.length)} of{' '}
+                {filteredHistory.length} Entries
+              </div>
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${historyPage === 1 ? 'disabled' : ''}`}
+                  disabled={historyPage === 1}
+                  onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalHistoryPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-btn ${historyPage === page ? 'active' : ''}`}
+                    onClick={() => setHistoryPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${historyPage === totalHistoryPages ? 'disabled' : ''}`}
+                  disabled={historyPage === totalHistoryPages}
+                  onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages, p + 1))}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>

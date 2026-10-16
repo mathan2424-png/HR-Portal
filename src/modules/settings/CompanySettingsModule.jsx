@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Save,
   CheckCircle2,
@@ -7,19 +8,29 @@ import {
   Bell,
   Shield,
   History,
+  LifeBuoy,
 } from 'lucide-react';
 import { FieldError } from '../../components/common/FieldError/FieldError';
+import { HelpSupportModule } from '../support/HelpSupportModule';
 import './CompanySettingsModule.css';
 
 export const CompanySettingsModule = () => {
-  // STRICTLY and ONLY the 5 user-requested sections:
-  // 1. Company Preferences: Timezone, working days and basic recruitment preferences.
-  // 2. Recruitment Settings: Default stages, screening settings, rejection reasons and approval settings.
-  // 3. Notification Preferences: Email, SMS, push and reminder preferences.
-  // 4. Security: Password, two-factor authentication, active sessions and device access.
-  // 5. Login History: User login date/time and device information.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (tabParam === 'support' || tabParam === 'help') return 'support';
+    if (tabParam) return tabParam;
+    return 'all';
+  });
 
-  const [activeTab, setActiveTab] = useState('all');
+  useEffect(() => {
+    if (tabParam === 'support' || tabParam === 'help') {
+      setActiveTab('support');
+    } else if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
   const [toastMessage, setToastMessage] = useState('');
 
   // 1. Company Preferences State
@@ -227,14 +238,20 @@ export const CompanySettingsModule = () => {
           <button
             type="button"
             className={`settings-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
+            onClick={() => {
+              setActiveTab('all');
+              setSearchParams({});
+            }}
           >
             All Settings Overview
           </button>
           <button
             type="button"
             className={`settings-tab-btn ${activeTab === 'preferences' ? 'active' : ''}`}
-            onClick={() => setActiveTab('preferences')}
+            onClick={() => {
+              setActiveTab('preferences');
+              setSearchParams({ tab: 'preferences' });
+            }}
           >
             <Building size={15} />
             <span>1. Company Preferences</span>
@@ -242,7 +259,10 @@ export const CompanySettingsModule = () => {
           <button
             type="button"
             className={`settings-tab-btn ${activeTab === 'recruitment' ? 'active' : ''}`}
-            onClick={() => setActiveTab('recruitment')}
+            onClick={() => {
+              setActiveTab('recruitment');
+              setSearchParams({ tab: 'recruitment' });
+            }}
           >
             <Sliders size={15} />
             <span>2. Recruitment Settings</span>
@@ -250,7 +270,10 @@ export const CompanySettingsModule = () => {
           <button
             type="button"
             className={`settings-tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
-            onClick={() => setActiveTab('notifications')}
+            onClick={() => {
+              setActiveTab('notifications');
+              setSearchParams({ tab: 'notifications' });
+            }}
           >
             <Bell size={15} />
             <span>3. Notification Preferences</span>
@@ -258,7 +281,10 @@ export const CompanySettingsModule = () => {
           <button
             type="button"
             className={`settings-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
-            onClick={() => setActiveTab('security')}
+            onClick={() => {
+              setActiveTab('security');
+              setSearchParams({ tab: 'security' });
+            }}
           >
             <Shield size={15} />
             <span>4. Security & Sessions</span>
@@ -266,14 +292,31 @@ export const CompanySettingsModule = () => {
           <button
             type="button"
             className={`settings-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => setActiveTab('history')}
+            onClick={() => {
+              setActiveTab('history');
+              setSearchParams({ tab: 'history' });
+            }}
           >
             <History size={15} />
             <span>5. Login History</span>
           </button>
+          <button
+            type="button"
+            className={`settings-tab-btn ${activeTab === 'support' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('support');
+              setSearchParams({ tab: 'support' });
+            }}
+          >
+            <LifeBuoy size={15} />
+            <span>6. Help & Support</span>
+          </button>
         </div>
 
-        <form onSubmit={handleSaveAll} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {activeTab === 'support' ? (
+          <HelpSupportModule inSettings={true} />
+        ) : (
+          <form onSubmit={handleSaveAll} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* SECTION 1: Company Preferences */}
           {(activeTab === 'preferences' || activeTab === 'all') && (
             <div className="settings-section-box">
@@ -772,6 +815,28 @@ export const CompanySettingsModule = () => {
             </div>
           )}
 
+          {/* SECTION 6: Help & Support (in All Settings Overview) */}
+          {activeTab === 'all' && (
+            <div className="settings-section-box">
+              <div className="settings-section-header">
+                <span>6. HELP & SUPPORT (TICKET MANAGEMENT & INCIDENT DESK)</span>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem', background: '#ffffff' }}
+                  onClick={() => {
+                    setActiveTab('support');
+                    setSearchParams({ tab: 'support' });
+                  }}
+                >
+                  <LifeBuoy size={14} color="var(--primary)" />
+                  <span>Open Full Support Desk →</span>
+                </button>
+              </div>
+              <HelpSupportModule inSettings={true} />
+            </div>
+          )}
+
           {/* Bottom Action Footer */}
           <div className="inpage-form-footer">
             <button
@@ -791,6 +856,7 @@ export const CompanySettingsModule = () => {
             </button>
           </div>
         </form>
+      )}
       </div>
     </div>
   );

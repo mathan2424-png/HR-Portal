@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Mail,
+  User,
   Lock,
   Eye,
   EyeOff,
@@ -11,7 +11,6 @@ import bgImg from '../../assets/login-bg.jpg';
 import { usePortal } from '../../context/PortalContext';
 import { Toast } from '../../components/common/Toast/Toast';
 import { FieldError } from '../../components/common/FieldError/FieldError';
-import { validateEmail } from '../../utils/validation';
 import './LoginPage.css';
 
 // Stylized Brand Emblem Matching Uploaded Design
@@ -61,30 +60,26 @@ export const LoginPage = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
+  const [usernameFocused, setUsernameFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [toast, setToast] = useState(null);
   const [errors, setErrors] = useState({});
 
-  const showToast = (message, type = 'info') => {
-    setToast({ message, type });
+  const showToast = (message, type = 'info', title = null) => {
+    setToast({ message, type, title });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newErrors = {};
-    const emailErr = validateEmail(email, 'Email Address', true);
-    if (emailErr) newErrors.email = emailErr;
-
-    if (!password.trim()) {
-      newErrors.password = 'Password is required';
-    }
+    if (!username.trim()) newErrors.username = 'User Name is required';
+    if (!password.trim()) newErrors.password = 'Password is required';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -94,22 +89,62 @@ export const LoginPage = () => {
     setErrors({});
     setIsLoading(true);
 
-    // Simulate enterprise authentication
-    setTimeout(() => {
-      setIsLoading(false);
-      if (login) {
-        login(email, password);
+    try {
+      const response = await fetch('http://192.168.88.5:5000/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password.trim(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        showToast(result.message || 'Invalid credentials', 'error');
+        setIsLoading(false);
+        return;
       }
-      showToast('Login Successfully! Redirecting...', 'success');
+
+      // Backend token & user details save pannuvom
+      localStorage.setItem('hr_portal_token', result.data.token);
+      localStorage.setItem('hr_portal_authenticated', 'true');
+      localStorage.setItem('hr_portal_user', JSON.stringify(result.data.user));
+
+      if (login) {
+        login(result.data.user);
+      }
+
+      showToast(result.message || 'Login successful!', 'success');
       setTimeout(() => {
         navigate('/');
-      }, 700);
-    }, 450);
+      }, 600);
+    } catch (err) {
+      console.error('Login error:', err);
+      if (!navigator.onLine) {
+        showToast(
+          'No internet connection. Please check your network and try again.',
+          'error',
+          'Internet Error'
+        );
+      } else {
+        showToast(
+          'Unable to connect to server. Please check your internet connection.',
+          'error',
+          'Internet Error'
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
-    showToast(`Password recovery link has been sent to ${email || 'your email'}.`, 'success');
+    showToast(`Password recovery link has been sent for ${username || 'your account'}.`, 'success');
   };
 
   const handleContactSupport = (e) => {
@@ -142,6 +177,7 @@ export const LoginPage = () => {
       {/* Floating Animated Toast Notification */}
       {toast && (
         <Toast
+          title={toast.title}
           message={toast.message}
           type={toast.type}
           duration={3500}
@@ -162,36 +198,36 @@ export const LoginPage = () => {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="login-form" noValidate>
-            {/* Field 1: Email Address */}
+            {/* Field 1: User Name */}
             <div className="login-field-group">
               <label className="login-field-label">User Name</label>
               <div
-                className={`login-input-container ${
-                  emailFocused ? 'focused' : ''
-                } ${errors.email ? 'has-error' : ''}`}
+                className={`login-input-container ${usernameFocused ? 'focused' : ''
+                  } ${errors.username ? 'has-error' : ''}`}
               >
                 <div className="login-input-icon">
-                  <Mail size={17} strokeWidth={2.2} />
+                  <User size={17} strokeWidth={2.2} />
                 </div>
                 <input
-                  type="email"
+                  type="text"
                   className="login-input"
-                  placeholder="Enter Email Address"
-                  value={email}
+                  placeholder="Enter User Name"
+                  value={username}
                   onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors((prev) => ({ ...prev, email: null }));
+                    setUsername(e.target.value);
+                    if (errors.username) setErrors((prev) => ({ ...prev, username: null }));
                   }}
-                  onFocus={() => setEmailFocused(true)}
+                  onFocus={() => setUsernameFocused(true)}
                   onBlur={() => {
-                    setEmailFocused(false);
-                    const err = validateEmail(email, 'Email Address', false);
-                    if (err) setErrors((prev) => ({ ...prev, email: err }));
+                    setUsernameFocused(false);
+                    if (!username.trim()) {
+                      setErrors((prev) => ({ ...prev, username: 'User Name is required' }));
+                    }
                   }}
-                  autoComplete="email"
+                  autoComplete="username"
                 />
               </div>
-              <FieldError error={errors.email} />
+              <FieldError error={errors.username} />
             </div>
 
             {/* Field 2: Password */}
@@ -207,9 +243,8 @@ export const LoginPage = () => {
                 </button>
               </div>
               <div
-                className={`login-input-container ${
-                  passwordFocused ? 'focused' : ''
-                } ${errors.password ? 'has-error' : ''}`}
+                className={`login-input-container ${passwordFocused ? 'focused' : ''
+                  } ${errors.password ? 'has-error' : ''}`}
               >
                 <div className="login-input-icon">
                   <Lock size={17} strokeWidth={2.2} />

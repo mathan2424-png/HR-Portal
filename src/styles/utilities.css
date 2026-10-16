@@ -102,3 +102,91 @@
 .animate-fade-in {
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ==========================================================================
+   STANDARD PAGINATION FOOTER (MATCHING COMPANY DETAILS GOLDEN MODEL)
+   ========================================================================== */
+.companies-pagination-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem 1rem 1.25rem;
+  background: #ffffff;
+}
+
+.interviews-table-card .companies-pagination-row,
+.screening-table-card .companies-pagination-row,
+.matching-table-card .companies-pagination-row,
+.offers-table-card .companies-pagination-row,
+.reports-table-card .companies-pagination-row {
+  border-top: 1px solid var(--border-light, #f1f5f9);
+}
+
+.pagination-entries-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pagination-nav-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pagination-nav-btn:hover:not(:disabled):not(.disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #eff6ff;
+}
+
+.pagination-nav-btn.disabled,
+.pagination-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.pagination-page-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.pagination-page-btn:hover:not(.active) {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.pagination-page-btn.active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border-color: var(--primary) !important;
+}
+

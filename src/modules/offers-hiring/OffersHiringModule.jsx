@@ -861,6 +861,15 @@ export const OffersHiringModule = () => {
     return matchesSearch && matchesOfferStatus && matchesJoiningStatus;
   });
 
+  // Offers Table Pagination State (8 items per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(filteredOffers.length / itemsPerPage) || 1;
+  const paginatedOffers = filteredOffers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   // Badge Helpers
   const getOfferStatusBadge = (status) => {
     switch (status?.toLowerCase()) {
@@ -1078,12 +1087,6 @@ export const OffersHiringModule = () => {
             <option value="Not Joined">Not Joined</option>
           </select>
         </div>
-
-        <div className="toolbar-right-group">
-          <span className="offers-counter-text">
-            Showing <strong>{filteredOffers.length}</strong> of {offers.length} Offer Records
-          </span>
-        </div>
       </div>
 
       {/* =========================================================================
@@ -1115,10 +1118,12 @@ export const OffersHiringModule = () => {
                   </td>
                 </tr>
               ) : (
-                filteredOffers.map((item, idx) => (
+                paginatedOffers.map((item, idx) => {
+                  const serialNumber = (currentPage - 1) * itemsPerPage + idx + 1;
+                  return (
                   <tr key={item.id}>
                     {/* 1. S.No */}
-                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{serialNumber}</td>
 
                     {/* 2. Offer ID with Version Badge */}
                     <td>
@@ -1265,18 +1270,48 @@ export const OffersHiringModule = () => {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Table Footer */}
-        <div className="table-footer-bar">
-          <span className="table-count-info">
-            Total <strong>{filteredOffers.length}</strong> recruitment offer records
-          </span>
-          
+        {/* Pagination Footer */}
+        <div className="companies-pagination-row">
+          <div className="pagination-entries-count">
+            Showing {filteredOffers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+            {Math.min(currentPage * itemsPerPage, filteredOffers.length)} of{' '}
+            {filteredOffers.length} Entries
+          </div>
+          <div className="pagination-controls">
+            <button
+              type="button"
+              className={`pagination-nav-btn ${currentPage === 1 ? 'disabled' : ''}`}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                type="button"
+                className={`pagination-page-btn ${currentPage === page ? 'active' : ''}`}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={`pagination-nav-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
         </>

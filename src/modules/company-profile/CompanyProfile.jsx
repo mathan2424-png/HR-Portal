@@ -1,14 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import CompanyApi from '../../Api/CompanyApi';
 import {
   Search,
   Plus,
   Edit2,
   Eye,
   Trash2,
-  Lock,
-  Unlock,
   CheckCircle2,
-  XCircle,
   AlertTriangle,
   Upload,
   MapPin,
@@ -16,6 +14,14 @@ import {
   ChevronRight,
   ArrowLeft,
   Save,
+  GitBranch,
+  Building2,
+  ShieldCheck,
+  KeyRound,
+  EyeOff,
+  User,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import defaultLogo from '../../assets/logo.png';
 import { Toast } from '../../components/common/Toast/Toast';
@@ -32,163 +38,161 @@ import {
 } from '../../utils/validation';
 import './CompanyProfile.css';
 
-// Initial Mock Companies strictly conforming to user requirements (Tamil Companies & Details)
+// Initial Mock Fallback (Ocean Software Main Company & Multi-Branch Network)
 const INITIAL_COMPANIES = [
   {
-    companyId: 'CMP-1001',
-    companyName: 'Marutham Technologies Pvt. Ltd.',
+    companyId: 'OCN-001',
+    companyName: 'Ocean Software',
     companyLogo: defaultLogo,
     aboutCompany:
-      'Enterprise software engineering firm specializing in scalable SaaS architectures, cloud solutions, and recruitment infrastructure based in Chennai.',
+      'Enterprise software engineering firm specializing in scalable SaaS architectures, cloud solutions, and recruitment infrastructure based in Chennai & Tamil Nadu.',
     industry: 'Information Technology',
-    companySize: '51-200 Employees',
-    website: 'https://www.maruthamtech.com',
-    companyEmail: 'contact@maruthamtech.com',
-    companyMobile: '+91 98401 23456',
-    contactPerson: 'Saravanan S',
-    contactDesignation: 'Head of HR & Operations',
-    registeredAddress: 'Ascendas IT Park, 4th Floor, CSIR Road, Taramani',
+    companySize: '500-1000 Employees',
+    website: 'https://oceansoftware.example.com',
+    companyEmail: 'admin@oceansoftware.com',
+    companyMobile: '+91 99887 75544',
+    contactPerson: 'MATHAN',
+    contactDesignation: 'VP of Human Resources',
+    registeredAddress: '42 GST Road, Guindy Industrial Estate',
     city: 'Chennai',
     state: 'Tamil Nadu',
-    pincode: '600113',
-    gstNumber: '33AABCM1206D1ZM',
-    gstVerification: 'Valid',
-    gstLegalName: 'MARUTHAM TECHNOLOGIES PRIVATE LIMITED',
+    pincode: '600032',
+    gstNumber: '33AABCO1234F1Z5',
+    gstVerificationStatus: 'Valid',
+    gstLegalName: 'Ocean Software Private Limited',
     gstBusinessStatus: 'Active',
-    gstVerificationDate: '12-Oct-2026 10:30 AM',
-    companyStatus: 'Active',
-    registrationDate: '15-Jan-2025',
-    lastUpdated: '12-Oct-2026 01:09 PM',
-  },
-  {
-    companyId: 'CMP-1002',
-    companyName: 'Vaigai Cloud Solutions LLP',
-    companyLogo: '',
-    aboutCompany:
-      'Cloud modernization and enterprise DevOps advisory serving Tamil Nadu and global clients.',
-    industry: 'Cloud Infrastructure & SaaS',
-    companySize: '201-500 Employees',
-    website: 'https://www.vaigaicloud.in',
-    companyEmail: 'admin@vaigaicloud.in',
-    companyMobile: '+91 98410 76543',
-    contactPerson: 'Kavitha Ramachandran',
-    contactDesignation: 'VP - Talent Acquisition',
-    registeredAddress: 'ELCOT IT Park, Ring Road, Ilandhaikulam',
-    city: 'Madurai',
-    state: 'Tamil Nadu',
-    pincode: '625020',
-    gstNumber: '33AABCV9812K1ZN',
-    gstVerification: 'Valid',
-    gstLegalName: 'VAIGAI CLOUD SOLUTIONS LLP',
-    gstBusinessStatus: 'Active',
-    gstVerificationDate: '11-Oct-2026 04:15 PM',
-    companyStatus: 'Active',
-    registrationDate: '02-Mar-2025',
-    lastUpdated: '11-Oct-2026 04:15 PM',
-  },
-  {
-    companyId: 'CMP-1003',
-    companyName: 'Cheran Talent & Staffing Services',
-    companyLogo: '',
-    aboutCompany:
-      'Full-spectrum workforce management and talent sourcing partner across Coimbatore, Chennai, and Tiruppur.',
-    industry: 'Human Resources & Staffing',
-    companySize: '11-50 Employees',
-    website: 'https://www.cherantalent.in',
-    companyEmail: 'hiring@cherantalent.in',
-    companyMobile: '+91 86101 88861',
-    contactPerson: 'Dhakshan S',
-    contactDesignation: 'Managing Director',
-    registeredAddress: 'TIDEL Park Coimbatore, Civil Aerodrome Post',
-    city: 'Coimbatore',
-    state: 'Tamil Nadu',
-    pincode: '641014',
-    gstNumber: '33AABCC1092M1ZO',
-    gstVerification: 'Valid',
-    gstLegalName: 'CHERAN TALENT & STAFFING SERVICES',
-    gstBusinessStatus: 'Active',
-    gstVerificationDate: '08-Oct-2026 11:20 AM',
-    companyStatus: 'Active',
-    registrationDate: '10-May-2025',
-    lastUpdated: '09-Oct-2026 02:40 PM',
-  },
-  {
-    companyId: 'CMP-1004',
-    companyName: 'Kaveri Healthtech Innovations',
-    companyLogo: '',
-    aboutCompany:
-      'Digital healthcare and diagnostics software provider delivering clinical solutions across Tamil Nadu medical networks.',
-    industry: 'Healthcare & Biotech',
-    companySize: '1-10 Employees',
-    website: 'https://www.kaverihealth.tech',
-    companyEmail: 'ops@kaverihealth.tech',
-    companyMobile: '+91 96325 87410',
-    contactPerson: 'Abinaya R',
-    contactDesignation: 'Co-Founder & CEO',
-    registeredAddress: 'Thuvakudi Industrial Corridor, Cantonment',
-    city: 'Tiruchirappalli',
-    state: 'Tamil Nadu',
-    pincode: '620015',
-    gstNumber: '33AABCK5544J1ZQ',
-    gstVerification: 'Invalid',
-    gstLegalName: '—',
-    gstBusinessStatus: 'Cancelled',
-    gstVerificationDate: '10-Oct-2026 03:00 PM',
-    companyStatus: 'Pending',
-    registrationDate: '09-Oct-2026',
-    lastUpdated: '10-Oct-2026 03:00 PM',
-  },
-  {
-    companyId: 'CMP-1005',
-    companyName: 'Pandian Global Consulting Group',
-    companyLogo: '',
-    aboutCompany:
-      'Strategic corporate workforce advisory and digital operations consultancy for South Indian enterprises.',
-    industry: 'Management Consulting',
-    companySize: '501-1000 Employees',
-    website: 'https://www.pandianglobal.com',
-    companyEmail: 'contact@pandianglobal.com',
-    companyMobile: '+91 94432 55667',
-    contactPerson: 'Rithesh K',
-    contactDesignation: 'Head of People Strategy',
-    registeredAddress: 'Collectorate Junction, Palayamkottai',
-    city: 'Tirunelveli',
-    state: 'Tamil Nadu',
-    pincode: '627002',
-    gstNumber: '33AABCP4421B1ZR',
-    gstVerification: 'Verification Failed',
-    gstLegalName: 'PANDIAN GLOBAL CONSULTING GROUP',
-    gstBusinessStatus: 'Suspended',
-    gstVerificationDate: '05-Oct-2026 09:12 AM',
-    companyStatus: 'Suspended',
-    registrationDate: '18-Aug-2024',
-    lastUpdated: '05-Oct-2026 09:12 AM',
+    gstVerificationDate: '2025-01-15',
+    panCin: 'U72200TN2015PTC123456',
+    status: 'Active',
+    isMainCompany: true,
+    branchCount: 4,
+    branches: [
+      {
+        _id: 'br-1',
+        companyId: 'OCN-001',
+        branchName: 'Tambaram Branch',
+        branchCode: 'OCN-TAM-001',
+        contactPerson: 'Kavitha R',
+        contactDesignation: 'Operations Lead',
+        email: 'tambaram@oceansoftware.com',
+        mobile: '9840112233',
+        address: 'GST Road, Near Sanatorium Railway Station',
+        city: 'Chennai',
+        state: 'Tamil Nadu',
+        pincode: '600045',
+        industry: 'Information Technology',
+        employeeSize: '51-200 Employees',
+        status: 'Active',
+      },
+      {
+        _id: 'br-2',
+        companyId: 'OCN-001',
+        branchName: 'Coimbatore Branch',
+        branchCode: 'OCN-CBE-001',
+        contactPerson: 'Senthil Kumar',
+        contactDesignation: 'Branch Manager',
+        email: 'coimbatore@oceansoftware.com',
+        mobile: '9443211223',
+        address: 'TIDEL Park Coimbatore, Civil Aerodrome Post',
+        city: 'Coimbatore',
+        state: 'Tamil Nadu',
+        pincode: '641014',
+        industry: 'Information Technology',
+        employeeSize: '201-500 Employees',
+        status: 'Active',
+      },
+      {
+        _id: 'br-3',
+        companyId: 'OCN-001',
+        branchName: 'Trichy Branch',
+        branchCode: 'OCN-TRY-001',
+        contactPerson: 'Dhakshan S',
+        contactDesignation: 'Branch Supervisor',
+        email: 'trichy@oceansoftware.com',
+        mobile: '9789012345',
+        address: 'Thuvakudi Industrial Corridor, Cantonment',
+        city: 'Tiruchirappalli',
+        state: 'Tamil Nadu',
+        pincode: '620015',
+        industry: 'Information Technology',
+        employeeSize: '10-50 Employees',
+        status: 'Active',
+      },
+      {
+        _id: 'br-4',
+        companyId: 'OCN-001',
+        branchName: 'Puducherry Branch',
+        branchCode: 'OCN-PDY-001',
+        contactPerson: 'Ananya M',
+        contactDesignation: 'Regional Coordinator',
+        email: 'puducherry@oceansoftware.com',
+        mobile: '9842134567',
+        address: 'Mission Street, Heritage Town',
+        city: 'Puducherry',
+        state: 'Puducherry',
+        pincode: '605001',
+        industry: 'Information Technology',
+        employeeSize: '10-50 Employees',
+        status: 'Active',
+      },
+    ],
   },
 ];
 
 export const CompanyProfile = () => {
+  // State for companies and branches
   const [companies, setCompanies] = useState(INITIAL_COMPANIES);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isBackendConnected, setIsBackendConnected] = useState(false);
 
-  // In-page View Mode: 'list' (Table) | 'edit' (Edit Form) | 'view' (Readonly Details)
+  // Active view: 'list' | 'add-branch' | 'edit-branch' | 'view-branch' | 'edit-company' | 'view-company'
   const [currentView, setCurrentView] = useState('list');
-  const [isVerifyingGst, setIsVerifyingGst] = useState(false);
-  const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
   const [toast, setToast] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const isPageMounted = useRef(false);
 
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
+  // Selected entities for edit/view
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [selectedBranch, setSelectedBranch] = useState(null);
+
+  // Password visibility toggle in form
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Form templates
+  const defaultBranchForm = {
+    parentCompanyId: '',
+    parentCompanyName: '',
+    parentGst: '',
+    branchName: '',
+    branchCode: '',
+    adminUsername: '',
+    adminPassword: '',
+    confirmPassword: '',
+    contactPerson: '',
+    contactDesignation: 'Branch Manager',
+    email: '',
+    mobile: '',
+    address: '',
+    city: '',
+    state: 'Tamil Nadu',
+    pincode: '',
+    industry: 'Information Technology',
+    employeeSize: '10-50 Employees',
+    status: 'Active',
   };
 
-  // Active form data
-  const defaultForm = {
+  const defaultCompanyForm = {
     companyId: '',
     companyName: '',
     companyLogo: '',
     aboutCompany: '',
     industry: 'Information Technology',
-    companySize: '51-200 Employees',
+    companySize: '500-1000 Employees',
     website: '',
     companyEmail: '',
     companyMobile: '',
@@ -196,570 +200,607 @@ export const CompanyProfile = () => {
     contactDesignation: '',
     registeredAddress: '',
     city: '',
-    state: '',
+    state: 'Tamil Nadu',
     pincode: '',
     gstNumber: '',
-    gstVerification: 'Valid',
-    gstLegalName: '',
-    gstBusinessStatus: 'Active',
-    gstVerificationDate: '',
-    companyStatus: 'Active',
-    registrationDate: '',
-    lastUpdated: '',
+    gstVerificationStatus: 'Valid',
+    status: 'Active',
   };
 
-  const [formData, setFormData] = useState(defaultForm);
-  const [formErrors, setFormErrors] = useState({});
+  const [branchFormData, setBranchFormData] = useState(defaultBranchForm);
+  const [branchFormErrors, setBranchFormErrors] = useState({});
+  const [companyFormData, setCompanyFormData] = useState(defaultCompanyForm);
+  const [companyFormErrors, setCompanyFormErrors] = useState({});
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  // Filtered List for Table
-  const filteredCompanies = useMemo(() => {
-    return companies.filter((c) => {
-      const matchSearch =
-        c.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.companyId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.gstNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.city.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchStatus = selectedStatus === 'ALL' || c.companyStatus === selectedStatus;
-
-      return matchSearch && matchStatus;
-    });
-  }, [companies, searchTerm, selectedStatus]);
-
-  const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage) || 1;
-  const paginatedCompanies = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredCompanies.slice(start, start + itemsPerPage);
-  }, [filteredCompanies, currentPage, itemsPerPage]);
-
-  // Open Add Company Form (Switches view in the same card)
-  const handleOpenAddForm = () => {
-    const nextNum = companies.length + 1;
-    const newId = `CMP-${1000 + nextNum}`;
-    setFormData({
-      ...defaultForm,
-      companyId: newId,
-      companyName: '',
-      contactPerson: 'Sundar Raman',
-      contactDesignation: 'Director',
-      companyEmail: 'contact@enterprise.com',
-      companyMobile: '+91 98401 23456',
-      industry: 'Information Technology',
-      companySize: '51-200 Employees',
-      website: 'https://www.company.com',
-      aboutCompany: 'Leading enterprise solutions and digital transformation partner.',
-      registeredAddress: 'Tidel Park, 4th Floor, CSIR Road, Taramani',
-      city: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600113',
-      gstNumber: `33AABCT${String(1000 + nextNum)}D1ZM`,
-      gstLegalName: 'NEW ENTERPRISE TECH PRIVATE LIMITED',
-      registrationDate: '12-Oct-2026',
-      lastUpdated: 'Just now',
-      gstVerificationDate: '12-Oct-2026 10:30 AM',
-      gstVerification: 'Valid',
-      companyStatus: 'Active',
-    });
-    setFormErrors({});
-    setCurrentView('add');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
   };
 
-  // Open Edit Form (Switches view in the same card)
-  const handleOpenEditForm = (company) => {
-    setFormData({ ...company });
-    setFormErrors({});
-    setCurrentView('edit');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  // ─────────────────────────────────────────────────────────────
+  // 1. DATA LOADING: Fetch hierarchical company & branches
+  // ─────────────────────────────────────────────────────────────
+  const loadCompanies = async (page = currentPage, search = searchTerm, status = selectedStatus) => {
+    setIsLoading(true);
+    try {
+      const res = await CompanyApi.getCompanies({
+        page,
+        limit: itemsPerPage,
+        search: search.trim(),
+        status: status !== 'ALL' ? status : undefined,
+      });
 
-  // Open Quick View Form (Switches view in the same card)
-  const handleOpenViewForm = (company) => {
-    setFormData({ ...company });
-    setFormErrors({});
-    setCurrentView('view');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Switch back to List View
-  const handleBackToList = () => {
-    setCurrentView('list');
-    setFormErrors({});
-    setSaveSuccessMessage('');
-  };
-
-  // Handle Form Change with Active Input Sanitization
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    let sanitizedValue = value;
-
-    // Strictly enforce: Name fields can only accept letters (blocks typing numbers)
-    if (name === 'contactPerson' || name === 'city' || name === 'state') {
-      sanitizedValue = sanitizeNameInput(value);
-    }
-    // Strictly enforce: Number/Mobile fields can only accept digits
-    else if (name === 'companyMobile') {
-      sanitizedValue = sanitizePhoneInput(value);
-    }
-    // Strictly enforce: Pincode can only accept digits (max 6)
-    else if (name === 'pincode') {
-      sanitizedValue = sanitizeNumberInput(value).slice(0, 6);
-    }
-
-    setFormData((prev) => ({ ...prev, [name]: sanitizedValue }));
-    if (formErrors[name]) {
-      setFormErrors((prev) => ({ ...prev, [name]: null }));
-    }
-  };
-
-  // Handle Logo Upload
-  const handleLogoUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        companyLogo: URL.createObjectURL(file),
-      }));
-    }
-  };
-
-  // Remove Logo
-  const handleRemoveLogo = () => {
-    setFormData((prev) => ({
-      ...prev,
-      companyLogo: '',
-    }));
-  };
-
-  // GST Verification Simulator
-  const handleTriggerGstVerification = () => {
-    setIsVerifyingGst(true);
-    setTimeout(() => {
-      setIsVerifyingGst(false);
-      const cleanGst = formData.gstNumber.trim().toUpperCase();
-      const now =
-        new Date().toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        }) +
-        ' ' +
-        new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-      if (cleanGst.length === 15) {
-        setFormData((prev) => ({
-          ...prev,
-          gstVerification: 'Valid',
-          gstLegalName: prev.companyName.toUpperCase() + ' (PVT LTD)',
-          gstBusinessStatus: 'Active',
-          gstVerificationDate: now,
-        }));
-      } else if (cleanGst.length === 0) {
-        setFormData((prev) => ({
-          ...prev,
-          gstVerification: 'Not Found',
-          gstLegalName: '—',
-          gstBusinessStatus: 'Inactive',
-          gstVerificationDate: now,
-        }));
+      if (res && res.success && res.data) {
+        const fetched = res.data.companies || [];
+        setCompanies(fetched);
+        setTotalCount(res.data.pagination?.total ?? fetched.length);
+        setIsBackendConnected(true);
       } else {
-        setFormData((prev) => ({
-          ...prev,
-          gstVerification: 'Invalid',
-          gstLegalName: 'Verification Failed / No Record',
-          gstBusinessStatus: 'Cancelled',
-          gstVerificationDate: now,
-        }));
+        setIsBackendConnected(false);
       }
-    }, 450);
+    } catch (err) {
+      console.error('Failed to load companies:', err);
+      setIsBackendConnected(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Save Company Handler with Strict Custom Validations
-  const handleSaveCompany = (e) => {
-    e.preventDefault();
-
-    const errors = {};
-
-    // 1. Company Name validation (Required)
-    const nameErr = validateRequired(formData.companyName, 'Company name');
-    if (nameErr) errors.companyName = nameErr;
-
-    // 2. Contact Person validation (Name field: Strings only, no numbers allowed)
-    if (formData.contactPerson) {
-      const contactErr = validateName(formData.contactPerson, 'Contact person', false);
-      if (contactErr) errors.contactPerson = contactErr;
-    }
-
-    // 3. Email validation (Mandatory '@' and valid domain format)
-    if (formData.companyEmail) {
-      const emailErr = validateEmail(formData.companyEmail, 'Company email', false);
-      if (emailErr) errors.companyEmail = emailErr;
-    }
-
-    // 4. Mobile validation (Number field: Numbers only)
-    if (formData.companyMobile) {
-      const mobileErr = validatePhone(formData.companyMobile, 'Company mobile', false);
-      if (mobileErr) errors.companyMobile = mobileErr;
-    }
-
-    // 5. City validation (Strings only)
-    if (formData.city) {
-      const cityErr = validateName(formData.city, 'City', false);
-      if (cityErr) errors.city = cityErr;
-    }
-
-    // 6. State validation (Strings only)
-    if (formData.state) {
-      const stateErr = validateName(formData.state, 'State', false);
-      if (stateErr) errors.state = stateErr;
-    }
-
-    // 7. Pincode validation (Numbers only: 6 digits)
-    if (formData.pincode) {
-      const pinErr = validateNumber(formData.pincode, 'Pincode', false, 6, 6);
-      if (pinErr) errors.pincode = pinErr;
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      showToast('Please fix the errors indicated below.', 'warning');
-      window.scrollTo({ top: 120, behavior: 'smooth' });
+  useEffect(() => {
+    if (!isPageMounted.current) {
+      isPageMounted.current = true;
+      loadCompanies(1, searchTerm, selectedStatus);
       return;
     }
 
-    setFormErrors({});
-    const now = '12-Oct-2026 01:09 PM';
+    const timer = setTimeout(() => {
+      loadCompanies(1, searchTerm, selectedStatus);
+      setCurrentPage(1);
+    }, 300);
 
-    if (currentView === 'add') {
-      const newRecord = {
-        ...formData,
-        lastUpdated: now,
-      };
-      setCompanies((prev) => [newRecord, ...prev]);
-      showToast(`Company "${newRecord.companyName}" added successfully!`, 'success');
-    } else {
-      setCompanies((prev) =>
-        prev.map((item) =>
-          item.companyId === formData.companyId ? { ...formData, lastUpdated: now } : item
-        )
-      );
-      showToast(`Company "${formData.companyName}" updated successfully!`, 'success');
-    }
+    return () => clearTimeout(timer);
+  }, [searchTerm, selectedStatus]);
 
-    setCurrentView('list');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  // ─────────────────────────────────────────────────────────────
+  // 2. FILTERING & FLATTENING BRANCHES
+  // ─────────────────────────────────────────────────────────────
+  // Filtered Company List
+  const filteredCompanies = useMemo(() => {
+    const q = searchTerm.toLowerCase();
+    return companies.filter((comp) => {
+      const matchesSearch =
+        !searchTerm ||
+        comp.companyName?.toLowerCase().includes(q) ||
+        comp.companyId?.toLowerCase().includes(q) ||
+        comp.city?.toLowerCase().includes(q) ||
+        comp.contactPerson?.toLowerCase().includes(q);
 
-  // Toggle Company Status (Active <-> Suspended)
-  const handleToggleStatus = (companyId) => {
-    setCompanies((prev) =>
-      prev.map((c) => {
-        if (c.companyId === companyId) {
-          const next = c.companyStatus === 'Active' ? 'Suspended' : 'Active';
-          return { ...c, companyStatus: next };
+      const matchesStatus =
+        selectedStatus === 'ALL' ||
+        comp.status?.toUpperCase() === selectedStatus.toUpperCase();
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [companies, searchTerm, selectedStatus]);
+
+  // Filtered Branches List (Flattened from companies)
+  const allBranchesList = useMemo(() => {
+    const q = searchTerm.toLowerCase();
+    const list = [];
+
+    companies.forEach((comp) => {
+      const branchItems = comp.branches || [];
+      branchItems.forEach((b) => {
+        const matchesSearch =
+          !searchTerm ||
+          b.branchName?.toLowerCase().includes(q) ||
+          b.branchCode?.toLowerCase().includes(q) ||
+          b.city?.toLowerCase().includes(q) ||
+          b.contactPerson?.toLowerCase().includes(q) ||
+          comp.companyName?.toLowerCase().includes(q);
+
+        const matchesStatus =
+          selectedStatus === 'ALL' ||
+          b.status?.toUpperCase() === selectedStatus.toUpperCase();
+
+        if (matchesSearch && matchesStatus) {
+          list.push({
+            ...b,
+            parentCompanyObj: comp,
+            parentCompanyName: comp.companyName,
+          });
         }
-        return c;
-      })
-    );
+      });
+    });
+
+    return list;
+  }, [companies, searchTerm, selectedStatus]);
+
+  // ─────────────────────────────────────────────────────────────
+  // 3. ACTION HANDLERS
+  // ─────────────────────────────────────────────────────────────
+  const handleOpenAddBranch = (parent = null) => {
+    const mainComp = parent || companies.find((c) => c.isMainCompany) || companies[0] || INITIAL_COMPANIES[0];
+    setSelectedCompany(mainComp);
+    setSelectedBranch(null);
+    setShowPassword(false);
+
+    setBranchFormData({
+      parentCompanyId: mainComp.companyId,
+      parentCompanyName: mainComp.companyName,
+      parentGst: mainComp.gstNumber || '33AABCO1234F1Z5',
+      branchName: '',
+      branchCode: '',
+      adminUsername: '',
+      adminPassword: '',
+      confirmPassword: '',
+      contactPerson: '',
+      contactDesignation: 'Branch Manager',
+      email: '',
+      mobile: '',
+      address: '',
+      city: '',
+      state: mainComp.state || 'Tamil Nadu',
+      pincode: '',
+      industry: mainComp.industry || 'Information Technology',
+      employeeSize: '10-50 Employees',
+      status: 'Active',
+    });
+    setBranchFormErrors({});
+    setCurrentView('add-branch');
   };
 
-  // Delete Company
-  const handleDeleteCompany = (companyId) => {
-    const comp = companies.find((c) => c.companyId === companyId);
-    if (window.confirm(`Are you sure you want to delete company "${comp?.companyName || companyId}"?`)) {
-      setCompanies((prev) => prev.filter((c) => c.companyId !== companyId));
-      showToast(`Company "${comp?.companyName || companyId}" deleted.`, 'delete');
+  const handleOpenEditBranch = (branch, parentComp = null) => {
+    const parent = parentComp || branch.parentCompanyObj || companies.find((c) => c.companyId === branch.companyId) || companies[0];
+    setSelectedCompany(parent);
+    setSelectedBranch(branch);
+    setShowPassword(false);
+
+    setBranchFormData({
+      parentCompanyId: parent.companyId,
+      parentCompanyName: parent.companyName,
+      parentGst: parent.gstNumber || '33AABCO1234F1Z5',
+      branchName: branch.branchName || '',
+      branchCode: branch.branchCode || '',
+      adminUsername: branch.adminUsername || '',
+      adminPassword: '',
+      confirmPassword: '',
+      contactPerson: branch.contactPerson || '',
+      contactDesignation: branch.contactDesignation || 'Branch Manager',
+      email: branch.email || '',
+      mobile: branch.mobile || '',
+      address: branch.address || '',
+      city: branch.city || '',
+      state: branch.state || 'Tamil Nadu',
+      pincode: branch.pincode || '',
+      industry: branch.industry || parent.industry || 'Information Technology',
+      employeeSize: branch.employeeSize || '10-50 Employees',
+      status: branch.status || 'Active',
+    });
+    setBranchFormErrors({});
+    setCurrentView('edit-branch');
+  };
+
+  const handleOpenViewBranch = (branch, parentComp = null) => {
+    handleOpenEditBranch(branch, parentComp);
+    setCurrentView('view-branch');
+  };
+
+  const handleOpenEditCompany = (company) => {
+    setSelectedCompany(company);
+    setCompanyFormData({
+      ...company,
+      companyId: company.companyId,
+      companyName: company.companyName,
+      companyLogo: company.companyLogo || defaultLogo,
+      aboutCompany: company.aboutCompany || '',
+      industry: company.industry || 'Information Technology',
+      companySize: company.companySize || '500-1000 Employees',
+      website: company.website || '',
+      companyEmail: company.companyEmail || company.email || '',
+      companyMobile: company.companyMobile || company.mobile || '',
+      contactPerson: company.contactPerson || '',
+      contactDesignation: company.contactDesignation || '',
+      registeredAddress: company.registeredAddress || company.address || '',
+      city: company.city || '',
+      state: company.state || 'Tamil Nadu',
+      pincode: company.pincode || '',
+      gstNumber: company.gstNumber || '',
+      gstVerificationStatus: company.gstVerificationStatus || 'Valid',
+      status: company.status || 'Active',
+    });
+    setCompanyFormErrors({});
+    setCurrentView('edit-company');
+  };
+
+  const handleOpenViewCompany = (company) => {
+    handleOpenEditCompany(company);
+    setCurrentView('view-company');
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. BRANCH SUBMISSION & VALIDATION
+  // ─────────────────────────────────────────────────────────────
+  const handleBranchInputChange = (e) => {
+    const { name, value } = e.target;
+    let sanitizedVal = value;
+
+    if (name === 'contactPerson') sanitizedVal = sanitizeNameInput(value);
+    if (name === 'mobile') sanitizedVal = sanitizePhoneInput(value).slice(0, 10);
+    if (name === 'pincode') sanitizedVal = sanitizeNumberInput(value).slice(0, 6);
+    if (name === 'branchCode') sanitizedVal = value.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+    if (name === 'adminUsername') sanitizedVal = value.toLowerCase().replace(/[^a-z0-9_.]/g, '');
+
+    setBranchFormData((prev) => ({ ...prev, [name]: sanitizedVal }));
+    if (branchFormErrors[name]) {
+      setBranchFormErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
-  return (
-    <div className="company-details-page animate-fade-in">
-      {/* Floating Animated Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          duration={3500}
-          onClose={() => setToast(null)}
-        />
-      )}
+  const validateBranchForm = () => {
+    const errors = {};
+    const nameErr = validateRequired(branchFormData.branchName, 'Branch Name');
+    if (nameErr) errors.branchName = nameErr;
 
-      {/* 1. Page Header */}
-      <div className="companies-header-row">
-        {currentView === 'list' ? (
-          <>
-            <div>
-              <h1 className="companies-main-title">Company Details</h1>
-            </div>
+    const codeErr = validateRequired(branchFormData.branchCode, 'Branch Code');
+    if (codeErr) errors.branchCode = codeErr;
+
+    // Validate Credentials in Add Branch mode
+    if (currentView === 'add-branch') {
+      if (!branchFormData.adminUsername || branchFormData.adminUsername.trim().length < 3) {
+        errors.adminUsername = 'Username must be at least 3 characters.';
+      }
+
+      if (!branchFormData.adminPassword || branchFormData.adminPassword.length < 6) {
+        errors.adminPassword = 'Password must be at least 6 characters.';
+      }
+
+      if (branchFormData.adminPassword !== branchFormData.confirmPassword) {
+        errors.confirmPassword = 'Passwords do not match.';
+      }
+    }
+
+    const personErr = validateName(branchFormData.contactPerson, 'Contact Person');
+    if (personErr) errors.contactPerson = personErr;
+
+    const emailErr = validateEmail(branchFormData.email, 'Email Address');
+    if (emailErr) errors.email = emailErr;
+
+    const mobileErr = validatePhone(branchFormData.mobile, 'Mobile Number');
+    if (mobileErr) errors.mobile = mobileErr;
+
+    const addrErr = validateRequired(branchFormData.address, 'Address');
+    if (addrErr) errors.address = addrErr;
+
+    const cityErr = validateRequired(branchFormData.city, 'City');
+    if (cityErr) errors.city = cityErr;
+
+    const stateErr = validateRequired(branchFormData.state, 'State');
+    if (stateErr) errors.state = stateErr;
+
+    const pinErr = validateNumber(branchFormData.pincode, 'Pincode', 6, 6);
+    if (pinErr) errors.pincode = pinErr;
+
+    setBranchFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveBranch = async (e) => {
+    e.preventDefault();
+    if (!validateBranchForm()) {
+      showToast('Please correct the validation errors in the form.', 'error');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const parentId = branchFormData.parentCompanyId || selectedCompany?.companyId;
+
+      if (selectedBranch) {
+        // Update Branch
+        const branchId = selectedBranch._id || selectedBranch.id;
+        const res = await CompanyApi.updateBranch(parentId, branchId, branchFormData);
+        if (res && res.success) {
+          showToast('Branch updated successfully.', 'success');
+          await loadCompanies();
+          setCurrentView('list');
+        } else {
+          showToast(res?.message || 'Failed to update branch.', 'error');
+        }
+      } else {
+        // Create Branch with Administrator Credentials
+        const res = await CompanyApi.createBranch(parentId, branchFormData);
+        if (res && (res.success || res._id || res.data)) {
+          const userNote = branchFormData.adminUsername
+            ? `Branch created! Administrator account (${branchFormData.adminUsername}) is active.`
+            : 'Branch created successfully and administrator credentials configured.';
+          showToast(userNote, 'success');
+          await loadCompanies();
+          setCurrentView('list');
+        } else {
+          showToast(res?.message || 'Failed to create branch.', 'error');
+          if (res?.message && res.message.toLowerCase().includes('already taken')) {
+            setBranchFormErrors((prev) => ({ ...prev, adminUsername: 'Username is already taken.' }));
+          }
+          if (res?.message && res.message.toLowerCase().includes('already exists')) {
+            setBranchFormErrors((prev) => ({ ...prev, branchCode: 'Branch code already in use.' }));
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error saving branch:', err);
+      showToast('Network error while saving branch.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteBranch = async (branch, parentCompany) => {
+    if (!window.confirm(`Are you sure you want to delete "${branch.branchName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const branchId = branch._id || branch.id;
+      const res = await CompanyApi.deleteBranch(parentCompany.companyId, branchId);
+      if (res && res.success) {
+        showToast(`Branch "${branch.branchName}" deleted successfully.`, 'success');
+        await loadCompanies();
+      } else {
+        showToast(res?.message || 'Failed to delete branch.', 'error');
+      }
+    } catch (err) {
+      console.error('Delete branch error:', err);
+      showToast('Error deleting branch.', 'error');
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // 5. COMPANY FORM SUBMISSION
+  // ─────────────────────────────────────────────────────────────
+  const handleCompanyInputChange = (e) => {
+    const { name, value } = e.target;
+    let sanitizedVal = value;
+    if (name === 'contactPerson') sanitizedVal = sanitizeNameInput(value);
+    if (name === 'companyMobile') sanitizedVal = sanitizePhoneInput(value);
+    if (name === 'pincode') sanitizedVal = sanitizeNumberInput(value).slice(0, 6);
+
+    setCompanyFormData((prev) => ({ ...prev, [name]: sanitizedVal }));
+    if (companyFormErrors[name]) {
+      setCompanyFormErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSaveCompany = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const companyId = companyFormData.companyId || companyFormData._id;
+      const res = await CompanyApi.updateCompany(companyId, companyFormData);
+      if (res && (res.success || res.companyId)) {
+        showToast(`Company "${companyFormData.companyName}" updated successfully.`, 'success');
+        await loadCompanies();
+        setCurrentView('list');
+      } else {
+        showToast(res?.message || 'Failed to update company.', 'error');
+      }
+    } catch (err) {
+      console.error('Update company error:', err);
+      showToast('Error saving company.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // RENDER VIEW
+  // ─────────────────────────────────────────────────────────────
+  return (
+    <div className="company-details-page">
+      {/* Toast Notification */}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {/* ══════════════════════════════════════════════════════════
+          VIEW 1: DUAL TABLES (Company List & Branch List)
+          ══════════════════════════════════════════════════════════ */}
+      {currentView === 'list' && (
+        <>
+          {/* Header Row: Title & "+ Add Branch" Button */}
+          <div className="companies-header-row">
+            <h1 className="companies-main-title">Company Details</h1>
             <button
               type="button"
               className="btn-save-header-action"
-              onClick={handleOpenAddForm}
+              onClick={() => handleOpenAddBranch()}
+              title="Add a new sub-branch under Ocean Software"
             >
-              <Plus size={16} strokeWidth={2.5} />
-              <span>Add Company</span>
+              <Plus size={16} />
+              <span>Add Branch</span>
             </button>
-          </>
-        ) : (
-          <>
-            <div>
-              <h1 className="companies-main-title">
-                {currentView === 'add'
-                  ? 'Add Company Details'
-                  : currentView === 'edit'
-                    ? `Edit Company Details — ${formData.companyName}`
-                    : `Company Details — ${formData.companyName}`}
-              </h1>
-            </div>
-
-            <button
-              type="button"
-              className="btn-back-to-list"
-              onClick={handleBackToList}
-              title="Back to Companies List"
-            >
-              <ArrowLeft size={16} strokeWidth={2.5} />
-              <span>Back to List</span>
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* 2. Main White Container Card (Everything renders inside here without popups!) */}
-      <div className="companies-main-card">
-        {saveSuccessMessage && (
-          <div className="inpage-success-banner">
-            <CheckCircle2 size={16} />
-            <span>{saveSuccessMessage}</span>
           </div>
-        )}
 
-        {/* =========================================================================
-            VIEW 1: TABLE LIST VIEW (When currentView === 'list')
-            ========================================================================= */}
-        {currentView === 'list' && (
-          <>
-            {/* Toolbar: Search (Left) + Status Filter (Right) */}
-            <div className="companies-toolbar">
-              {/* Left: Search Input Box */}
-              <div className="company-search-input">
-                <Search size={16} color="var(--text-muted)" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                />
+          {/* Search and Status Filter Toolbar */}
+          <div className="companies-main-card" style={{ padding: '0.85rem 1.25rem', marginBottom: '0.5rem' }}>
+            <div className="companies-toolbar" style={{ margin: 0 }}>
+              <div className="toolbar-left-group">
+                <div style={{ position: 'relative', width: '320px' }}>
+                  <Search
+                    size={16}
+                    style={{
+                      position: 'absolute',
+                      left: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: 'var(--text-muted)',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search company, branch, code or location..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="company-search-input"
+                    style={{ paddingLeft: '36px' }}
+                  />
+                </div>
               </div>
 
-              {/* Right: Company Status Filter */}
               <select
-                className="toolbar-filter-select"
                 value={selectedStatus}
-                onChange={(e) => {
-                  setSelectedStatus(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="toolbar-filter-select"
               >
-                <option value="ALL">All Company Statuses</option>
+                <option value="ALL">All Status</option>
                 <option value="Active">Active</option>
-                <option value="Pending">Pending</option>
-                <option value="Suspended">Suspended</option>
+                <option value="Inactive">Inactive</option>
                 <option value="Blocked">Blocked</option>
-                <option value="Closed">Closed</option>
+                <option value="Suspended">Suspended</option>
               </select>
             </div>
+          </div>
 
-            {/* Companies List Table (Solid Primary Banner Header + Clean Rows) */}
-            <div className="companies-table-container">
+          {/* ═══════════════════════════════════════════════════════
+              SECTION 1: COMPANY LIST TABLE
+              ═══════════════════════════════════════════════════════ */}
+          <div className="section-table-box main-company-table-box" style={{ overflow: 'visible', maxHeight: 'none' }}>
+            <div className="module-section-header">
+              <div className="module-section-title-wrap">
+                <h2 className="module-section-title">
+                  <Building2 size={18} style={{ color: 'var(--primary)' }} />
+                  <span>Main Company</span>
+                </h2>
+                
+              </div>
+            </div>
+
+            <div className="companies-table-container main-company-table-container" style={{ overflowY: 'hidden', overflowX: 'auto', maxHeight: 'none' }}>
               <table className="companies-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '50px' }}>S.NO</th>
-                    <th>COMPANY</th>
-                    <th>CONTACT PERSON</th>
-                    <th>INDUSTRY & SIZE</th>
-                    <th>LOCATION</th>
-                    <th>GST VERIFICATION</th>
-                    <th>STATUS</th>
-                    <th style={{ textAlign: 'center' }}>ACTION</th>
+                    <th style={{ width: '60px', textAlign: 'center' }}>S.NO</th>
+                    <th style={{ textAlign: 'left' }}>COMPANY NAME</th>
+                    <th style={{ textAlign: 'left' }}>COMPANY CODE</th>
+                    <th style={{ textAlign: 'left' }}>REGISTERED ADDRESS</th>
+                    <th style={{ textAlign: 'left' }}>CONTACT PERSON</th>
+                    <th style={{ textAlign: 'center' }}>TOTAL BRANCHES</th>
+                    <th style={{ textAlign: 'center' }}>STATUS</th>
+                    <th style={{ textAlign: 'center', width: '110px' }}>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredCompanies.length === 0 ? (
                     <tr>
                       <td colSpan="8" className="empty-table-cell">
-                        No companies found matching your criteria.
+                        {isLoading ? 'Loading company records...' : 'No companies found matching criteria.'}
                       </td>
                     </tr>
                   ) : (
-                    paginatedCompanies.map((company, index) => {
-                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                    filteredCompanies.map((company, index) => {
+                      const branchCount = (company.branches || []).length;
                       return (
-                        <tr key={company.companyId}>
+                        <tr key={company.companyId || company._id}>
                           {/* S.NO */}
-                          <td style={{ fontWeight: 600 }}>{serialNumber}</td>
+                          <td style={{ textAlign: 'center', fontWeight: 600 }}>{index + 1}</td>
 
-                        {/* COMPANY (Logo + Name + ID) */}
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <div className="company-info-cell" style={{ whiteSpace: 'nowrap' }}>
-                            <div className="company-logo-mini">
-                              {company.companyLogo ? (
-                                <img src={company.companyLogo} alt={company.companyName} />
-                              ) : (
-                                <span className="company-logo-letter">
-                                  {company.companyName ? company.companyName.trim().charAt(0).toUpperCase() : 'C'}
+                          {/* COMPANY NAME */}
+                          <td style={{ textAlign: 'left' }}>
+                            <div className="company-info-cell" style={{ justifyContent: 'flex-start' }}>
+                              <div className="company-logo-mini">
+                                {company.companyLogo ? (
+                                  <img src={company.companyLogo} alt={company.companyName} />
+                                ) : (
+                                  <span className="company-logo-letter">
+                                    {company.companyName ? company.companyName.trim().charAt(0).toUpperCase() : 'O'}
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                                <span className="company-name-title" style={{ fontSize: '0.94rem', fontWeight: 800 }}>
+                                  {company.companyName}
                                 </span>
-                              )}
+                                {company.isMainCompany && (
+                                  <span className="badge-main-company" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>
+                                    Main Company
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <div style={{ whiteSpace: 'nowrap' }}>
-                              <span className="company-name-title" style={{ whiteSpace: 'nowrap' }}>
-                                {company.companyName}
+                          </td>
+
+                          {/* COMPANY CODE */}
+                          <td style={{ textAlign: 'left' }}>
+                            <span className="code-pill" style={{ fontWeight: 700, color: '#1e293b' }}>
+                              {company.companyId}
+                            </span>
+                          </td>
+
+                          {/* REGISTERED ADDRESS */}
+                          <td style={{ textAlign: 'left' }}>
+                            <div className="location-cell-wrapper" style={{ justifyContent: 'flex-start' }}>
+                              <span className="location-pill">
+                                <MapPin size={12} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                                <span style={{ fontWeight: 600 }}>{company.city || 'Chennai'}</span>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                                  {company.state || 'Tamil Nadu'}
+                                </span>
                               </span>
-                              <div className="company-sub-id" style={{ whiteSpace: 'nowrap' }}>
-                                {company.companyId}
+
+                              <div className="location-tooltip">
+                                <div className="tooltip-title">{company.companyName}</div>
+                                <div className="tooltip-address">{company.registeredAddress}</div>
+                                <div className="tooltip-meta">
+                                  <span>{company.city}, {company.state}</span>
+                                  {company.pincode && <span className="tooltip-pin">PIN: {company.pincode}</span>}
+                                </div>
+                                <div className="tooltip-arrow"></div>
                               </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* CONTACT PERSON (Name + Designation + Mobile) */}
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <div style={{ whiteSpace: 'nowrap' }}>
-                            <span className="contact-name-title" style={{ whiteSpace: 'nowrap' }}>
-                              {company.contactPerson}
+                          {/* CONTACT PERSON */}
+                          <td style={{ textAlign: 'left' }}>
+                            <div className="contact-name-title">{company.contactPerson || 'MATHAN'}</div>
+                            <div className="contact-sub-meta">
+                              {company.companyMobile || company.mobile || company.companyEmail || company.email}
+                            </div>
+                          </td>
+
+                          {/* TOTAL BRANCHES */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className="company-branch-count-btn">
+                              <GitBranch size={13} />
+                              <span>{branchCount} {branchCount === 1 ? 'Branch' : 'Branches'}</span>
                             </span>
-                            <div className="contact-sub-meta" style={{ whiteSpace: 'nowrap' }}>
-                              {company.contactDesignation} • {company.companyMobile}
-                            </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* INDUSTRY & SIZE */}
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <div style={{ whiteSpace: 'nowrap' }}>
-                            <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>
-                              {company.industry}
-                            </div>
-                            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                              {company.companySize}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* LOCATION (City, State) with Interactive Hover Tooltip */}
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <div
-                            className="location-cell-wrapper"
-                            title={`${company.registeredAddress}, ${company.city}, ${company.state} - ${company.pincode}`}
-                          >
-                            <div className="location-pill">
-                              <MapPin size={14} color="var(--primary)" />
-                              <span>{company.city}, {company.state}</span>
-                            </div>
-
-                            {/* Hover Tooltip Box */}
-                            <div className="location-tooltip">
-                              <div className="tooltip-title">Registered Office Address</div>
-                              <div className="tooltip-address">{company.registeredAddress}</div>
-                              <div className="tooltip-meta">
-                                <span>{company.city}, {company.state}</span>
-                                <span className="tooltip-pin">PIN: {company.pincode}</span>
-                              </div>
-                              <div className="tooltip-arrow" />
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* GST VERIFICATION (Badge + GSTIN) */}
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                            <span
-                              className={`gst-status-badge ${company.gstVerification
-                                .toLowerCase()
-                                .replace(/\s+/g, '_')}`}
-                            >
-                              {company.gstVerification === 'Valid' && <CheckCircle2 size={12} />}
-                              {company.gstVerification === 'Invalid' && <XCircle size={12} />}
-                              {company.gstVerification === 'Not Found' && <AlertTriangle size={12} />}
-                              {company.gstVerification === 'Verification Failed' && (
-                                <AlertTriangle size={12} />
-                              )}
-                              <span>{company.gstVerification}</span>
+                          {/* STATUS */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span className={`company-status-pill ${(company.status || 'Active').toLowerCase()}`}>
+                              {company.status || 'Active'}
                             </span>
-                            <span className="gst-sub-number">{company.gstNumber}</span>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* COMPANY STATUS (Pending, Active, Suspended, Blocked, Closed) */}
-                        <td style={{ whiteSpace: 'nowrap' }}>
-                          <span
-                            className={`company-status-pill ${company.companyStatus.toLowerCase()}`}
-                          >
-                            {company.companyStatus}
-                          </span>
-                        </td>
-
-                        {/* ACTION (Edit, View, Status Toggle, Delete) */}
-                        <td style={{ whiteSpace: 'nowrap', textAlign: 'center' }}>
-                          <div className="table-actions-cluster">
-                            {/* Edit Button */}
-                            <button
-                              type="button"
-                              className="action-icon-button"
-                              title="Edit Company Details"
-                              onClick={() => handleOpenEditForm(company)}
-                            >
-                              <Edit2 size={16} />
-                            </button>
-
-                            {/* Quick View Button */}
-                            <button
-                              type="button"
-                              className="action-icon-button"
-                              title="View Company Record"
-                              onClick={() => handleOpenViewForm(company)}
-                            >
-                              <Eye size={16} />
-                            </button>
-
-                            {/* Status Toggle Button */}
-                            <button
-                              type="button"
-                              className="action-icon-button"
-                              title={
-                                company.companyStatus === 'Active'
-                                  ? 'Suspend Account'
-                                  : 'Activate Account'
-                              }
-                              onClick={() => handleToggleStatus(company.companyId)}
-                            >
-                              {company.companyStatus === 'Active' ? (
-                                <Unlock size={16} color="var(--color-success)" />
-                              ) : (
-                                <Lock size={16} color="var(--color-warning)" />
-                              )}
-                            </button>
-
-                            {/* Delete Button */}
-                            <button
-                              type="button"
-                              className="action-icon-button delete"
-                              title="Delete Company"
-                              onClick={() => handleDeleteCompany(company.companyId)}
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
+                          {/* ACTIONS */}
+                          <td style={{ textAlign: 'center' }}>
+                            <div className="table-actions-cluster" style={{ justifyContent: 'center' }}>
+                              <button
+                                type="button"
+                                className="action-icon-button"
+                                title="View Company Details"
+                                onClick={() => handleOpenViewCompany(company)}
+                              >
+                                <Eye size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                className="action-icon-button"
+                                title="Edit Company Details"
+                                onClick={() => handleOpenEditCompany(company)}
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })
@@ -767,411 +808,868 @@ export const CompanyProfile = () => {
                 </tbody>
               </table>
             </div>
+          </div>
 
-            {/* Pagination Footer */}
-            <div className="companies-pagination-row">
-              <div className="pagination-entries-count">
-                Showing {filteredCompanies.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
-                {Math.min(currentPage * itemsPerPage, filteredCompanies.length)} of{' '}
-                {filteredCompanies.length} entries
-              </div>
-              <div className="pagination-controls">
-                <button
-                  type="button"
-                  className={`pagination-nav-btn ${currentPage === 1 ? 'disabled' : ''}`}
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    className={`pagination-page-btn ${currentPage === page ? 'active' : ''}`}
-                    onClick={() => setCurrentPage(page)}
-                  >
-                    {page}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className={`pagination-nav-btn ${currentPage === totalPages ? 'disabled' : ''}`}
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  <ChevronRight size={16} />
-                </button>
+          {/* ═══════════════════════════════════════════════════════
+              SECTION 2: BRANCH LIST TABLE
+              ═══════════════════════════════════════════════════════ */}
+          <div className="section-table-box">
+            <div className="module-section-header">
+              <div className="module-section-title-wrap">
+                <h2 className="module-section-title">
+                  <GitBranch size={18} style={{ color: 'var(--primary)' }} />
+                  <span>Branch List</span>
+                </h2>
+                <span className="module-section-badge">
+                  {allBranchesList.length} {allBranchesList.length === 1 ? 'Branch' : 'Branches'}
+                </span>
               </div>
             </div>
-          </>
-        )}
 
-        {/* =========================================================================
-            VIEW 2: IN-PAGE EDIT / VIEW FORM (Table is hidden, no popup!)
-            ========================================================================= */}
-        {currentView !== 'list' && (
-          <form
-            id="inpage-company-form"
-            onSubmit={handleSaveCompany}
-            className="inpage-company-form"
-            noValidate
-          >
-            {/* SECTION 1: Company & Business Identity */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">1. COMPANY INFORMATION</div>
-
-              {/* Logo Upload Row */}
-              <div className="inpage-logo-row">
-                <div className="inpage-logo-preview">
-                  {formData.companyLogo ? (
-                    <img src={formData.companyLogo} alt="Logo Preview" />
+            <div className="companies-table-container">
+              <table className="companies-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '60px', textAlign: 'center' }}>S.NO</th>
+                    <th style={{ textAlign: 'left' }}>BRANCH NAME</th>
+                    <th style={{ textAlign: 'left' }}>BRANCH CODE</th>
+                    <th style={{ textAlign: 'left' }}>PARENT COMPANY</th>
+                    <th style={{ textAlign: 'left' }}>LOCATION / ADDRESS</th>
+                    <th style={{ textAlign: 'left' }}>CONTACT PERSON</th>
+                    <th style={{ textAlign: 'center' }}>STATUS</th>
+                    <th style={{ textAlign: 'center', width: '110px' }}>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allBranchesList.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="empty-table-cell">
+                        No sub-branches registered yet. Click "+ Add Branch" to create one.
+                      </td>
+                    </tr>
                   ) : (
-                    <span className="company-logo-letter large">
-                      {formData.companyName ? formData.companyName.trim().charAt(0).toUpperCase() : 'C'}
-                    </span>
+                    allBranchesList.map((branch, index) => (
+                      <tr key={branch._id || branch.branchCode || index}>
+                        {/* S.NO */}
+                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{index + 1}</td>
+
+                        {/* BRANCH NAME */}
+                        <td style={{ textAlign: 'left' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.91rem' }}>
+                            {branch.branchName}
+                          </span>
+                        </td>
+
+                        {/* BRANCH CODE */}
+                        <td style={{ textAlign: 'left' }}>
+                          <span className="code-pill">
+                            {branch.branchCode}
+                          </span>
+                        </td>
+
+                        {/* PARENT COMPANY */}
+                        <td style={{ textAlign: 'left' }}>
+                          <span className="parent-company-name">
+                            {branch.parentCompanyName || 'Ocean Software'}
+                          </span>
+                        </td>
+
+                        {/* LOCATION */}
+                        <td style={{ textAlign: 'left' }}>
+                          <div className="location-cell-wrapper" style={{ justifyContent: 'flex-start' }}>
+                            <span className="location-pill">
+                              <MapPin size={12} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                              <span>{branch.city || 'Tamil Nadu'}</span>
+                            </span>
+
+                            <div className="location-tooltip">
+                              <div className="tooltip-title">{branch.branchName}</div>
+                              <div className="tooltip-address">{branch.address || 'Address on file'}</div>
+                              <div className="tooltip-meta">
+                                <span>{branch.city}, {branch.state}</span>
+                                {branch.pincode && <span className="tooltip-pin">PIN: {branch.pincode}</span>}
+                              </div>
+                              <div className="tooltip-arrow"></div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* CONTACT PERSON */}
+                        <td style={{ textAlign: 'left' }}>
+                          <div className="contact-name-title">{branch.contactPerson || 'Branch Admin'}</div>
+                          <div className="contact-sub-meta">
+                            {branch.mobile ? `+91 ${branch.mobile}` : branch.email}
+                          </div>
+                        </td>
+
+                        {/* STATUS */}
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`company-status-pill ${(branch.status || 'Active').toLowerCase()}`}>
+                            {branch.status || 'Active'}
+                          </span>
+                        </td>
+
+                        {/* ACTIONS */}
+                        <td style={{ textAlign: 'center' }}>
+                          <div className="table-actions-cluster" style={{ justifyContent: 'center' }}>
+                            <button
+                              type="button"
+                              className="action-icon-button"
+                              title="Edit Branch"
+                              onClick={() => handleOpenEditBranch(branch, branch.parentCompanyObj)}
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              className="action-icon-button delete"
+                              title="Delete Branch"
+                              onClick={() => handleDeleteBranch(branch, branch.parentCompanyObj)}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
-                </div>
-                {currentView !== 'view' && (
-                  <div className="inpage-logo-actions">
-                    <label className="btn-upload-file">
-                      <Upload size={14} />
-                      <span>Upload Logo</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                    {formData.companyLogo && (
-                      <button
-                        type="button"
-                        className="btn-remove-file"
-                        onClick={handleRemoveLogo}
-                      >
-                        Remove
-                      </button>
-                    )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          VIEW 2: ADD / EDIT / VIEW BRANCH FORM (With Credentials Section)
+          ══════════════════════════════════════════════════════════ */}
+      {(currentView === 'add-branch' || currentView === 'edit-branch' || currentView === 'view-branch') && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={() => setCurrentView('list')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Company & Branch Management</span>
+            </button>
+          </div>
+
+          <div className="companies-header-row">
+            <div>
+              <h1 className="companies-main-title">
+                {currentView === 'view-branch'
+                  ? 'Sub-Branch Profile (Read-Only)'
+                  : currentView === 'edit-branch'
+                  ? 'Edit Sub-Branch'
+                  : 'Add New Sub-Branch'}
+              </h1>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: 'var(--text-muted)' }}>
+                {currentView === 'add-branch'
+                  ? 'Manage sub-branch parameters under Ocean Software organization.'
+                  : 'Manage sub-branch parameters under Ocean Software organization.'}
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveBranch} className="inpage-company-form">
+            {/* SECTION 1: PARENT COMPANY (READ-ONLY) */}
+            <div className="inpage-section-box">
+              <div className="inpage-section-header">
+                1. Parent Company Details (Read-Only)
+              </div>
+              <div className="readonly-parent-card">
+                <div>
+                  <div className="parent-title">
+                    <Building2 size={18} style={{ color: 'var(--primary)' }} />
+                    <span>{branchFormData.parentCompanyName || 'Ocean Software'}</span>
+                    <span className="parent-code-badge">
+                      {branchFormData.parentCompanyId || 'OCN-001'}
+                    </span>
                   </div>
-                )}
+                  <div style={{ marginTop: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Parent Company is registered by Super Admin. Sub-branches inherit parent enterprise configuration.
+                  </div>
+                </div>
+
+                <div className="super-admin-gst-tag">
+                  <ShieldCheck size={14} />
+                  <span>GSTIN: {branchFormData.parentGst || '33AABCO1234F1Z5'} (Super Admin Verified)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: BRANCH IDENTITY & CLASSIFICATION */}
+            <div className="inpage-section-box">
+              <div className="inpage-section-header">
+                2. Branch Identity & Classification
               </div>
 
               <div className="inpage-grid-3col">
-
-
-                {/* Company Name */}
                 <div className="form-field-group">
-                  <label>Company Name *</label>
+                  <label>
+                    Branch Name <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="text"
-                    name="companyName"
-                    value={formData.companyName}
-                    onChange={handleInputChange}
-                    readOnly={currentView === 'view'}
-                    placeholder="Enter company name"
-                    className={`form-control-input ${formErrors.companyName ? 'has-error' : ''}`}
+                    name="branchName"
+                    placeholder="e.g. Tambaram Branch"
+                    value={branchFormData.branchName}
+                    onChange={handleBranchInputChange}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
-                  <FieldError error={formErrors.companyName} />
+                  <FieldError error={branchFormErrors.branchName} />
                 </div>
 
-                {/* Industry */}
                 <div className="form-field-group">
-                  <label>Industry *</label>
+                  <label>
+                    Branch Code <span style={{ color: '#dc2626' }}>*</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: '6px' }}>
+                      (Unique within company)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    name="branchCode"
+                    placeholder="e.g. OCN-TAM-001"
+                    value={branchFormData.branchCode}
+                    onChange={handleBranchInputChange}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                  />
+                  <FieldError error={branchFormErrors.branchCode} />
+                </div>
+
+                <div className="form-field-group">
+                  <label>Branch Status <span style={{ color: '#dc2626' }}>*</span></label>
+                  {currentView === 'view-branch' ? (
+                    <input
+                      type="text"
+                      value={branchFormData.status}
+                      readOnly
+                      className="form-control-input readonly"
+                    />
+                  ) : (
+                    <select
+                      name="status"
+                      value={branchFormData.status}
+                      onChange={handleBranchInputChange}
+                      className="form-control-select"
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              <div className="inpage-grid-2col">
+                <div className="form-field-group">
+                  <label>Industry</label>
                   <input
                     type="text"
                     name="industry"
-                    value={formData.industry}
-                    onChange={handleInputChange}
-                    readOnly={currentView === 'view'}
-                    required
                     placeholder="e.g. Information Technology"
-                    className="form-control-input"
+                    value={branchFormData.industry}
+                    onChange={handleBranchInputChange}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
                 </div>
 
-                {/* Company Size */}
                 <div className="form-field-group">
-                  <label>Company Size *</label>
-                  <select
-                    name="companySize"
-                    value={formData.companySize}
-                    onChange={handleInputChange}
-                    disabled={currentView === 'view'}
-                    className="form-control-select"
-                  >
-                    <option value="1-10 Employees">1-10 Employees</option>
-                    <option value="11-50 Employees">11-50 Employees</option>
-                    <option value="51-200 Employees">51-200 Employees</option>
-                    <option value="201-500 Employees">201-500 Employees</option>
-                    <option value="501-1000 Employees">501-1000 Employees</option>
-                    <option value="1000+ Employees">1000+ Employees</option>
-                  </select>
+                  <label>Employee Size</label>
+                  {currentView === 'view-branch' ? (
+                    <input
+                      type="text"
+                      value={branchFormData.employeeSize}
+                      readOnly
+                      className="form-control-input readonly"
+                    />
+                  ) : (
+                    <select
+                      name="employeeSize"
+                      value={branchFormData.employeeSize}
+                      onChange={handleBranchInputChange}
+                      className="form-control-select"
+                    >
+                      <option value="1-10 Employees">1-10 Employees</option>
+                      <option value="11-50 Employees">11-50 Employees</option>
+                      <option value="51-200 Employees">51-200 Employees</option>
+                      <option value="201-500 Employees">201-500 Employees</option>
+                      <option value="500+ Employees">500+ Employees</option>
+                    </select>
+                  )}
                 </div>
-
-                {/* Website */}
-                <div className="form-field-group" style={{ gridColumn: 'span 2' }}>
-                  <label>Website</label>
-                  <input
-                    type="url"
-                    name="website"
-                    value={formData.website}
-                    onChange={handleInputChange}
-                    readOnly={currentView === 'view'}
-                    placeholder="https://example.com"
-                    className="form-control-input"
-                  />
-                </div>
-              </div>
-
-              {/* About Company */}
-              <div className="form-field-group" style={{ marginTop: '0.25rem' }}>
-                <label>About Company</label>
-                <textarea
-                  name="aboutCompany"
-                  value={formData.aboutCompany}
-                  onChange={handleInputChange}
-                  readOnly={currentView === 'view'}
-                  placeholder="Enter brief company description..."
-                  rows={3}
-                  className="form-control-textarea"
-                />
               </div>
             </div>
 
-            {/* SECTION 2: Official Contact & Registered Address */}
+            {/* ── SECTION 3: CREDENTIAL SECTION FOR SUB-BRANCH ── */}
+            {currentView === 'add-branch' && (
+              <div className="inpage-section-box">
+                <div className="inpage-section-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <KeyRound size={16} />
+                  <span>3. Branch Administrator Login Credentials</span>
+                </div>
+
+                <div className="credential-info-callout">
+                  <ShieldCheck size={16} style={{ flexShrink: 0 }} />
+                  <span>
+                    Configure administrator login credentials for this sub-branch. The branch administrator will use these credentials to securely access the HR Portal.
+                  </span>
+                </div>
+
+                <div className="inpage-grid-3col">
+                  <div className="form-field-group">
+                    <label>
+                      Administrator Username <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="adminUsername"
+                      placeholder="e.g. branch_tambaram"
+                      value={branchFormData.adminUsername}
+                      onChange={handleBranchInputChange}
+                      className="form-control-input"
+                    />
+                    <FieldError error={branchFormErrors.adminUsername} />
+                  </div>
+
+                  <div className="form-field-group">
+                    <label>
+                      Login Password <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="adminPassword"
+                        placeholder="Enter password (min 6 chars)"
+                        value={branchFormData.adminPassword}
+                        onChange={handleBranchInputChange}
+                        className="form-control-input"
+                        style={{ paddingRight: '36px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((p) => !p)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#64748b',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    <FieldError error={branchFormErrors.adminPassword} />
+                  </div>
+
+                  <div className="form-field-group">
+                    <label>
+                      Confirm Password <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="confirmPassword"
+                      placeholder="Re-enter password"
+                      value={branchFormData.confirmPassword}
+                      onChange={handleBranchInputChange}
+                      className="form-control-input"
+                    />
+                    <FieldError error={branchFormErrors.confirmPassword} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SECTION 4: BRANCH CONTACT DETAILS */}
             <div className="inpage-section-box">
-              <div className="inpage-section-header">2. OFFICIAL CONTACT & REGISTERED ADDRESS</div>
-              <div className="inpage-grid-4col">
-                {/* Contact Person */}
+              <div className="inpage-section-header">
+                {currentView === 'add-branch' ? '4. Branch Contact Details' : '3. Branch Contact Details'}
+              </div>
+
+              <div className="inpage-grid-2col">
                 <div className="form-field-group">
-                  <label>Contact Person *</label>
+                  <label>
+                    Contact Person Name <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="text"
                     name="contactPerson"
-                    value={formData.contactPerson}
-                    onChange={handleInputChange}
-                    readOnly={currentView === 'view'}
-                    placeholder="Primary contact name (letters only)"
-                    className={`form-control-input ${formErrors.contactPerson ? 'has-error' : ''}`}
+                    placeholder="e.g. Kavitha R"
+                    value={branchFormData.contactPerson}
+                    onChange={handleBranchInputChange}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
-                  <FieldError error={formErrors.contactPerson} />
+                  <FieldError error={branchFormErrors.contactPerson} />
                 </div>
 
-                {/* Contact Designation */}
-
-
-                {/* Company Email */}
                 <div className="form-field-group">
-                  <label>Company Email *</label>
-                  <input
-                    type="email"
-                    name="companyEmail"
-                    value={formData.companyEmail}
-                    onChange={handleInputChange}
-                    readOnly={currentView === 'view'}
-                    placeholder="official@company.com"
-                    className={`form-control-input ${formErrors.companyEmail ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={formErrors.companyEmail} />
-                </div>
-
-                {/* Company Mobile */}
-                <div className="form-field-group">
-                  <label>Company Mobile *</label>
+                  <label>Designation</label>
                   <input
                     type="text"
-                    name="companyMobile"
-                    value={formData.companyMobile}
-                    onChange={handleInputChange}
-                    readOnly={currentView === 'view'}
-                    placeholder="+91 98765 43210 (digits only)"
-                    className={`form-control-input ${formErrors.companyMobile ? 'has-error' : ''}`}
+                    name="contactDesignation"
+                    placeholder="e.g. Operations Lead / Branch Manager"
+                    value={branchFormData.contactDesignation}
+                    onChange={handleBranchInputChange}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
-                  <FieldError error={formErrors.companyMobile} />
                 </div>
               </div>
 
-              <div className="inpage-grid-4col" style={{ marginTop: '1rem' }}>
-                {/* Registered Address */}
-                <div className="form-field-group" style={{ gridColumn: 'span 2' }}>
-                  <label>Registered Address *</label>
+              <div className="inpage-grid-2col">
+                <div className="form-field-group">
+                  <label>
+                    Branch Email Address <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
-                    type="text"
-                    name="registeredAddress"
-                    value={formData.registeredAddress}
-                    onChange={handleInputChange}
-                    readOnly={currentView === 'view'}
-                    placeholder="Street, Building, Area"
-                    className={`form-control-input ${formErrors.registeredAddress ? 'has-error' : ''}`}
+                    type="email"
+                    name="email"
+                    placeholder="e.g. tambaram@oceansoftware.com"
+                    value={branchFormData.email}
+                    onChange={handleBranchInputChange}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
-                  <FieldError error={formErrors.registeredAddress} />
+                  <FieldError error={branchFormErrors.email} />
                 </div>
 
-                {/* City */}
                 <div className="form-field-group">
-                  <label>City *</label>
+                  <label>
+                    Branch Mobile Number (10 Digits) <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="mobile"
+                    placeholder="e.g. 9840112233"
+                    value={branchFormData.mobile}
+                    onChange={handleBranchInputChange}
+                    maxLength={10}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                  />
+                  <FieldError error={branchFormErrors.mobile} />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 5: BRANCH ADDRESS */}
+            <div className="inpage-section-box">
+              <div className="inpage-section-header">
+                {currentView === 'add-branch' ? '5. Branch Address' : '4. Branch Address'}
+              </div>
+
+              <div className="form-field-group">
+                <label>
+                  Address (Street / Building) <span style={{ color: '#dc2626' }}>*</span>
+                </label>
+                <textarea
+                  name="address"
+                  placeholder="e.g. GST Road, Near Sanatorium Railway Station"
+                  value={branchFormData.address}
+                  onChange={handleBranchInputChange}
+                  readOnly={currentView === 'view-branch'}
+                  className={`form-control-textarea ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                />
+                <FieldError error={branchFormErrors.address} />
+              </div>
+
+              <div className="inpage-grid-3col">
+                <div className="form-field-group">
+                  <label>
+                    City <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="text"
                     name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    readOnly={currentView === 'view'}
-                    placeholder="City name (letters only)"
-                    className={`form-control-input ${formErrors.city ? 'has-error' : ''}`}
+                    placeholder="e.g. Chennai / Coimbatore / Trichy / Puducherry"
+                    value={branchFormData.city}
+                    onChange={handleBranchInputChange}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
-                  <FieldError error={formErrors.city} />
+                  <FieldError error={branchFormErrors.city} />
                 </div>
 
-                {/* State / Pincode */}
                 <div className="form-field-group">
-                  <label>State & Pincode *</label>
-                  <div style={{ display: 'flex', gap: '0.45rem' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <input
-                        type="text"
-                        name="state"
-                        value={formData.state}
-                        onChange={handleInputChange}
-                        readOnly={currentView === 'view'}
-                        placeholder="State"
-                        className={`form-control-input ${formErrors.state ? 'has-error' : ''}`}
-                      />
-                      <FieldError error={formErrors.state} />
-                    </div>
-                    <div style={{ width: '105px', display: 'flex', flexDirection: 'column' }}>
-                      <input
-                        type="text"
-                        name="pincode"
-                        value={formData.pincode}
-                        onChange={handleInputChange}
-                        readOnly={currentView === 'view'}
-                        placeholder="6-digit PIN"
-                        style={{ width: '100%' }}
-                        className={`form-control-input ${formErrors.pincode ? 'has-error' : ''}`}
-                      />
-                      <FieldError error={formErrors.pincode} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 3: GST Verification & Legal Registration */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">3. GST VERIFICATION & LEGAL DETAILS</div>
-
-              <div className="inpage-grid-3col">
-                <div className="form-field-group" style={{ gridColumn: 'span 2' }}>
-                  <label>GST Number (GSTIN) *</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                      type="text"
-                      name="gstNumber"
-                      value={formData.gstNumber}
-                      onChange={handleInputChange}
-                      readOnly={currentView === 'view'}
-                      maxLength={15}
-                      placeholder="e.g. 33AAACC1206D1ZM"
-                      className="form-control-input"
-                      style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                    />
-                    {currentView !== 'view' && (
-                      <button
-                        type="button"
-                        className="btn-trigger-verify-gst"
-                        onClick={handleTriggerGstVerification}
-                        disabled={isVerifyingGst}
-                      >
-                        {isVerifyingGst ? 'Verifying...' : 'Verify GST'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* GST Verification Status */}
-                <div className="form-field-group">
-                  <label>GST Verification Status</label>
-                  <div style={{ display: 'flex', alignItems: 'center', height: '40px' }}>
-                    <span
-                      className={`gst-status-badge ${formData.gstVerification
-                        .toLowerCase()
-                        .replace(/\s+/g, '_')}`}
-                    >
-                      {formData.gstVerification}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 4: Company Status & Audit Metadata */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">4. COMPANY STATUS & AUDIT METADATA</div>
-              <div className="inpage-grid-3col">
-                {/* Company Status */}
-                <div className="form-field-group">
-                  <label>Company Status *</label>
-                  <select
-                    name="companyStatus"
-                    value={formData.companyStatus}
-                    onChange={handleInputChange}
-                    disabled={currentView === 'view'}
-                    className="form-control-select"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Suspended">Suspended</option>
-                    <option value="Blocked">Blocked</option>
-                    <option value="Closed">Closed</option>
-                  </select>
-                </div>
-
-                {/* Registration Date */}
-                <div className="form-field-group">
-                  <label>Registration Date</label>
+                  <label>
+                    State <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="text"
-                    name="registrationDate"
-                    value={formData.registrationDate}
-                    readOnly
-                    className="form-control-input readonly"
+                    name="state"
+                    placeholder="e.g. Tamil Nadu"
+                    value={branchFormData.state}
+                    onChange={handleBranchInputChange}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
+                  <FieldError error={branchFormErrors.state} />
                 </div>
 
-                {/* Last Updated */}
                 <div className="form-field-group">
-                  <label>Last Updated</label>
+                  <label>
+                    Pincode (6 Digits) <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="text"
-                    name="lastUpdated"
-                    value={formData.lastUpdated}
-                    readOnly
-                    className="form-control-input readonly"
+                    name="pincode"
+                    placeholder="e.g. 600045"
+                    value={branchFormData.pincode}
+                    onChange={handleBranchInputChange}
+                    maxLength={6}
+                    readOnly={currentView === 'view-branch'}
+                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
+                  <FieldError error={branchFormErrors.pincode} />
                 </div>
               </div>
             </div>
 
-            {/* Form Bottom Controls */}
+            {/* Form Footer Buttons */}
             <div className="inpage-form-footer">
               <button
                 type="button"
                 className="btn-cancel-action"
-                onClick={handleBackToList}
+                onClick={() => setCurrentView('list')}
+                disabled={isSaving}
               >
-                {currentView === 'view' ? 'Back to List' : 'Cancel'}
+                {currentView === 'view-branch' ? 'Back to Table' : 'Cancel'}
               </button>
-              {(currentView === 'edit' || currentView === 'add') && (
-                <button type="submit" className="btn-save-header-action">
+              {currentView !== 'view-branch' && (
+                <button
+                  type="submit"
+                  className="btn-save-header-action"
+                  disabled={isSaving}
+                >
                   <Save size={16} />
-                  <span>{currentView === 'add' ? 'Add Company' : 'Save Changes'}</span>
+                  <span>{isSaving ? 'Saving...' : currentView === 'edit-branch' ? 'Update Branch' : 'Create Branch'}</span>
                 </button>
               )}
             </div>
           </form>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          VIEW 3: EDIT & VIEW COMPANY DETAILS
+          ══════════════════════════════════════════════════════════ */}
+      {(currentView === 'edit-company' || currentView === 'view-company') && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={() => setCurrentView('list')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Company & Branch Management</span>
+            </button>
+          </div>
+
+          <div className="companies-header-row">
+            <div>
+              <h1 className="companies-main-title">
+                {currentView === 'view-company' ? 'Company Details (Read-Only)' : 'Edit Company Details'}
+              </h1>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: 'var(--text-muted)' }}>
+                {currentView === 'view-company'
+                  ? 'Organization profile registered and verified by Super Admin.'
+                  : 'Authorized Admin management. Super Admin-controlled GST verification data is protected.'}
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveCompany} className="inpage-company-form">
+            {/* SECTION 1: SUPER ADMIN CONTROLLED REGISTRATION & GST (STRICTLY READ-ONLY) */}
+            <div className="inpage-section-box">
+              <div className="inpage-section-header">
+                1. Super Admin Registration & GST Verification (Read-Only)
+              </div>
+
+              <div className="inpage-grid-2col">
+                <div className="form-field-group">
+                  <label>
+                    Company Name
+                    <span style={{ fontSize: '0.72rem', color: '#4F46E5', background: '#EEF2FF', padding: '1px 6px', borderRadius: '4px', marginLeft: '6px' }}>
+                      Super Admin Registered
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={companyFormData.companyName}
+                    readOnly
+                    className="form-control-input readonly"
+                    title="Company Name is registered and controlled exclusively by Super Admin."
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label>
+                    Company Code / ID
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: '6px' }}>
+                      (Read-Only)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={companyFormData.companyId}
+                    readOnly
+                    className="form-control-input readonly"
+                  />
+                </div>
+              </div>
+
+              <div className="inpage-grid-2col" style={{ alignItems: 'flex-start' }}>
+                <div className="form-field-group">
+                  <label>
+                    GSTIN Number
+                    <span style={{ fontSize: '0.72rem', color: '#16a34a', background: '#f0fdf4', padding: '1px 6px', borderRadius: '4px', marginLeft: '6px' }}>
+                      Super Admin Verified
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={companyFormData.gstNumber || '33AABCO1234F1Z5'}
+                    readOnly
+                    className="form-control-input readonly"
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label>GST Verification Status</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minHeight: '38px' }}>
+                    <span className="super-admin-gst-tag" style={{ padding: '0.45rem 0.85rem' }}>
+                      <CheckCircle2 size={16} />
+                      <span>Super Admin Verified (Valid)</span>
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    GST registration and verification are controlled exclusively by the Super Admin.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: COMPANY PROFILE DETAILS */}
+            <div className="inpage-section-box">
+              <div className="inpage-section-header">
+                2. Company Profile Details
+              </div>
+
+              <div className="form-field-group">
+                <label>About Company</label>
+                <textarea
+                  name="aboutCompany"
+                  value={companyFormData.aboutCompany}
+                  onChange={handleCompanyInputChange}
+                  readOnly={currentView === 'view-company'}
+                  className={`form-control-textarea ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  placeholder="Brief description of the organization..."
+                />
+              </div>
+
+              <div className="inpage-grid-3col">
+                <div className="form-field-group">
+                  <label>Industry</label>
+                  <input
+                    type="text"
+                    name="industry"
+                    value={companyFormData.industry}
+                    onChange={handleCompanyInputChange}
+                    readOnly={currentView === 'view-company'}
+                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label>Company Size</label>
+                  {currentView === 'view-company' ? (
+                    <input
+                      type="text"
+                      value={companyFormData.companySize}
+                      readOnly
+                      className="form-control-input readonly"
+                    />
+                  ) : (
+                    <select
+                      name="companySize"
+                      value={companyFormData.companySize}
+                      onChange={handleCompanyInputChange}
+                      className="form-control-select"
+                    >
+                      <option value="1-10 Employees">1-10 Employees</option>
+                      <option value="11-50 Employees">11-50 Employees</option>
+                      <option value="51-200 Employees">51-200 Employees</option>
+                      <option value="201-500 Employees">201-500 Employees</option>
+                      <option value="500-1000 Employees">500-1000 Employees</option>
+                      <option value="1000-5000 Employees">1000-5000 Employees</option>
+                      <option value="5000+ Employees">5000+ Employees</option>
+                    </select>
+                  )}
+                </div>
+
+                <div className="form-field-group">
+                  <label>Company Website</label>
+                  <input
+                    type="text"
+                    name="website"
+                    value={companyFormData.website}
+                    onChange={handleCompanyInputChange}
+                    readOnly={currentView === 'view-company'}
+                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+
+              <div className="inpage-grid-2col">
+                <div className="form-field-group">
+                  <label>Company Email</label>
+                  <input
+                    type="email"
+                    name="companyEmail"
+                    value={companyFormData.companyEmail}
+                    onChange={handleCompanyInputChange}
+                    readOnly={currentView === 'view-company'}
+                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label>Company Mobile</label>
+                  <input
+                    type="tel"
+                    name="companyMobile"
+                    value={companyFormData.companyMobile}
+                    onChange={handleCompanyInputChange}
+                    readOnly={currentView === 'view-company'}
+                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  />
+                </div>
+              </div>
+
+              <div className="inpage-grid-2col">
+                <div className="form-field-group">
+                  <label>Contact Person</label>
+                  <input
+                    type="text"
+                    name="contactPerson"
+                    value={companyFormData.contactPerson}
+                    onChange={handleCompanyInputChange}
+                    readOnly={currentView === 'view-company'}
+                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label>Contact Designation</label>
+                  <input
+                    type="text"
+                    name="contactDesignation"
+                    value={companyFormData.contactDesignation}
+                    onChange={handleCompanyInputChange}
+                    readOnly={currentView === 'view-company'}
+                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 3: REGISTERED ADDRESS */}
+            <div className="inpage-section-box">
+              <div className="inpage-section-header">
+                3. Registered Head Office Address
+              </div>
+
+              <div className="form-field-group">
+                <label>Registered Address</label>
+                <textarea
+                  name="registeredAddress"
+                  value={companyFormData.registeredAddress}
+                  onChange={handleCompanyInputChange}
+                  readOnly={currentView === 'view-company'}
+                  className={`form-control-textarea ${currentView === 'view-company' ? 'readonly' : ''}`}
+                />
+              </div>
+
+              <div className="inpage-grid-3col">
+                <div className="form-field-group">
+                  <label>City</label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={companyFormData.city}
+                    onChange={handleCompanyInputChange}
+                    readOnly={currentView === 'view-company'}
+                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label>State</label>
+                  <input
+                    type="text"
+                    name="state"
+                    value={companyFormData.state}
+                    onChange={handleCompanyInputChange}
+                    readOnly={currentView === 'view-company'}
+                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  />
+                </div>
+
+                <div className="form-field-group">
+                  <label>Pincode</label>
+                  <input
+                    type="text"
+                    name="pincode"
+                    value={companyFormData.pincode}
+                    onChange={handleCompanyInputChange}
+                    maxLength={6}
+                    readOnly={currentView === 'view-company'}
+                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="inpage-form-footer">
+              <button
+                type="button"
+                className="btn-cancel-action"
+                onClick={() => setCurrentView('list')}
+                disabled={isSaving}
+              >
+                {currentView === 'view-company' ? 'Back to Table' : 'Cancel'}
+              </button>
+              {currentView === 'edit-company' && (
+                <button
+                  type="submit"
+                  className="btn-save-header-action"
+                  disabled={isSaving}
+                >
+                  <Save size={16} />
+                  <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };
+
+export default CompanyProfile;

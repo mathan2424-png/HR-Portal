@@ -168,6 +168,7 @@
   width: 100%;
   border-radius: 8px;
   overflow-x: auto;
+  overflow-y: hidden !important;
   border: 1px solid var(--border-color);
 }
 
@@ -806,4 +807,435 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+
+/* ==========================================================================
+   BRANCH MANAGEMENT STYLES (Admin Panel Branch System)
+   ========================================================================== */
+
+/* Main Table Branch Count Badge */
+.company-branch-count-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.65rem;
+  background: rgba(14, 116, 144, 0.08);
+  color: var(--primary, #0e7490);
+  border: 1px solid rgba(14, 116, 144, 0.2);
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.company-branch-count-btn:hover {
+  background: var(--primary, #0e7490);
+  color: #ffffff;
+  border-color: var(--primary, #0e7490);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(14, 116, 144, 0.25);
+}
+
+/* Parent Company Summary Banner (Manage Branches View) */
+.branch-parent-banner {
+  background: #ffffff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.branch-parent-left {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.branch-parent-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.branch-parent-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.branch-parent-details h2 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-main, #1e293b);
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.branch-parent-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: var(--text-muted, #64748b);
+}
+
+.branch-parent-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.branch-parent-meta .pill-tag {
+  background: #f1f5f9;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.branch-parent-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Branch Super Admin GST Info Tag */
+.super-admin-gst-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+/* Readonly Info Banner inside Form */
+.readonly-parent-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.readonly-parent-card .parent-title {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.readonly-parent-card .parent-code-badge {
+  font-size: 0.75rem;
+  background: #e2e8f0;
+  color: #475569;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.code-pill {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-family: monospace;
+  font-weight: 600;
+  color: #334155;
+}
+
+
+/* ==========================================================================
+   HIERARCHICAL COMPANY & BRANCH MANAGEMENT DASHBOARD STYLES
+   ========================================================================== */
+
+/* Summary Metrics Cards Grid */
+.company-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+@media (max-width: 900px) {
+  .company-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .company-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.company-metric-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.company-metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+.metric-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.metric-icon-wrap.companies {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.metric-icon-wrap.branches {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.metric-icon-wrap.active {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.metric-icon-wrap.inactive {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.metric-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-val {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-main, #1e293b);
+  line-height: 1.2;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Branch Count Header Tag */
+.header-branch-count-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Badges for Table: Main Company vs Sub-Branch */
+.badge-main-company {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge-sub-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.55rem;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Sub-Branch Indentation & Tree Indicator */
+.sub-branch-row {
+  background-color: #fafbfd;
+  transition: background-color 0.15s ease;
+}
+
+.sub-branch-row:hover {
+  background-color: #f1f5f9;
+}
+
+.sub-branch-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-left: 1.25rem;
+}
+
+.tree-branch-indicator {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #94a3b8;
+  line-height: 1;
+  user-select: none;
+}
+
+.sub-branch-name-text {
+  font-weight: 700;
+  color: var(--text-main, #1e293b);
+  font-size: 0.9rem;
+}
+
+.parent-company-name {
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
+  font-size: 0.84rem;
+}
+
+
+/* ==========================================================================
+   DUAL TABLE SECTION STYLING (Company List + Branch List)
+   ========================================================================== */
+
+.section-table-box {
+  background: #ffffff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-bottom: 1.5rem;
+}
+
+.module-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  border-left: 4px solid var(--primary, #0e7490);
+}
+
+.module-section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.module-section-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main, #1e293b);
+  letter-spacing: -0.01em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.module-section-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.6rem;
+  background: rgba(14, 116, 144, 0.08);
+  color: var(--primary, #0e7490);
+  border: 1px solid rgba(14, 116, 144, 0.2);
+  border-radius: 9999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.credential-info-callout {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+/* ==========================================================================
+   MAIN COMPANY LIST: REMOVE TOP-DOWN (VERTICAL) SCROLL
+   ========================================================================== */
+.main-company-table-box {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.main-company-table-container {
+  overflow-y: hidden !important;
+  max-height: none !important;
+  height: auto !important;
+  border: none !important;
+}
+
+.main-company-table-container::-webkit-scrollbar {
+  height: 6px;
+  width: 0px !important;
+  display: none !important;
+}
+
+.main-company-table-container::-webkit-scrollbar:vertical {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }

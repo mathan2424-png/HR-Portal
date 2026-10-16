@@ -8,11 +8,20 @@ export const PortalProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('hr_portal_authenticated') === 'true';
   });
-  const [currentUser, setCurrentUser] = useState({
-    name: 'Administrator',
-    email: 'admin@hrms.com',
-    role: 'Super Admin',
-    avatarInitial: 'A',
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('hr_portal_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return {
+      name: 'MATHAN67',
+      username: 'MATHAN67',
+      email: 'mathan67@hrms.com',
+      role: 'Super Admin',
+      avatarInitial: 'M',
+    };
   });
   const [notifications, setNotifications] = useState([
     {
@@ -96,22 +105,60 @@ export const PortalProvider = ({ children }) => {
     );
   };
 
-  const login = (email) => {
+  const login = (userDataOrUsername) => {
     setIsAuthenticated(true);
     localStorage.setItem('hr_portal_authenticated', 'true');
-    if (email) {
-      setCurrentUser((prev) => ({
-        ...prev,
-        email,
-        name: email.includes('@') ? email.split('@')[0].toUpperCase() : 'Administrator',
-        avatarInitial: email.charAt(0).toUpperCase(),
-      }));
+
+    let userObj;
+    if (userDataOrUsername && typeof userDataOrUsername === 'object') {
+      const roleStr = typeof userDataOrUsername.role === 'object'
+        ? (userDataOrUsername.role?.roleName || 'Employer')
+        : (userDataOrUsername.role || 'Employer');
+
+      const isBranchAdmin = Boolean(
+        userDataOrUsername.isBranchAdmin ||
+        userDataOrUsername.branchId ||
+        userDataOrUsername.branch ||
+        roleStr.toLowerCase().includes('branch')
+      );
+
+      const branchName = userDataOrUsername.branchName || userDataOrUsername.branch?.branchName || (isBranchAdmin ? 'Tambaram Branch' : null);
+
+      userObj = {
+        ...userDataOrUsername,
+        name: userDataOrUsername.name || userDataOrUsername.username || 'MATHAN67',
+        username: userDataOrUsername.username || 'MATHAN67',
+        email: userDataOrUsername.email || `${(userDataOrUsername.username || 'mathan67').toLowerCase()}@hrms.com`,
+        role: roleStr,
+        isBranchAdmin,
+        branchName,
+        branch: userDataOrUsername.branch || (branchName ? { branchName } : null),
+        branchId: userDataOrUsername.branchId || userDataOrUsername.branch?.id || null,
+        avatarInitial: (userDataOrUsername.name || userDataOrUsername.username || 'M').charAt(0).toUpperCase(),
+      };
+    } else {
+      const uName = (userDataOrUsername || 'MATHAN67').trim();
+      const isBranch = uName.toLowerCase().includes('branch') || uName.toLowerCase().includes('tam');
+      userObj = {
+        name: uName.toUpperCase(),
+        username: uName,
+        email: uName.includes('@') ? uName : `${uName.toLowerCase()}@hrms.com`,
+        role: isBranch ? 'Sub-Branch Admin' : 'Super Admin',
+        isBranchAdmin: isBranch,
+        branchName: isBranch ? 'Tambaram Branch' : null,
+        avatarInitial: uName.charAt(0).toUpperCase(),
+      };
     }
+
+    setCurrentUser(userObj);
+    localStorage.setItem('hr_portal_user', JSON.stringify(userObj));
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('hr_portal_authenticated');
+    localStorage.removeItem('hr_portal_user');
+    localStorage.removeItem('hr_portal_token');
   };
 
   return (

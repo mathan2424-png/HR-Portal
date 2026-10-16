@@ -1,13 +1,14 @@
 .portal-sidebar {
   width: var(--sidebar-width);
   height: 100vh;
-  position: sticky;
-  top: 0;
-  left: 0;
+  max-height: 100vh;
+  position: relative;
   background-color: var(--bg-sidebar);
   color: var(--text-sidebar);
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
   transition: width var(--transition-smooth);
   z-index: var(--z-sidebar);
   border-right: 1px solid var(--border-color);
@@ -67,8 +68,9 @@
 
 .sidebar-nav {
   flex: 1;
-  padding: 0.25rem 0.75rem;
+  padding: 0.25rem 0.75rem 3rem 0.75rem;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;

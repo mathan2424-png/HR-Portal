@@ -16,6 +16,7 @@ import {
   BarChart3,
   Settings,
   ScrollText,
+  LifeBuoy,
   ChevronDown,
   LogOut,
 } from 'lucide-react';
@@ -63,11 +64,12 @@ const navItems = [
     ],
   },
   { path: '/settings', label: 'Settings & Security', icon: Settings },
+  { path: '/help-support', label: 'Help & Support', icon: LifeBuoy },
   { path: '/audit-log', label: 'Company Audit Log', icon: ScrollText },
 ];
 
 export const Sidebar = () => {
-  const { sidebarCollapsed, setSidebarCollapsed, logout } = usePortal();
+  const { sidebarCollapsed, setSidebarCollapsed, logout, currentUser } = usePortal();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -78,6 +80,22 @@ export const Sidebar = () => {
 
   const [mastersOpen, setMastersOpen] = useState(isMastersActive);
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
+  const isBranchAdmin = Boolean(
+    currentUser?.isBranchAdmin ||
+    currentUser?.branchId ||
+    currentUser?.role?.toLowerCase().includes('branch')
+  );
+
+  // Sub-Branch Admin cannot view or access Company or Subscription & Billing modules
+  const visibleNavItems = navItems.filter((item) => {
+    if (isBranchAdmin) {
+      if (item.path === '/company-profile' || item.path === '/subscription') {
+        return false;
+      }
+    }
+    return true;
+  });
+
 
   // Auto-expand if user navigates to any sub-route
   useEffect(() => {
@@ -129,7 +147,7 @@ export const Sidebar = () => {
       </div>
 
       <nav className="sidebar-nav">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
 
           if (item.hasDropdown) {
@@ -213,9 +231,7 @@ export const Sidebar = () => {
         })}
       </nav>
 
-      <div className="sidebar-footer">
-
-      </div>
+      
     </aside>
   );
 };

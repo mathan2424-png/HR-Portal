@@ -23,6 +23,7 @@ import {
   Eye,
   FileSpreadsheet,
   Printer,
+  ChevronLeft,
   ChevronRight,
   ChevronDown,
   ShieldCheck,
@@ -543,6 +544,70 @@ export const RecruitmentReportsModule = () => {
     setDrilldownModalOpen(true);
   };
 
+  // =========================================================================
+  // TAB-WISE PAGINATION & FILTERED DATA ARRAYS (8 items per page)
+  // =========================================================================
+  const itemsPerPage = 8;
+
+  // 1. Overview Tab
+  const [overviewPage, setOverviewPage] = useState(1);
+  const filteredOverviewData = recruitmentOverviewData
+    .filter((r) => (departmentFilter === 'All' ? true : r.department === departmentFilter))
+    .filter(
+      (r) =>
+        r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.id.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  const totalOverviewPages = Math.ceil(filteredOverviewData.length / itemsPerPage) || 1;
+  const paginatedOverviewData = filteredOverviewData.slice(
+    (overviewPage - 1) * itemsPerPage,
+    overviewPage * itemsPerPage
+  );
+
+  // 2. Candidate Matching Tab
+  const [matchingPage, setMatchingPage] = useState(1);
+  const filteredMatchingData = candidateMatchingReportData
+    .filter((r) => (departmentFilter === 'All' ? true : r.department === departmentFilter))
+    .filter(
+      (r) =>
+        r.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.jobId.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  const totalMatchingPages = Math.ceil(filteredMatchingData.length / itemsPerPage) || 1;
+  const paginatedMatchingData = filteredMatchingData.slice(
+    (matchingPage - 1) * itemsPerPage,
+    matchingPage * itemsPerPage
+  );
+
+  // 3. Screening Tab
+  const [screeningPage, setScreeningPage] = useState(1);
+  const filteredScreeningData = screeningReportData
+    .filter((r) =>
+      screeningStatusFilter === 'All' ? true : r.status === screeningStatusFilter
+    )
+    .filter(
+      (r) =>
+        r.screeningName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.screeningId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  const totalScreeningPages = Math.ceil(filteredScreeningData.length / itemsPerPage) || 1;
+  const paginatedScreeningData = filteredScreeningData.slice(
+    (screeningPage - 1) * itemsPerPage,
+    screeningPage * itemsPerPage
+  );
+
+  // 4. Interviews & Hiring Tab
+  const [interviewsPage, setInterviewsPage] = useState(1);
+  const filteredInterviewsData = interviewsHiringReportData
+    .filter((r) => (departmentFilter === 'All' ? true : r.department === departmentFilter))
+    .filter((r) => r.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()));
+  const totalInterviewsPages = Math.ceil(filteredInterviewsData.length / itemsPerPage) || 1;
+  const paginatedInterviewsData = filteredInterviewsData.slice(
+    (interviewsPage - 1) * itemsPerPage,
+    interviewsPage * itemsPerPage
+  );
+
   return (
     <div className="reports-page-container animate-fade-in">
       {/* Toast Alert */}
@@ -692,12 +757,6 @@ export const RecruitmentReportsModule = () => {
                 <option value="Business Development">Business Development</option>
               </select>
             </div>
-
-            <div className="toolbar-right-group">
-              <span className="reports-counter-text">
-                Showing <strong>{recruitmentOverviewData.length}</strong> Job Requisitions Summary
-              </span>
-            </div>
           </div>
 
           {/* Data Section: Recruitment Overview Table */}
@@ -721,17 +780,18 @@ export const RecruitmentReportsModule = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {recruitmentOverviewData
-                    .filter((r) =>
-                      departmentFilter === 'All' ? true : r.department === departmentFilter
-                    )
-                    .filter((r) =>
-                      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      r.id.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((item, idx) => (
+                  {filteredOverviewData.length === 0 ? (
+                    <tr>
+                      <td colSpan="12" className="table-empty-cell">
+                        No recruitment overview records found matching your filter criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedOverviewData.map((item, idx) => {
+                      const serialNumber = (overviewPage - 1) * itemsPerPage + idx + 1;
+                      return (
                       <tr key={item.id}>
-                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{serialNumber}</td>
                         <td><span className="code-badge blue">{item.id}</span></td>
                         <td><span className="font-bold">{item.title}</span></td>
                         <td><span className="dept-tag">{item.department}</span></td>
@@ -753,13 +813,48 @@ export const RecruitmentReportsModule = () => {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
 
-            <div className="table-footer-bar">
-             
+            {/* Pagination Footer */}
+            <div className="companies-pagination-row">
+              <div className="pagination-entries-count">
+                Showing {filteredOverviewData.length > 0 ? (overviewPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(overviewPage * itemsPerPage, filteredOverviewData.length)} of{' '}
+                {filteredOverviewData.length} Entries
+              </div>
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${overviewPage === 1 ? 'disabled' : ''}`}
+                  disabled={overviewPage === 1}
+                  onClick={() => setOverviewPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalOverviewPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-btn ${overviewPage === page ? 'active' : ''}`}
+                    onClick={() => setOverviewPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${overviewPage === totalOverviewPages ? 'disabled' : ''}`}
+                  disabled={overviewPage === totalOverviewPages}
+                  onClick={() => setOverviewPage((p) => Math.min(totalOverviewPages, p + 1))}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -842,12 +937,6 @@ export const RecruitmentReportsModule = () => {
                 <option value="Draft">Draft</option>
               </select>
             </div>
-
-            <div className="toolbar-right-group">
-              <span className="reports-counter-text">
-                Showing <strong>{candidateMatchingReportData.length}</strong> Matched Jobs
-              </span>
-            </div>
           </div>
 
           {/* Table: Exactly 12 columns requested */}
@@ -871,17 +960,18 @@ export const RecruitmentReportsModule = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {candidateMatchingReportData
-                    .filter((r) =>
-                      departmentFilter === 'All' ? true : r.department === departmentFilter
-                    )
-                    .filter((r) =>
-                      r.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      r.jobId.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((item, idx) => (
+                  {filteredMatchingData.length === 0 ? (
+                    <tr>
+                      <td colSpan="11" className="table-empty-cell">
+                        No matching report records found matching your filter criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedMatchingData.map((item, idx) => {
+                      const serialNumber = (matchingPage - 1) * itemsPerPage + idx + 1;
+                      return (
                       <tr key={item.jobId}>
-                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{serialNumber}</td>
                         <td><span className="code-badge blue">{item.jobId}</span></td>
                         <td><span className="font-bold">{item.jobTitle}</span></td>
                         <td><span className="dept-tag">{item.department}</span></td>
@@ -903,13 +993,48 @@ export const RecruitmentReportsModule = () => {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
 
-            <div className="table-footer-bar">
-             
+            {/* Pagination Footer */}
+            <div className="companies-pagination-row">
+              <div className="pagination-entries-count">
+                Showing {filteredMatchingData.length > 0 ? (matchingPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(matchingPage * itemsPerPage, filteredMatchingData.length)} of{' '}
+                {filteredMatchingData.length} Entries
+              </div>
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${matchingPage === 1 ? 'disabled' : ''}`}
+                  disabled={matchingPage === 1}
+                  onClick={() => setMatchingPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalMatchingPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-btn ${matchingPage === page ? 'active' : ''}`}
+                    onClick={() => setMatchingPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${matchingPage === totalMatchingPages ? 'disabled' : ''}`}
+                  disabled={matchingPage === totalMatchingPages}
+                  onClick={() => setMatchingPage((p) => Math.min(totalMatchingPages, p + 1))}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -980,12 +1105,6 @@ export const RecruitmentReportsModule = () => {
                 <option value="Closed">Closed</option>
               </select>
             </div>
-
-            <div className="toolbar-right-group">
-              <span className="reports-counter-text">
-                Showing <strong>{screeningReportData.length}</strong> Assessment Types
-              </span>
-            </div>
           </div>
 
           {/* Table: Exactly 12 columns requested */}
@@ -1009,18 +1128,18 @@ export const RecruitmentReportsModule = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {screeningReportData
-                    .filter((r) =>
-                      screeningStatusFilter === 'All' ? true : r.status === screeningStatusFilter
-                    )
-                    .filter((r) =>
-                      r.screeningName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      r.screeningId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      r.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((item, idx) => (
+                  {filteredScreeningData.length === 0 ? (
+                    <tr>
+                      <td colSpan="12" className="table-empty-cell">
+                        No screening assessment report records found matching your filter criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedScreeningData.map((item, idx) => {
+                      const serialNumber = (screeningPage - 1) * itemsPerPage + idx + 1;
+                      return (
                       <tr key={item.screeningId}>
-                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{serialNumber}</td>
                         <td><span className="code-badge blue">{item.screeningId}</span></td>
                         <td><span className="font-bold">{item.screeningName}</span></td>
                         <td><span className="dept-tag">{item.jobTitle}</span></td>
@@ -1046,13 +1165,48 @@ export const RecruitmentReportsModule = () => {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
 
-            <div className="table-footer-bar">
-             
+            {/* Pagination Footer */}
+            <div className="companies-pagination-row">
+              <div className="pagination-entries-count">
+                Showing {filteredScreeningData.length > 0 ? (screeningPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(screeningPage * itemsPerPage, filteredScreeningData.length)} of{' '}
+                {filteredScreeningData.length} Entries
+              </div>
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${screeningPage === 1 ? 'disabled' : ''}`}
+                  disabled={screeningPage === 1}
+                  onClick={() => setScreeningPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalScreeningPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-btn ${screeningPage === page ? 'active' : ''}`}
+                    onClick={() => setScreeningPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${screeningPage === totalScreeningPages ? 'disabled' : ''}`}
+                  disabled={screeningPage === totalScreeningPages}
+                  onClick={() => setScreeningPage((p) => Math.min(totalScreeningPages, p + 1))}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1125,12 +1279,6 @@ export const RecruitmentReportsModule = () => {
                 <option value="Business Development">Business Development</option>
               </select>
             </div>
-
-            <div className="toolbar-right-group">
-              <span className="reports-counter-text">
-                Showing <strong>{interviewsHiringReportData.length}</strong> Requisitions Pipeline
-              </span>
-            </div>
           </div>
 
           {/* Table: Exactly 14 columns requested */}
@@ -1156,16 +1304,18 @@ export const RecruitmentReportsModule = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {interviewsHiringReportData
-                    .filter((r) =>
-                      departmentFilter === 'All' ? true : r.department === departmentFilter
-                    )
-                    .filter((r) =>
-                      r.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((item, idx) => (
+                  {filteredInterviewsData.length === 0 ? (
+                    <tr>
+                      <td colSpan="14" className="table-empty-cell">
+                        No interview report records found matching your filter criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedInterviewsData.map((item, idx) => {
+                      const serialNumber = (interviewsPage - 1) * itemsPerPage + idx + 1;
+                      return (
                       <tr key={item.jobTitle}>
-                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{serialNumber}</td>
                         <td><span className="font-bold">{item.jobTitle}</span></td>
                         <td style={{ textAlign: 'center' }}><span className="count-pill blue">{item.candidatesInterviewed}</span></td>
                         <td style={{ textAlign: 'center' }}><span className="count-pill amber">{item.interviewsScheduled}</span></td>
@@ -1189,14 +1339,48 @@ export const RecruitmentReportsModule = () => {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
 
-            <div className="table-footer-bar">
-      
-              
+            {/* Pagination Footer */}
+            <div className="companies-pagination-row">
+              <div className="pagination-entries-count">
+                Showing {filteredInterviewsData.length > 0 ? (interviewsPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(interviewsPage * itemsPerPage, filteredInterviewsData.length)} of{' '}
+                {filteredInterviewsData.length} Entries
+              </div>
+              <div className="pagination-controls">
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${interviewsPage === 1 ? 'disabled' : ''}`}
+                  disabled={interviewsPage === 1}
+                  onClick={() => setInterviewsPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                {Array.from({ length: totalInterviewsPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-btn ${interviewsPage === page ? 'active' : ''}`}
+                    onClick={() => setInterviewsPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={`pagination-nav-btn ${interviewsPage === totalInterviewsPages ? 'disabled' : ''}`}
+                  disabled={interviewsPage === totalInterviewsPages}
+                  onClick={() => setInterviewsPage((p) => Math.min(totalInterviewsPages, p + 1))}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
             </div>
           </div>
         </div>

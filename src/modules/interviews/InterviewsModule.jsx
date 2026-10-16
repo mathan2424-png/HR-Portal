@@ -26,6 +26,7 @@ import {
   ArrowLeft,
   ShieldCheck,
   ExternalLink,
+  ChevronLeft,
   ChevronRight,
   HelpCircle,
   Check,
@@ -623,6 +624,15 @@ export const InterviewsModule = () => {
     return matchesSearch && matchesStatus && matchesRound && matchesRec;
   });
 
+  // Interviews Table Pagination State (8 items per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(filteredInterviews.length / itemsPerPage) || 1;
+  const paginatedInterviews = filteredInterviews.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   // Badge Class Helpers
   const getStatusBadgeClass = (status) => {
     switch (status?.toLowerCase()) {
@@ -846,12 +856,6 @@ export const InterviewsModule = () => {
             <option value="Pending">Pending</option>
           </select>
         </div>
-
-        <div className="toolbar-right-group">
-          <span className="interviews-counter-text">
-            Showing <strong>{filteredInterviews.length}</strong> of {interviews.length} Scheduled Interviews
-          </span>
-        </div>
       </div>
 
       {/* =========================================================================
@@ -884,10 +888,12 @@ export const InterviewsModule = () => {
                   </td>
                 </tr>
               ) : (
-                filteredInterviews.map((item, idx) => (
+                paginatedInterviews.map((item, idx) => {
+                  const serialNumber = (currentPage - 1) * itemsPerPage + idx + 1;
+                  return (
                   <tr key={item.id}>
                     {/* 1. S.No */}
-                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                    <td style={{ textAlign: 'center', fontWeight: 600 }}>{serialNumber}</td>
 
                     {/* 2. Interview ID */}
                     <td>
@@ -1012,18 +1018,48 @@ export const InterviewsModule = () => {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {/* Table Footer */}
-        <div className="table-footer-bar">
-          <span className="table-count-info">
-            Total <strong>{filteredInterviews.length}</strong> scheduled candidate interview slots
-          </span>
-          
+        {/* Pagination Footer */}
+        <div className="companies-pagination-row">
+          <div className="pagination-entries-count">
+            Showing {filteredInterviews.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+            {Math.min(currentPage * itemsPerPage, filteredInterviews.length)} of{' '}
+            {filteredInterviews.length} Entries
+          </div>
+          <div className="pagination-controls">
+            <button
+              type="button"
+              className={`pagination-nav-btn ${currentPage === 1 ? 'disabled' : ''}`}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                type="button"
+                className={`pagination-page-btn ${currentPage === page ? 'active' : ''}`}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={`pagination-nav-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
         </>

@@ -1,13 +1,12 @@
 .portal-header {
   height: 65px;
+  flex-shrink: 0;
   background-color: #ffffff;
   border-bottom: 1px solid var(--border-color);
   padding: 0 2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
   z-index: var(--z-header);
 }
 

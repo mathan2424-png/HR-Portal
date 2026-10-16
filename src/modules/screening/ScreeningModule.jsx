@@ -19,6 +19,8 @@ import {
   HelpCircle,
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
   BookOpen,
   Sliders,
@@ -423,6 +425,25 @@ export const ScreeningModule = () => {
 
     return matchesSearch && matchesStatus && matchesDept;
   });
+
+  // Main Screening Table Pagination State (8 items per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(filteredScreenings.length / itemsPerPage) || 1;
+  const paginatedScreenings = filteredScreenings.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Candidate Results Modal Pagination State (8 items per page)
+  const [resultsPage, setResultsPage] = useState(1);
+  const resultsPerPage = 8;
+  const targetResults = targetScreening?.results || [];
+  const totalResultsPages = Math.ceil(targetResults.length / resultsPerPage) || 1;
+  const paginatedResults = targetResults.slice(
+    (resultsPage - 1) * resultsPerPage,
+    resultsPage * resultsPerPage
+  );
 
   // =========================================================================
   // HANDLERS: ADD / EDIT SCREENING
@@ -958,12 +979,13 @@ export const ScreeningModule = () => {
                   </td>
                 </tr>
               ) : (
-                filteredScreenings.map((scrn, idx) => {
+                paginatedScreenings.map((scrn, idx) => {
+                  const serialNumber = (currentPage - 1) * itemsPerPage + idx + 1;
                   const canSend = scrn.status !== 'Draft' && scrn.totalQuestions > 0;
                   return (
                     <tr key={scrn.id}>
                       {/* S.No */}
-                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{serialNumber}</td>
 
                       {/* Screening ID */}
                       <td>
@@ -1148,12 +1170,41 @@ export const ScreeningModule = () => {
           </table>
         </div>
 
-        {/* Table Footer Bar */}
-        <div className="table-footer-bar">
-          <span className="table-count-info">
-            Total <strong>{filteredScreenings.length}</strong> screening assessments tracked
-          </span>
-          
+        {/* Pagination Footer */}
+        <div className="companies-pagination-row">
+          <div className="pagination-entries-count">
+            Showing {filteredScreenings.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+            {Math.min(currentPage * itemsPerPage, filteredScreenings.length)} of{' '}
+            {filteredScreenings.length} Entries
+          </div>
+          <div className="pagination-controls">
+            <button
+              type="button"
+              className={`pagination-nav-btn ${currentPage === 1 ? 'disabled' : ''}`}
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                type="button"
+                className={`pagination-page-btn ${currentPage === page ? 'active' : ''}`}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={`pagination-nav-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
         </>
@@ -1828,6 +1879,7 @@ export const ScreeningModule = () => {
                 <table className="results-table">
                   <thead>
                     <tr>
+                      <th style={{ width: '50px', textAlign: 'center' }}>S.No</th>
                       <th>Candidate ID</th>
                       <th>Candidate Name</th>
                       <th>Assigned Date</th>
@@ -1838,15 +1890,18 @@ export const ScreeningModule = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {targetScreening.results.length === 0 ? (
+                    {targetResults.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="table-empty-cell">
+                        <td colSpan="8" className="table-empty-cell">
                           No candidate evaluation results available yet. Dispatched candidates will appear here once submitted.
                         </td>
                       </tr>
                     ) : (
-                      targetScreening.results.map((r) => (
+                      paginatedResults.map((r, idx) => (
                         <tr key={r.candidateId}>
+                          <td style={{ textAlign: 'center', fontWeight: 600 }}>
+                            {(resultsPage - 1) * resultsPerPage + idx + 1}
+                          </td>
                           <td>
                             <span className="cand-code">{r.candidateId}</span>
                           </td>
@@ -1909,6 +1964,43 @@ export const ScreeningModule = () => {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Candidate Results Pagination Footer */}
+              <div className="companies-pagination-row">
+                <div className="pagination-entries-count">
+                  Showing {targetResults.length > 0 ? (resultsPage - 1) * resultsPerPage + 1 : 0} to{' '}
+                  {Math.min(resultsPage * resultsPerPage, targetResults.length)} of{' '}
+                  {targetResults.length} Entries
+                </div>
+                <div className="pagination-controls">
+                  <button
+                    type="button"
+                    className={`pagination-nav-btn ${resultsPage === 1 ? 'disabled' : ''}`}
+                    disabled={resultsPage === 1}
+                    onClick={() => setResultsPage((p) => Math.max(1, p - 1))}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  {Array.from({ length: totalResultsPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      className={`pagination-page-btn ${resultsPage === page ? 'active' : ''}`}
+                      onClick={() => setResultsPage(page)}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={`pagination-nav-btn ${resultsPage === totalResultsPages ? 'disabled' : ''}`}
+                    disabled={resultsPage === totalResultsPages}
+                    onClick={() => setResultsPage((p) => Math.min(totalResultsPages, p + 1))}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
             </div>
 

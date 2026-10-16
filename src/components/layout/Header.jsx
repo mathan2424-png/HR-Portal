@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, LogOut, Bell, Check } from 'lucide-react';
+import { Menu, LogOut, Bell, Check, GitBranch } from 'lucide-react';
 import { usePortal } from '../../context/PortalContext';
 import './Header.css';
 
@@ -103,6 +103,28 @@ export const Header = () => {
       </div>
 
       <div className="header-right">
+        {/* Sub-Branch Display Banner */}
+        {(currentUser?.branchName || currentUser?.branch?.branchName) && (
+          <div
+            className="header-branch-pill"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.35rem 0.8rem',
+              background: 'rgba(14, 116, 144, 0.08)',
+              color: 'var(--primary, #0e7490)',
+              borderRadius: '9999px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              border: '1px solid rgba(14, 116, 144, 0.25)',
+            }}
+          >
+            <GitBranch size={14} />
+            <span>{currentUser.branchName || currentUser.branch?.branchName}</span>
+          </div>
+        )}
+
         <div className="header-datetime-text">
           {currentDateTime}
         </div>
@@ -221,6 +243,12 @@ export const Header = () => {
                 </div>
                 <div className="header-user-dropdown-email">
                   {currentUser?.email || 'admin@hrms.com'}
+                </div>
+                <div style={{ marginTop: '5px', fontSize: '0.76rem', color: 'var(--primary)', fontWeight: 700 }}>
+                  Role: {currentUser?.role || 'Administrator'}
+                  {(currentUser?.branchName || currentUser?.branch?.branchName) && (
+                    <span> • {currentUser.branchName || currentUser.branch?.branchName}</span>
+                  )}
                 </div>
               </div>
               <button

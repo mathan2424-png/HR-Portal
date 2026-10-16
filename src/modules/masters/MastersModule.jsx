@@ -1,3 +1,4 @@
+import { api } from '../../Api/Api';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -197,8 +198,42 @@ const formatDisplayDate = (d) => {
         year: 'numeric',
       });
     }
-  } catch {}
+  } catch { }
   return d;
+};
+
+
+const TAB_ENDPOINTS = {
+  'job-categories': '/job-categories',
+  'skills': '/skills',
+  'industries': '/industries',
+  'locations': '/job-locations',
+  'employment-types': '/employment-types',
+  'work-modes': '/work-modes',
+  'qualifications': '/academic-qualifications',
+};
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('hr_portal_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+const extractItems = (data) => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  const arrayField = Object.values(data).find((v) => Array.isArray(v));
+  if (arrayField) {
+    return arrayField.map((it) => ({
+      id: it._id || it.id,
+      title: it.name || it.title || 'Untitled',
+      status: it.status || (it.isActive === false ? 'Inactive' : 'Active'),
+      startDate: it.startDate || (it.createdAt ? it.createdAt.slice(0, 10) : '2026-01-01'),
+    }));
+  }
+  return [];
 };
 
 export const MastersModule = () => {
@@ -256,6 +291,7 @@ export const MastersModule = () => {
     status: 'Active',
   });
 
+
   // Sync with URL query parameter when it changes
   useEffect(() => {
     if (tabParam && DEFAULT_CATEGORIES[tabParam] && tabParam !== activeTab) {
@@ -267,6 +303,36 @@ export const MastersModule = () => {
       setFormErrors({});
     }
   }, [tabParam, activeTab]);
+
+  // Fetch real master records from backend API using centralized api client
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      const endpoint = TAB_ENDPOINTS[activeTab];
+      if (!endpoint) return;
+
+      try {
+        const response = await api.get(endpoint, { params: { all: true } });
+        const result = response.data;
+        if (result.success && result.data) {
+          const items = extractItems(result.data);
+          if (items.length > 0) {
+            setCategoryData((prev) => ({
+              ...prev,
+              [activeTab]: {
+                ...prev[activeTab],
+                items,
+              },
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching master data:', err);
+      }
+    };
+
+    fetchMasterData();
+  }, [activeTab]);
+
 
   // Save to localStorage
   useEffect(() => {
@@ -327,15 +393,12 @@ export const MastersModule = () => {
   };
 
   // Save Item (Add or Edit)
-  const handleSaveModal = (e) => {
+  const handleSaveModal = async (e) => {
     e.preventDefault();
     const errors = {};
     const trimmedTitle = modalForm.title.trim();
     if (!trimmedTitle) {
       errors.title = `${activeCategory.singular} Name / Title is required`;
-    }
-    if (!modalForm.startDate) {
-      errors.startDate = 'Start date is required';
     }
 
     if (Object.keys(errors).length > 0) {
@@ -344,76 +407,107 @@ export const MastersModule = () => {
       return;
     }
 
-    const currentItems = activeCategory.items;
-
-    // Check duplicate
-    const isDuplicate = currentItems.some(
-      (it) =>
-        it.title.toLowerCase() === trimmedTitle.toLowerCase() &&
-        (!editingItem || it.id !== editingItem.id)
-    );
-
-    if (isDuplicate) {
-      setFormErrors({ title: `"${trimmedTitle}" already exists in ${activeCategory.label}` });
-      window.scrollTo({ top: 120, behavior: 'smooth' });
-      return;
-    }
-
     setFormErrors({});
 
-    if (editingItem) {
-      // Edit
-      const updated = currentItems.map((it) =>
-        it.id === editingItem.id
-          ? {
+    const endpoint = TAB_ENDPOINTS[activeTab];
+    if (!endpoint) return;
+
+    try {
+      if (editingItem) {
+        // Real Backend PUT API Call
+        const response = await api.put(`${endpoint}/${editingItem.id}`, {
+            title: trimmedTitle,
+            name: trimmedTitle,
+            status: modalForm.status,
+            isActive: modalForm.status === 'Active',
+          });
+        const result = response.data;
+        if (!res.ok || !result.success) {
+          showToast(result.message || 'Failed to update', 'error');
+          return;
+        }
+
+        const updated = activeCategory.items.map((it) =>
+          it.id === editingItem.id
+            ? {
               ...it,
               title: trimmedTitle,
-              startDate: modalForm.startDate || it.startDate || '2026-01-01',
               status: modalForm.status,
             }
-          : it
-      );
-      setCategoryData((prev) => ({
-        ...prev,
-        [activeTab]: {
-          ...prev[activeTab],
-          items: updated,
-        },
-      }));
-      showToast(`${activeCategory.singular} updated successfully!`, 'success');
-    } else {
-      // Add
-      const newItem = {
-        id: `${activeTab.substring(0, 2).toUpperCase()}-${Date.now().toString().slice(-4)}`,
-        title: trimmedTitle,
-        startDate: modalForm.startDate || new Date().toISOString().split('T')[0],
-        status: modalForm.status,
-      };
-      setCategoryData((prev) => ({
-        ...prev,
-        [activeTab]: {
-          ...prev[activeTab],
-          items: [newItem, ...currentItems],
-        },
-      }));
-      showToast(`${activeCategory.singular} created successfully!`, 'success');
-    }
+            : it
+        );
+        setCategoryData((prev) => ({
+          ...prev,
+          [activeTab]: {
+            ...prev[activeTab],
+            items: updated,
+          },
+        }));
+        showToast(result.message || `${activeCategory.singular} updated successfully!`, 'success');
+      } else {
+        // Real Backend POST API Call
+        const response = await api.post(endpoint, {
+            title: trimmedTitle,
+            name: trimmedTitle,
+            status: modalForm.status,
+            isActive: modalForm.status === 'Active',
+          });
+        const result = response.data;
+        if (!res.ok || !result.success) {
+          showToast(result.message || 'Failed to create', 'error');
+          return;
+        }
 
-    handleBackToList();
+        const createdData = result.data || {};
+        const newItem = {
+          id: createdData.id || createdData._id || `ITEM-${Date.now()}`,
+          title: createdData.title || createdData.name || trimmedTitle,
+          status: modalForm.status,
+          startDate: createdData.startDate || new Date().toISOString().split('T')[0],
+        };
+
+        setCategoryData((prev) => ({
+          ...prev,
+          [activeTab]: {
+            ...prev[activeTab],
+            items: [newItem, ...activeCategory.items],
+          },
+        }));
+        showToast(result.message || `${activeCategory.singular} created successfully!`, 'success');
+      }
+
+      handleBackToList();
+    } catch (err) {
+      console.error('API Error:', err);
+      showToast('Backend server connection error', 'error');
+    }
   };
 
   // Delete Item
-  const handleDelete = (item) => {
+  const handleDelete = async (item) => {
     if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
-      const updated = activeCategory.items.filter((it) => it.id !== item.id);
-      setCategoryData((prev) => ({
-        ...prev,
-        [activeTab]: {
-          ...prev[activeTab],
-          items: updated,
-        },
-      }));
-      showToast(`${activeCategory.singular} "${item.title}" deleted successfully!`, 'delete');
+      const endpoint = TAB_ENDPOINTS[activeTab];
+      try {
+        const response = await api.delete(`${endpoint}/${item.id}`);
+        const result = response.data;
+        if (!res.ok || !result.success) {
+          showToast(result.message || 'Failed to delete', 'error');
+          return;
+        }
+
+        const updated = activeCategory.items.filter((it) => it.id !== item.id);
+        setCategoryData((prev) => ({
+          ...prev,
+          [activeTab]: {
+            ...prev[activeTab],
+            items: updated,
+          },
+        }));
+        showToast(result.message || `${activeCategory.singular} "${item.title}" deleted successfully!`, 'delete');
+      } catch (err) {
+        console.error('Delete error:', err);
+        showToast('Backend server connection error', 'error');
+      }
     }
   };
 
@@ -427,7 +521,7 @@ export const MastersModule = () => {
       setCategoryData(DEFAULT_CATEGORIES);
       localStorage.removeItem('hr_admin_master_taxonomy_v2');
       localStorage.removeItem('hr_admin_master_taxonomy');
-      showToast('Reset to system default taxonomies!', 'info');
+      showToast('Reset to system default Module!', 'info');
       setCurrentPage(1);
     }
   };
@@ -469,8 +563,8 @@ export const MastersModule = () => {
           {currentView === 'list'
             ? activeCategory.label
             : editingItem
-            ? `Edit ${activeCategory.singular} — ${editingItem.title}`
-            : `Add ${activeCategory.singular}`}
+              ? `Edit ${activeCategory.singular} — ${editingItem.title}`
+              : `Add ${activeCategory.singular}`}
         </h1>
 
         {currentView === 'list' ? (
@@ -513,192 +607,190 @@ export const MastersModule = () => {
           <>
             {/* Toolbar: Search (Left) + Filter (Right) */}
             <div className="masters-toolbar">
-          <div className="masters-search-box">
-            <Search size={16} className="text-muted" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="masters-search-input"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                className="masters-search-clear"
-                onClick={() => setSearchTerm('')}
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          <div className="masters-toolbar-right">
-            <div className="masters-filter-wrap">
-              <Filter size={15} color="var(--text-muted)" />
-              <select
-                className="masters-status-select"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Modern Data Table: Strictly S.NO | TITLE | START DATE | STATUS | ACTION */}
-        <div className="masters-table-container">
-          <table className="masters-table">
-            <thead>
-              <tr>
-                <th style={{ width: '85px', textAlign: 'center' }}>S.NO</th>
-                <th>TITLE</th>
-                <th style={{ width: '180px' }}>CREATED DATE</th>
-                <th style={{ width: '150px', textAlign: 'center' }}>STATUS</th>
-                <th style={{ width: '130px', textAlign: 'center' }}>ACTION</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedItems.length > 0 ? (
-                paginatedItems.map((item, index) => {
-                  const serialNumber =
-                    (currentPage - 1) * itemsPerPage + index + 1;
-                  return (
-                    <tr key={item.id}>
-                      {/* 1. S.NO */}
-                      <td
-                        style={{
-                          textAlign: 'center',
-                          fontWeight: 700,
-                          color: '#64748b',
-                        }}
-                      >
-                        {serialNumber}
-                      </td>
-
-                      {/* 2. TITLE */}
-                      <td>
-                        <span className="master-title-cell">{item.title}</span>
-                      </td>
-
-                      {/* 3. CREATED DATE */}
-                      <td>
-                        <span className="master-date-cell">
-                          {formatDisplayDate(item.startDate)}
-                        </span>
-                      </td>
-
-                      {/* 4. STATUS */}
-                      <td style={{ textAlign: 'center' }}>
-                        <span
-                          className={`master-status-badge ${
-                            item.status === 'Active' ? 'active' : 'inactive'
-                          }`}
-                        >
-                          <span className="master-status-dot" />
-                          <span>{item.status}</span>
-                        </span>
-                      </td>
-
-                      {/* 5. ACTION (Edit / Delete) */}
-                      <td style={{ textAlign: 'center' }}>
-                        <div className="master-actions-group">
-                          <button
-                            type="button"
-                            className="btn-table-action edit"
-                            onClick={() => handleOpenEdit(item)}
-                            title="Edit"
-                          >
-                            <Edit2 size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-table-action delete"
-                            onClick={() => handleDelete(item)}
-                            title="Delete"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={5} className="masters-empty-cell">
-                    {searchTerm || statusFilter !== 'ALL'
-                      ? 'No matching records found. Try adjusting your search or filter.'
-                      : `No records in ${activeCategory.label} yet. Click "+ Add ${activeCategory.singular}" above to create one.`}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Footer */}
-        {filteredItems.length > itemsPerPage && (
-          <div className="masters-pagination-row">
-            <span className="masters-pagination-info">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-              {Math.min(currentPage * itemsPerPage, filteredItems.length)} of{' '}
-              {filteredItems.length} records
-            </span>
-
-            <div className="masters-pagination-controls">
-              <button
-                type="button"
-                className="btn-page-nav"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              >
-                <ChevronLeft size={16} />
-                <span>Prev</span>
-              </button>
-
-              <div className="page-numbers">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      type="button"
-                      className={`btn-page-num ${
-                        currentPage === page ? 'active' : ''
-                      }`}
-                      onClick={() => setCurrentPage(page)}
-                    >
-                      {page}
-                    </button>
-                  )
+              <div className="masters-search-box">
+                <Search size={16} className="text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="masters-search-input"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    className="masters-search-clear"
+                    onClick={() => setSearchTerm('')}
+                  >
+                    <X size={14} />
+                  </button>
                 )}
               </div>
 
-              <button
-                type="button"
-                className="btn-page-nav"
-                disabled={currentPage === totalPages}
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(p + 1, totalPages))
-                }
-              >
-                <span>Next</span>
-                <ChevronRight size={16} />
-              </button>
+              <div className="masters-toolbar-right">
+                <div className="masters-filter-wrap">
+                  <Filter size={15} color="var(--text-muted)" />
+                  <select
+                    className="masters-status-select"
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value="ALL">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
-      </>
-    ) : (
+
+            {/* 3. Modern Data Table: Strictly S.NO | TITLE | START DATE | STATUS | ACTION */}
+            <div className="masters-table-container">
+              <table className="masters-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '85px', textAlign: 'center' }}>S.NO</th>
+                    <th>TITLE</th>
+                    <th style={{ width: '180px' }}>CREATED DATE</th>
+                    <th style={{ width: '150px', textAlign: 'center' }}>STATUS</th>
+                    <th style={{ width: '130px', textAlign: 'center' }}>ACTION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedItems.length > 0 ? (
+                    paginatedItems.map((item, index) => {
+                      const serialNumber =
+                        (currentPage - 1) * itemsPerPage + index + 1;
+                      return (
+                        <tr key={item.id}>
+                          {/* 1. S.NO */}
+                          <td
+                            style={{
+                              textAlign: 'center',
+                              fontWeight: 700,
+                              color: '#64748b',
+                            }}
+                          >
+                            {serialNumber}
+                          </td>
+
+                          {/* 2. TITLE */}
+                          <td>
+                            <span className="master-title-cell">{item.title}</span>
+                          </td>
+
+                          {/* 3. CREATED DATE */}
+                          <td>
+                            <span className="master-date-cell">
+                              {formatDisplayDate(item.startDate)}
+                            </span>
+                          </td>
+
+                          {/* 4. STATUS */}
+                          <td style={{ textAlign: 'center' }}>
+                            <span
+                              className={`master-status-badge ${item.status === 'Active' ? 'active' : 'inactive'
+                                }`}
+                            >
+                              <span className="master-status-dot" />
+                              <span>{item.status}</span>
+                            </span>
+                          </td>
+
+                          {/* 5. ACTION (Edit / Delete) */}
+                          <td style={{ textAlign: 'center' }}>
+                            <div className="master-actions-group">
+                              <button
+                                type="button"
+                                className="btn-table-action edit"
+                                onClick={() => handleOpenEdit(item)}
+                                title="Edit"
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-table-action delete"
+                                onClick={() => handleDelete(item)}
+                                title="Delete"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="masters-empty-cell">
+                        {searchTerm || statusFilter !== 'ALL'
+                          ? 'No matching records found. Try adjusting your search or filter.'
+                          : `No records in ${activeCategory.label} yet. Click "+ Add ${activeCategory.singular}" above to create one.`}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Footer */}
+            {filteredItems.length > itemsPerPage && (
+              <div className="masters-pagination-row">
+                <span className="masters-pagination-info">
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+                  {Math.min(currentPage * itemsPerPage, filteredItems.length)} of{' '}
+                  {filteredItems.length} records
+                </span>
+
+                <div className="masters-pagination-controls">
+                  <button
+                    type="button"
+                    className="btn-page-nav"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  >
+                    <ChevronLeft size={16} />
+                    <span>Prev</span>
+                  </button>
+
+                  <div className="page-numbers">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <button
+                          key={page}
+                          type="button"
+                          className={`btn-page-num ${currentPage === page ? 'active' : ''
+                            }`}
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-page-nav"
+                    disabled={currentPage === totalPages}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(p + 1, totalPages))
+                    }
+                  >
+                    <span>Next</span>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
           /* =========================================================================
              VIEW 2: IN-PAGE EDIT / ADD FORM (Table is hidden, No Popups!)
              ========================================================================= */
@@ -708,7 +800,7 @@ export const MastersModule = () => {
                 1. {activeCategory.singular.toUpperCase()} INFORMATION
               </div>
 
-              <div className="inpage-grid-3col">
+              <div className="inpage-grid-2col">
                 <div className="form-field-group">
                   <label className="modal-field-label">
                     {activeCategory.singular} Name / Title <span className="field-required">*</span>
@@ -725,22 +817,6 @@ export const MastersModule = () => {
                     autoFocus
                   />
                   <FieldError error={formErrors.title} />
-                </div>
-
-                <div className="form-field-group">
-                  <label className="modal-field-label">
-                    Start Date <span className="field-required">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    className={`modal-field-input ${formErrors.startDate ? 'has-error' : ''}`}
-                    value={modalForm.startDate}
-                    onChange={(e) => {
-                      setModalForm({ ...modalForm, startDate: e.target.value });
-                      if (formErrors.startDate) setFormErrors({ ...formErrors, startDate: null });
-                    }}
-                  />
-                  <FieldError error={formErrors.startDate} />
                 </div>
 
                 <div className="form-field-group">
