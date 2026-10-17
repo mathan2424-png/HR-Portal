@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Home,
   Shield,
@@ -18,8 +18,11 @@ import {
   Users,
   RotateCcw,
   Check,
+  MoreHorizontal,
+  UserPlus,
 } from 'lucide-react';
 import { Toast } from '../../components/common/Toast/Toast';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import {
   validateEmail,
@@ -29,243 +32,318 @@ import {
   sanitizePhoneInput,
 } from '../../utils/validation';
 import './UsersRoles.css';
+import { UsersRolesApi } from '../../Api/UserRolesApi';
 
 export const UsersRoles = () => {
   const [userErrors, setUserErrors] = useState({});
   const [roleErrors, setRoleErrors] = useState({});
 
-  // 1. Defined System Roles matching Image 1 & 2
-  const [systemRoles, setSystemRoles] = useState([
-    {
-      id: 'ROLE-01',
-      name: 'Super Admin',
-      description: 'Full root access to all system domains and security configurations.',
-      chips: ['View', 'Create', 'Edit', 'Approve', 'Export'],
-      permissions: {
-        Dashboard: { view: true, add: true, edit: true, delete: true },
-        'Roles Permissions': { view: true, add: true, edit: true, delete: true },
-        'Admin Users': { view: true, add: true, edit: true, delete: true },
-        'Business Regions': { view: true, add: true, edit: true, delete: true },
-        'Jobs & Requirements': { view: true, add: true, edit: true, delete: true },
-        'Candidate Matching': { view: true, add: true, edit: true, delete: true },
-        'Candidate Responses': { view: true, add: true, edit: true, delete: true },
-        'Screening Assessments': { view: true, add: true, edit: true, delete: true },
-        'Interviews & Scheduling': { view: true, add: true, edit: true, delete: true },
-        'Offers & Hiring': { view: true, add: true, edit: true, delete: true },
-        'Recruitment Reports': { view: true, add: true, edit: true, delete: true },
-        'Company Settings': { view: true, add: true, edit: true, delete: true },
-      },
-    },
-    {
-      id: 'ROLE-02',
-      name: 'Product Owner',
-      description: 'Manages company configurations, feature modules, and usage allotments.',
-      chips: ['View', 'Create', 'Edit', 'Export'],
-      permissions: {
-        Dashboard: { view: true, add: true, edit: true, delete: false },
-        'Roles Permissions': { view: true, add: false, edit: false, delete: false },
-        'Admin Users': { view: true, add: true, edit: true, delete: false },
-        'Business Regions': { view: true, add: true, edit: true, delete: false },
-        'Jobs & Requirements': { view: true, add: true, edit: true, delete: true },
-        'Candidate Matching': { view: true, add: true, edit: true, delete: false },
-        'Candidate Responses': { view: true, add: true, edit: true, delete: false },
-        'Screening Assessments': { view: true, add: true, edit: true, delete: false },
-        'Interviews & Scheduling': { view: true, add: true, edit: true, delete: false },
-        'Offers & Hiring': { view: true, add: false, edit: false, delete: false },
-        'Recruitment Reports': { view: true, add: false, edit: false, delete: false },
-        'Company Settings': { view: true, add: true, edit: true, delete: false },
-      },
-    },
-    {
-      id: 'ROLE-03',
-      name: 'Finance Lead',
-      description: 'Access to billing ledgers, invoices, payment disputes, and revenue analytics.',
-      chips: ['View', 'Edit', 'Approve', 'Export'],
-      permissions: {
-        Dashboard: { view: true, add: false, edit: false, delete: false },
-        'Roles Permissions': { view: false, add: false, edit: false, delete: false },
-        'Admin Users': { view: false, add: false, edit: false, delete: false },
-        'Business Regions': { view: true, add: false, edit: false, delete: false },
-        'Jobs & Requirements': { view: true, add: false, edit: false, delete: false },
-        'Candidate Matching': { view: false, add: false, edit: false, delete: false },
-        'Candidate Responses': { view: false, add: false, edit: false, delete: false },
-        'Screening Assessments': { view: false, add: false, edit: false, delete: false },
-        'Interviews & Scheduling': { view: false, add: false, edit: false, delete: false },
-        'Offers & Hiring': { view: true, add: false, edit: true, delete: false },
-        'Recruitment Reports': { view: true, add: false, edit: false, delete: false },
-        'Company Settings': { view: true, add: false, edit: true, delete: false },
-      },
-    },
-    {
-      id: 'ROLE-04',
-      name: 'Support Specialist',
-      description: 'Handles tenant support tickets, escalations, and incident resolutions.',
-      chips: ['View', 'Edit'],
-      permissions: {
-        Dashboard: { view: true, add: false, edit: false, delete: false },
-        'Roles Permissions': { view: false, add: false, edit: false, delete: false },
-        'Admin Users': { view: true, add: false, edit: false, delete: false },
-        'Business Regions': { view: true, add: false, edit: false, delete: false },
-        'Jobs & Requirements': { view: true, add: false, edit: false, delete: false },
-        'Candidate Matching': { view: true, add: false, edit: false, delete: false },
-        'Candidate Responses': { view: true, add: false, edit: true, delete: false },
-        'Screening Assessments': { view: true, add: false, edit: false, delete: false },
-        'Interviews & Scheduling': { view: true, add: false, edit: true, delete: false },
-        'Offers & Hiring': { view: false, add: false, edit: false, delete: false },
-        'Recruitment Reports': { view: false, add: false, edit: false, delete: false },
-        'Company Settings': { view: false, add: false, edit: false, delete: false },
-      },
-    },
+  // Helper to normalize permissions from backend API response
+const parseRolePermissions = (roleObj) => {
+  if (!roleObj) return {};
+  if (roleObj.permissionsMap && typeof roleObj.permissionsMap === 'object' && Object.keys(roleObj.permissionsMap).length > 0) {
+    return roleObj.permissionsMap;
+  }
+  if (Array.isArray(roleObj.permissions) && roleObj.permissions.length > 0) {
+    const map = {};
+    roleObj.permissions.forEach((p) => {
+      const mod = p.module;
+      const modName = (mod && typeof mod === 'object' ? (mod.name || mod.key) : '') || String(mod || 'General');
+      if (modName) {
+        map[modName] = {
+          view: Boolean(p.canView ?? p.view),
+          add: Boolean(p.canCreate ?? p.canAdd ?? p.add),
+          edit: Boolean(p.canEdit ?? p.edit),
+          delete: Boolean(p.canDelete ?? p.delete),
+        };
+      }
+    });
+    return map;
+  }
+  return {};
+};
+
+  // 1. Defined System Roles - 100% loaded dynamically from backend API
+  const [systemRoles, setSystemRoles] = useState([]);
+  const [isRolesLoading, setIsRolesLoading] = useState(false);
+  const [viewingPermsLoading, setViewingPermsLoading] = useState(false);
+  const [availableModules, setAvailableModules] = useState([
+    'Dashboard',
+    'Job Management',
+    'Candidate Management',
+    'Platform Reports',
+    'Support',
+    'Roles & Permissions',
+    'Platform Settings',
+    'Audit & Security',
+    'Company Details',
+    'Company Subscription',
+    'Company Usage',
+    'Subscription Plans',
+    'Payments & Invoices',
+    'Masters',
   ]);
 
-  // 2. Users Table Data matching Image 1 (Tamil Names)
-  const [users, setUsers] = useState([
-    {
-      userId: 'USR-001',
-      employeeName: 'Saravanan S',
-      email: 'saravanan.admin@hrportal.example.com',
-      mobile: '+91 98401 23456',
-      employeeId: 'EMP-1042',
-      designation: 'Super Administrator',
-      department: 'Executive Administration',
-      branch: 'Chennai HQ',
-      role: 'Super Admin',
-      assignedJobs: 'All System Requisitions',
-      status: 'Active',
-      lastLogin: '12-Oct-2026 01:05 PM',
-    },
-    {
-      userId: 'USR-002',
-      employeeName: 'Kavitha Ramachandran',
-      email: 'kavitha.finance@hrportal.example.com',
-      mobile: '+91 98410 76543',
-      employeeId: 'EMP-1048',
-      designation: 'Lead Finance Controller',
-      department: 'Finance & Accounts',
-      branch: 'Coimbatore Branch',
-      role: 'Finance Lead',
-      assignedJobs: 'None (Finance View Only)',
-      status: 'Active',
-      lastLogin: '12-Oct-2026 12:40 PM',
-    },
-    {
-      userId: 'USR-003',
-      employeeName: 'Dhakshan S',
-      email: 'sdhakshan007@company.com',
-      mobile: '+91 86101 88861',
-      employeeId: 'EMP-2015',
-      designation: 'Lead Technical Recruiter',
-      department: 'Talent Acquisition',
-      branch: 'Chennai HQ',
-      role: 'Product Owner',
-      assignedJobs: 'All Engineering Jobs (8)',
-      status: 'Active',
-      lastLogin: '12-Oct-2026 11:15 AM',
-    },
-    {
-      userId: 'USR-004',
-      employeeName: 'Abinaya R',
-      email: 'abinaya.r@company.com',
-      mobile: '+91 96325 87410',
-      employeeId: 'EMP-3091',
-      designation: 'Senior HR Manager',
-      department: 'Human Resources',
-      branch: 'Madurai Branch',
-      role: 'Super Admin',
-      assignedJobs: 'All Company Jobs',
-      status: 'Active',
-      lastLogin: '11-Oct-2026 04:20 PM',
-    },
-    {
-      userId: 'USR-005',
-      employeeName: 'Karthik V',
-      email: 'karthik.v@company.com',
-      mobile: '+91 94451 22334',
-      employeeId: 'EMP-4102',
-      designation: 'Support Engineer',
-      department: 'Operations',
-      branch: 'Tiruchirappalli Branch',
-      role: 'Support Specialist',
-      assignedJobs: 'Technical Screening & Scheduling',
-      status: 'Active',
-      lastLogin: '10-Oct-2026 09:30 AM',
-    },
-    {
-      userId: 'USR-006',
-      employeeName: 'Vigneshwaran P',
-      email: 'vigneshwaran.p@company.com',
-      mobile: '+91 97890 11223',
-      employeeId: 'EMP-5020',
-      designation: 'Talent Sourcing Specialist',
-      department: 'Talent Acquisition',
-      branch: 'Salem Branch',
-      role: 'Support Specialist',
-      assignedJobs: 'Design & UX Roles (2)',
-      status: 'Invited',
-      lastLogin: 'Invited (Pending First Login)',
-    },
-    {
-      userId: 'USR-007',
-      employeeName: 'Meenakshi Sundaram',
-      email: 'meenakshi.s@company.com',
-      mobile: '+91 94432 55667',
-      employeeId: 'EMP-5034',
-      designation: 'Associate HR Specialist',
-      department: 'Talent Acquisition',
-      branch: 'Tirunelveli Branch',
-      role: 'Product Owner',
-      assignedJobs: 'Entry Level Graduate Hiring',
-      status: 'Active',
-      lastLogin: '12-Oct-2026 10:00 AM',
-    },
-    {
-      userId: 'USR-008',
-      employeeName: 'Rithesh K',
-      email: 'murugan.k@company.com',
-      mobile: '+91 98940 33445',
-      employeeId: 'EMP-5042',
-      designation: 'Systems Auditor',
-      department: 'Operations & Compliance',
-      branch: 'Erode Branch',
-      role: 'Support Specialist',
-      assignedJobs: 'Compliance & Verification',
-      status: 'Active',
-      lastLogin: '11-Oct-2026 02:45 PM',
-    },
-  ]);
+  // 2. Users Table Data (Fetched dynamically from backend API)
+  const [users, setUsers] = useState([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // UI States
+  // 3. Search, Filter & Pagination UI States
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('All Roles');
   const [activeCardRoleFilter, setActiveCardRoleFilter] = useState(null);
-  const [toastMessage, setToastMessage] = useState('');
+  const [activeCardRoleId, setActiveCardRoleId] = useState(null);
+  const [openMenuRoleId, setOpenMenuRoleId] = useState(null);
+  const [editingRoleId, setEditingRoleId] = useState(null);
+  const [viewingPermsRole, setViewingPermsRole] = useState(null);
+
+  // ─── LOAD USERS FROM BACKEND API WITH FILTERS & PAGINATION ───
+  const loadUsers = async (
+    page = currentPage,
+    search = searchTerm,
+    role = activeCardRoleFilter || selectedRoleFilter,
+    roleId = activeCardRoleId
+  ) => {
+    setIsLoading(true);
+    try {
+      const params = {
+        page,
+        limit: itemsPerPage,
+      };
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+      const effRole = activeCardRoleFilter || (selectedRoleFilter !== 'All Roles' ? selectedRoleFilter : null);
+      if (effRole && effRole !== 'All Roles') {
+        params.role = effRole;
+      }
+      if (roleId) {
+        params.roleId = roleId;
+      }
+
+      const res = await UsersRolesApi.getUsers(params);
+      let usersList = [];
+      if (Array.isArray(res?.data)) {
+        usersList = res.data;
+      } else if (Array.isArray(res?.data?.users)) {
+        usersList = res.data.users;
+      } else if (Array.isArray(res?.users)) {
+        usersList = res.users;
+      } else if (Array.isArray(res)) {
+        usersList = res;
+      }
+
+      const normalized = usersList.map((u) => ({
+        userId: u.userId || u.employeeId || u._id || u.id,
+        _id: u._id || u.id,
+        employeeName: u.employeeName || u.name || u.fullName || '',
+        email: u.email || u.workEmail || '',
+        mobile: u.mobile || u.workMobile || u.phoneNumber || '',
+        employeeId: u.employeeId || '',
+        designation: u.designation || '',
+        department: u.department || '',
+        branch: u.branch || u.branchName || '',
+        role: typeof u.role === 'object' ? (u.role?.name || u.role?.roleName || 'Super Admin') : (u.role || u.roleName || 'Super Admin'),
+        roleName: u.roleName || (typeof u.role === 'object' ? u.role?.name : u.role) || '',
+        roleId: u.roleId || (typeof u.role === 'object' ? u.role?._id : '') || '',
+        assignedJobs: u.assignedJobs || u.assignedJobsScope || '',
+        status: u.status || (u.isActive ? 'Active' : 'Inactive'),
+        lastLogin: u.lastLogin || 'Pending First Login',
+      }));
+      setUsers(normalized);
+
+      // Pagination metadata from backend response
+      const paginationMeta = res?.pagination || res?.data?.pagination;
+      if (paginationMeta) {
+        setTotalUsers(paginationMeta.total ?? normalized.length);
+        setTotalPages(paginationMeta.totalPages ?? (Math.ceil((paginationMeta.total || normalized.length) / itemsPerPage) || 1));
+      } else {
+        const tot = res?.total ?? normalized.length;
+        setTotalUsers(tot);
+        setTotalPages(Math.ceil(tot / itemsPerPage) || 1);
+      }
+    } catch (err) {
+      console.error('Failed to load users from API:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadRoles = async () => {
+    try {
+      setIsRolesLoading(true);
+      const res = await UsersRolesApi.getRoles();
+      const rolesList = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      if (rolesList.length > 0) {
+        const modSet = new Set();
+        const mappedRoles = rolesList.map((r, idx) => {
+          const perms = parseRolePermissions(r);
+          Object.keys(perms).forEach((m) => modSet.add(m));
+          const rName = r.roleName || r.name || 'Custom Role';
+          return {
+            id: r.code || `ROLE-0${idx + 1}`,
+            code: r.code || getRoleCode(r),
+            roleId: r.roleId || r._id || r.id,
+            _id: r._id || r.id,
+            name: rName,
+            description: r.description || `${rName} operational access role.`,
+            chips: r.chips || (r.code === 'SUPER_ADMIN' || rName === 'Super Admin' ? ['Full Access'] : ['View', 'Edit']),
+            permissions: perms,
+            rawPermissions: r.permissions || [],
+            memberCount: typeof r.memberCount === 'number' ? r.memberCount : (r.totalMembers || 0),
+            totalMembers: typeof r.totalMembers === 'number' ? r.totalMembers : (r.memberCount || 0),
+          };
+        });
+
+        if (modSet.size > 0) {
+          setAvailableModules(Array.from(modSet));
+        }
+
+        setSystemRoles(mappedRoles);
+      }
+    } catch (err) {
+      console.error('Failed to load roles from API:', err);
+    } finally {
+      setIsRolesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadRoles();
+  }, []);
+
+  // Live Server-side Query whenever page, search term, or role filter changes (debounced 300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadUsers(currentPage, searchTerm, activeCardRoleFilter || selectedRoleFilter, activeCardRoleId);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [currentPage, searchTerm, selectedRoleFilter, activeCardRoleFilter, activeCardRoleId]);
+
+  const rolesScrollRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const isDownRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const hasMovedRef = useRef(false);
+
+  const scrollRoles = (direction) => {
+    if (rolesScrollRef.current) {
+      const scrollAmount = direction === 'left' ? -300 : 300;
+      rolesScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    if (e.button !== 0 || !rolesScrollRef.current) return;
+    isDownRef.current = true;
+    hasMovedRef.current = false;
+    startXRef.current = e.pageX - rolesScrollRef.current.offsetLeft;
+    scrollLeftRef.current = rolesScrollRef.current.scrollLeft;
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDownRef.current || !rolesScrollRef.current) return;
+    const x = e.pageX - rolesScrollRef.current.offsetLeft;
+    const walk = (x - startXRef.current) * 1.4;
+    if (Math.abs(x - startXRef.current) > 6) {
+      hasMovedRef.current = true;
+      if (!isDragging) setIsDragging(true);
+      e.preventDefault();
+      rolesScrollRef.current.scrollLeft = scrollLeftRef.current - walk;
+    }
+  };
+
+  const handleMouseUpOrLeave = () => {
+    isDownRef.current = false;
+    if (isDragging) {
+      setTimeout(() => {
+        hasMovedRef.current = false;
+        setIsDragging(false);
+      }, 50);
+    } else {
+      hasMovedRef.current = false;
+      setIsDragging(false);
+    }
+  };
+
+  // Open Permissions Modal with LIVE backend response
+  const handleOpenPermissionsModal = async (e, role) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    // Open immediately with parsed role permissions from API list
+    setViewingPermsRole(role);
+    setViewingPermsLoading(true);
+
+    const rId = role.roleId || role._id || role.id;
+    if (rId) {
+      try {
+        const res = await UsersRolesApi.getRoleById(rId);
+        const roleData = res?.data || (res?.success ? res : null);
+        if (roleData) {
+          const freshPerms = parseRolePermissions(roleData);
+          setViewingPermsRole((current) => ({
+            ...current,
+            ...roleData,
+            name: roleData.roleName || roleData.name || role.name,
+            code: roleData.code || role.code,
+            permissions: freshPerms,
+            rawPermissions: roleData.permissions || [],
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch role permissions from backend:', err);
+      } finally {
+        setViewingPermsLoading(false);
+      }
+    } else {
+      setViewingPermsLoading(false);
+    }
+  };
+
+  // Close role three-dots menu when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = () => setOpenMenuRoleId(null);
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  const getRoleCode = (role) => {
+    if (!role) return 'ROLE';
+    if (role.code) return role.code;
+    if (role.id && !String(role.id).startsWith('ROLE-')) return role.id;
+    const name = role.name || role.roleName || '';
+    return name.toUpperCase().trim().replace(/[^A-Z0-9]+/g, '_') || 'ROLE';
+  };
+
+  const getRoleUserCount = (role) => {
+    if (!role) return 0;
+    if (typeof role.memberCount === 'number') return role.memberCount;
+    if (typeof role.totalMembers === 'number') return role.totalMembers;
+    return 0;
+  };
 
   // Views: 'list' | 'add-user' | 'edit-user' | 'view-user'
   const [currentView, setCurrentView] = useState('list');
   const [editingUserId, setEditingUserId] = useState(null);
 
   // Add Role Form State (In-Page View)
+  const getFreshNewRolePermissions = () => {
+    const perms = {};
+    availableModules.forEach((m) => {
+      perms[m] = { view: true, add: false, edit: false, delete: false };
+    });
+    return perms;
+  };
+
   const initialNewRoleState = {
     name: '',
     description: '',
-    permissions: {
-      Dashboard: { view: true, add: false, edit: false, delete: false },
-      'Roles & Permissions': { view: true, add: false, edit: false, delete: false },
-      'Admin Users': { view: true, add: true, edit: false, delete: false },
-      'Company Details': { view: true, add: false, edit: true, delete: false },
-      'Departments & Branches': { view: true, add: true, edit: true, delete: false },
-      'Masters & Taxonomy': { view: true, add: true, edit: true, delete: false },
-      'Jobs & Requirements': { view: true, add: true, edit: true, delete: false },
-      'Candidate Matching': { view: true, add: true, edit: false, delete: false },
-      'Candidate Responses': { view: true, add: true, edit: true, delete: false },
-      'Screening Assessments': { view: true, add: true, edit: true, delete: false },
-      'Interviews & Scheduling': { view: true, add: true, edit: true, delete: false },
-      'Offers & Hiring': { view: true, add: false, edit: false, delete: false },
-      'Recruitment Reports': { view: true, add: false, edit: false, delete: false },
-      'Notifications': { view: true, add: true, edit: true, delete: false },
-      'Company Settings': { view: false, add: false, edit: false, delete: false },
-      'Company Audit Log': { view: true, add: false, edit: false, delete: false },
-    },
+    permissions: getFreshNewRolePermissions(),
   };
   const [newRoleForm, setNewRoleForm] = useState(initialNewRoleState);
 
@@ -286,12 +364,19 @@ export const UsersRoles = () => {
   };
   const [userFormData, setUserFormData] = useState(initialUserFormData);
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   // Toast Notification State
   const [toast, setToast] = useState(null); // { message: string, type: 'success' | 'delete' | 'info' | 'warning' }
+
+  // Custom Modern Delete Confirmation Modal State
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    type: null, // 'user' | 'role'
+    id: null,
+    name: '',
+    roleObj: null,
+    isLoading: false,
+  });
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -299,9 +384,38 @@ export const UsersRoles = () => {
 
   // Open In-Page "Add Role" View (Hides table, shows Add Role form)
   const handleOpenCreateRole = () => {
+    setEditingRoleId(null);
     setNewRoleForm(initialNewRoleState);
+    setRoleErrors({});
     setCurrentView('add-role');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenEditRole = (e, role) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    setOpenMenuRoleId(null);
+    setEditingRoleId(role.roleId || role._id || role.id);
+    setNewRoleForm({
+      name: role.name || '',
+      description: role.description || '',
+      permissions: role.permissions || initialNewRoleState.permissions,
+    });
+    setRoleErrors({});
+    setCurrentView('edit-role');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteRole = (e, role) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    setOpenMenuRoleId(null);
+    setDeleteConfirm({
+      isOpen: true,
+      type: 'role',
+      id: role.roleId || role._id || role.id,
+      name: role.name,
+      roleObj: role,
+      isLoading: false,
+    });
   };
 
   // Toggle single permission circle in matrix
@@ -371,48 +485,49 @@ export const UsersRoles = () => {
     });
   };
 
-  // Save new role from in-page view
-  const handleSaveRole = (e) => {
+  // Save new role or update existing role from in-page view
+  const handleSaveRole = async (e) => {
     e.preventDefault();
-    const roleNameErr = validateRequired(newRoleForm.name, 'Role name');
+    const roleNameErr = validateName(newRoleForm.name, 'Role name', true);
     if (roleNameErr) {
       setRoleErrors({ name: roleNameErr });
       return;
     }
     setRoleErrors({});
 
-    const nextIdNum = systemRoles.length + 1;
-    const roleId = `ROLE-0${nextIdNum}`;
-
-    // Compute chips based on permissions
-    const hasView = Object.values(newRoleForm.permissions).some((p) => p.view);
-    const hasAdd = Object.values(newRoleForm.permissions).some((p) => p.add);
-    const hasEdit = Object.values(newRoleForm.permissions).some((p) => p.edit);
-    const hasDelete = Object.values(newRoleForm.permissions).some((p) => p.delete);
-
-    const generatedChips = [];
-    if (hasView) generatedChips.push('View');
-    if (hasAdd) generatedChips.push('Create');
-    if (hasEdit) generatedChips.push('Edit');
-    if (hasDelete) generatedChips.push('Delete');
-    if (generatedChips.length === 0) generatedChips.push('View');
-
-    const createdRole = {
-      id: roleId,
-      name: newRoleForm.name.trim(),
+    const rolePayload = {
+      roleName: newRoleForm.name.trim(),
       description: newRoleForm.description.trim() || 'Custom configured operational access role.',
-      chips: generatedChips,
       permissions: newRoleForm.permissions,
     };
 
-    setSystemRoles((prev) => [...prev, createdRole]);
-    setCurrentView('list');
-    showToast(`Role "${createdRole.name}" (${createdRole.id}) created successfully!`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      let res;
+      if (editingRoleId) {
+        res = await UsersRolesApi.updateRole(editingRoleId, rolePayload);
+      } else {
+        res = await UsersRolesApi.createRole(rolePayload);
+      }
+      if (res && res.success) {
+        const backendMsg = res.message || res.data?.message || (editingRoleId ? 'Role updated successfully' : 'Role created successfully');
+        showToast(backendMsg, 'success');
+        await loadRoles();
+        setEditingRoleId(null);
+        setCurrentView('list');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const errMsg = res?.message || res?.data?.message || 'Failed to save role';
+        showToast(errMsg, 'error');
+      }
+    } catch (err) {
+      console.error('Failed to save role:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Failed to save role';
+      showToast(errMsg, 'error');
+    }
   };
 
   // User In-Page Form Handlers
-  const handleOpenAddUser = () => {
+  const handleOpenAddUser = (presetRole = null) => {
     const nextIdNumber = users.length + 1;
     setUserFormData({
       ...initialUserFormData,
@@ -421,7 +536,7 @@ export const UsersRoles = () => {
       employeeName: '',
       email: 'newuser@company.com',
       mobile: '+91 98401 23456',
-      role: systemRoles[0]?.name || 'Super Admin',
+      role: (typeof presetRole === 'string' && presetRole) ? presetRole : (systemRoles[0]?.name || 'Super Admin'),
       designation: 'HR Specialist',
       department: 'Talent Acquisition',
       branch: 'Chennai HQ',
@@ -432,10 +547,16 @@ export const UsersRoles = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleRoleMenuAddUser = (e, role) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    setOpenMenuRoleId(null);
+    handleOpenAddUser(role.name);
+  };
+
   const handleOpenEditUser = (user) => {
     setUserFormData({ ...user });
     setUserErrors({});
-    setEditingUserId(user.userId);
+    setEditingUserId(user._id || user.userId);
     setCurrentView('edit-user');
   };
 
@@ -451,10 +572,11 @@ export const UsersRoles = () => {
     setRoleErrors({});
     setCurrentView('list');
     setEditingUserId(null);
+    setEditingRoleId(null);
   };
 
-  const handleSaveUser = (e) => {
-    e.preventDefault();
+  const handleSaveUser = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     const errors = {};
 
     const nameErr = validateName(userFormData.employeeName, 'Full name', true);
@@ -476,50 +598,116 @@ export const UsersRoles = () => {
 
     setUserErrors({});
 
-    if (editingUserId) {
-      setUsers((prev) =>
-        prev.map((u) => (u.userId === editingUserId ? { ...userFormData } : u))
-      );
-      showToast(`User "${userFormData.employeeName}" updated successfully!`, 'success');
-    } else {
-      setUsers((prev) => [userFormData, ...prev]);
-      showToast(`User "${userFormData.employeeName}" added successfully!`, 'success');
-    }
+    const payload = {
+      fullName: userFormData.employeeName,
+      workEmail: userFormData.email,
+      workMobile: userFormData.mobile,
+      employeeId: userFormData.employeeId,
+      designation: userFormData.designation,
+      department: userFormData.department,
+      branch: userFormData.branch,
+      role: userFormData.role,
+      assignedJobsScope: userFormData.assignedJobs,
+      status: userFormData.status,
+    };
 
-    setCurrentView('list');
-    setEditingUserId(null);
+    try {
+      if (editingUserId) {
+        const res = await UsersRolesApi.updateUser(editingUserId, payload);
+        if (res && res.success) {
+          const backendMsg = res.message || res.data?.message || 'User updated successfully';
+          showToast(backendMsg, 'success');
+          await Promise.all([loadUsers(), loadRoles()]);
+          setCurrentView('list');
+          setEditingUserId(null);
+        } else {
+          const errMsg = res?.message || res?.data?.message || 'Failed to update user';
+          showToast(errMsg, 'error');
+        }
+      } else {
+        const res = await UsersRolesApi.createUser(payload);
+        if (res && res.success) {
+          const backendMsg = res.message || res.data?.message || 'User created successfully';
+          showToast(backendMsg, 'success');
+          await Promise.all([loadUsers(), loadRoles()]);
+          setCurrentView('list');
+          setEditingUserId(null);
+        } else {
+          const errMsg = res?.message || res?.data?.message || 'Failed to create user';
+          showToast(errMsg, 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving user:', error);
+      const errMsg = error.response?.data?.message || error.message || 'Failed to save user';
+      showToast(errMsg, 'error');
+    }
   };
 
   const handleDeleteUser = (userId, name) => {
-    if (window.confirm(`Are you sure you want to remove user "${name}" (${userId})?`)) {
-      setUsers((prev) => prev.filter((u) => u.userId !== userId));
-      showToast(`User "${name}" (${userId}) deleted successfully.`, 'delete');
+    setDeleteConfirm({
+      isOpen: true,
+      type: 'user',
+      id: userId,
+      name: name,
+      roleObj: null,
+      isLoading: false,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.id) return;
+    setDeleteConfirm((prev) => ({ ...prev, isLoading: true }));
+
+    if (deleteConfirm.type === 'user') {
+      try {
+        const res = await UsersRolesApi.deleteUser(deleteConfirm.id);
+        if (res && res.success) {
+          const backendMsg = res.message || res.data?.message || 'User deleted successfully';
+          showToast(backendMsg, 'delete');
+          await Promise.all([loadUsers(), loadRoles()]);
+        } else {
+          const errMsg = res?.message || res?.data?.message || 'Failed to delete user';
+          showToast(errMsg, 'error');
+        }
+      } catch (apiErr) {
+        console.error('Backend delete failed:', apiErr);
+        const errMsg = apiErr.response?.data?.message || apiErr.message || 'Failed to delete user';
+        showToast(errMsg, 'error');
+      } finally {
+        setDeleteConfirm({ isOpen: false, type: null, id: null, name: '', roleObj: null, isLoading: false });
+      }
+    } else if (deleteConfirm.type === 'role') {
+      const rId = deleteConfirm.id;
+      const role = deleteConfirm.roleObj;
+      try {
+        const res = await UsersRolesApi.deleteRole(rId);
+        if (res && res.success) {
+          const backendMsg = res.message || res.data?.message || 'Role deleted successfully';
+          showToast(backendMsg, 'delete');
+          await loadRoles();
+          if (activeCardRoleId === rId || (role && activeCardRoleFilter === role.name)) {
+            setActiveCardRoleFilter(null);
+            setActiveCardRoleId(null);
+            setSelectedRoleFilter('All Roles');
+          }
+        } else {
+          const errMsg = res?.message || res?.data?.message || 'Failed to delete role';
+          showToast(errMsg, 'error');
+        }
+      } catch (err) {
+        console.error('Failed to delete role:', err);
+        const errMsg = err.response?.data?.message || err.message || 'Failed to delete role';
+        showToast(errMsg, 'error');
+      } finally {
+        setDeleteConfirm({ isOpen: false, type: null, id: null, name: '', roleObj: null, isLoading: false });
+      }
     }
   };
 
-  // Filter Users
-  const filteredUsers = users.filter((u) => {
-    const matchesSearch =
-      u.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.mobile.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesRoleDropdown =
-      selectedRoleFilter === 'All Roles' || u.role === selectedRoleFilter;
-
-    const matchesCardFilter =
-      !activeCardRoleFilter || u.role === activeCardRoleFilter;
-
-    return matchesSearch && matchesRoleDropdown && matchesCardFilter;
-  });
-
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage) || 1;
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // Users list and pagination are driven directly by backend API response
+  const filteredUsers = users;
+  const paginatedUsers = users;
 
   const getRoleBadgeClass = (roleName) => {
     switch (roleName) {
@@ -549,19 +737,43 @@ export const UsersRoles = () => {
         />
       )}
 
+      {/* Custom Modern Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirm.isOpen}
+        title="Confirm Delete"
+        message={
+          deleteConfirm.type === 'user'
+            ? deleteConfirm.name
+              ? `Are you sure you want to delete user "${deleteConfirm.name}"? This action cannot be undone.`
+              : 'Are you sure you want to delete this user? This action cannot be undone.'
+            : deleteConfirm.name
+              ? `Are you sure you want to delete role "${deleteConfirm.name}"? This action cannot be undone.`
+              : 'Are you sure you want to delete this role? This action cannot be undone.'
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={deleteConfirm.isLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() =>
+          setDeleteConfirm({ isOpen: false, type: null, id: null, name: '', roleObj: null, isLoading: false })
+        }
+      />
+
       {/* Header */}
       <div className="users-page-header">
         <div className="users-header-left">
           <h1 className="users-page-title">
             {currentView === 'add-role'
               ? 'Add Role'
-              : currentView === 'add-user'
-                ? 'Add User'
-                : currentView === 'edit-user'
-                  ? 'Edit User'
-                  : currentView === 'view-user'
-                    ? 'User Details'
-                    : 'Roles & Permissions'}
+              : currentView === 'edit-role'
+                ? 'Edit Role'
+                : currentView === 'add-user'
+                  ? 'Add User'
+                  : currentView === 'edit-user'
+                    ? 'Edit User'
+                    : currentView === 'view-user'
+                      ? 'User Details'
+                      : 'Roles & Permissions'}
           </h1>
         </div>
 
@@ -616,57 +828,160 @@ export const UsersRoles = () => {
                 </span>
               </div>
 
-              {activeCardRoleFilter && (
-                <button
-                  type="button"
-                  className="btn-clear-role-filter"
-                  onClick={() => {
-                    setActiveCardRoleFilter(null);
-                    setSelectedRoleFilter('All Roles');
-                    setCurrentPage(1);
-                  }}
-                  title="Clear role filter"
-                >
-                  <RotateCcw size={11} />
-                  <span>Filtered: <strong>{activeCardRoleFilter}</strong> (Reset)</span>
-                </button>
-              )}
+              <div className="defined-roles-header-actions">
+                {activeCardRoleFilter && (
+                  <button
+                    type="button"
+                    className="btn-clear-role-filter"
+                    onClick={() => {
+                      setActiveCardRoleFilter(null);
+                      setActiveCardRoleId(null);
+                      setSelectedRoleFilter('All Roles');
+                      setCurrentPage(1);
+                    }}
+                    title="Clear role filter"
+                  >
+                    <RotateCcw size={11} />
+                    <span>Filtered: <strong>{activeCardRoleFilter}</strong> (Reset)</span>
+                  </button>
+                )}
+
+                {systemRoles.length > 3 && (
+                  <div className="roles-scroll-arrows">
+                    <button
+                      type="button"
+                      className="btn-role-scroll"
+                      onClick={() => scrollRoles('left')}
+                      title="Scroll Left"
+                      aria-label="Scroll Left"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-role-scroll"
+                      onClick={() => scrollRoles('right')}
+                      title="Scroll Right"
+                      aria-label="Scroll Right"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Roles Cards Grid */}
-            <div className="roles-cards-grid">
+            {/* Roles Cards Grid - Horizontal Single Row with Click & Drag to Scroll */}
+            <div
+              className={`roles-cards-grid ${isDragging ? 'is-dragging' : ''}`}
+              ref={rolesScrollRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUpOrLeave}
+              onMouseLeave={handleMouseUpOrLeave}
+            >
               {systemRoles.map((role) => {
-                const isSelected = activeCardRoleFilter === role.name;
+                const cardKey = role.roleId || role._id || role.id || role.name;
+                const isSelected =
+                  activeCardRoleFilter &&
+                  activeCardRoleFilter.toLowerCase() === role.name.toLowerCase();
+                const roleCode = getRoleCode(role);
+                const userCount = getRoleUserCount(role);
+                const isMenuOpen = openMenuRoleId === cardKey;
 
                 return (
                   <div
-                    key={role.id}
+                    key={cardKey}
                     className={`role-system-card ${isSelected ? 'active-filter' : ''}`}
                     onClick={() => {
-                      if (activeCardRoleFilter === role.name) {
+                      if (hasMovedRef.current) return;
+                      if (isSelected) {
                         setActiveCardRoleFilter(null);
+                        setActiveCardRoleId(null);
                         setSelectedRoleFilter('All Roles');
                       } else {
                         setActiveCardRoleFilter(role.name);
+                        setActiveCardRoleId(role.roleId || role._id || role.id);
                         setSelectedRoleFilter(role.name);
                       }
                       setCurrentPage(1);
                     }}
                     title={`Filter by ${role.name}`}
                   >
+                    {/* Top Row: Name on Left, Three Dots Menu on Right */}
                     <div className="role-card-top-row">
-                      <span className="role-card-name">{role.name}</span>
-                      <span className="role-card-code">{role.id}</span>
+                      <span className="role-card-name" title={role.name}>
+                        {role.name}
+                      </span>
+                      <div className="role-menu-container">
+                        <button
+                          type="button"
+                          className="role-menu-dots-btn"
+                          title="Role options"
+                          aria-label="Role options"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuRoleId(isMenuOpen ? null : cardKey);
+                          }}
+                        >
+                          <MoreHorizontal size={16} />
+                        </button>
+
+                        {isMenuOpen && (
+                          <div
+                            className="role-dropdown-menu"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              className="role-dropdown-item"
+                              onClick={(e) => handleRoleMenuAddUser(e, role)}
+                            >
+                              <UserPlus size={15} color="#2563eb" />
+                              <span>Add User</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="role-dropdown-item"
+                              onClick={(e) => handleOpenEditRole(e, role)}
+                            >
+                              <Edit2 size={15} color="#475569" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="role-dropdown-item delete"
+                              onClick={(e) => handleDeleteRole(e, role)}
+                            >
+                              <Trash2 size={15} color="#ef4444" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <p className="role-card-desc">{role.description}</p>
+                    {/* Second Row: Role code */}
+                    <div className="role-card-code-sub" title={roleCode}>
+                      Role code: <span className="role-code-val">{roleCode}</span>
+                    </div>
 
-                    <div className="role-card-chips-row">
-                      {role.chips.map((chip, idx) => (
-                        <span key={idx} className="role-perm-chip">
-                          {chip}
-                        </span>
-                      ))}
+                    {/* Divider */}
+                    <div className="role-card-divider" />
+
+                    {/* Bottom Row: User count pill on left, Permissions button on right */}
+                    <div className="role-card-bottom-row">
+                      <span className="role-user-count-pill">
+                        {userCount} {userCount === 1 ? 'User' : 'Users'}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn-role-permissions"
+                        onClick={(e) => handleOpenPermissionsModal(e, role)}
+                        title={`View permissions for ${role.name}`}
+                      >
+                        Permissions
+                      </button>
                     </div>
                   </div>
                 );
@@ -696,8 +1011,16 @@ export const UsersRoles = () => {
               <select
                 value={selectedRoleFilter}
                 onChange={(e) => {
-                  setSelectedRoleFilter(e.target.value);
-                  setActiveCardRoleFilter(e.target.value === 'All Roles' ? null : e.target.value);
+                  const val = e.target.value;
+                  setSelectedRoleFilter(val);
+                  if (val === 'All Roles') {
+                    setActiveCardRoleFilter(null);
+                    setActiveCardRoleId(null);
+                  } else {
+                    setActiveCardRoleFilter(val);
+                    const matched = systemRoles.find((r) => r.name.toLowerCase() === val.toLowerCase());
+                    setActiveCardRoleId(matched ? (matched.roleId || matched._id || matched.id) : null);
+                  }
                   setCurrentPage(1);
                 }}
                 className="users-role-select"
@@ -726,11 +1049,17 @@ export const UsersRoles = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedUsers.length > 0 ? (
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan="7" style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+                        Loading users from server...
+                      </td>
+                    </tr>
+                  ) : paginatedUsers.length > 0 ? (
                     paginatedUsers.map((user, index) => {
                       const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
                       return (
-                        <tr key={user.userId}>
+                        <tr key={user.userId || user._id || index}>
                           {/* S.NO */}
                           <td style={{ fontWeight: 700, color: '#64748b' }}>
                             {serialNumber}
@@ -761,9 +1090,9 @@ export const UsersRoles = () => {
 
                           {/* STATUS */}
                           <td>
-                            <span className={`user-status-pill ${user.status.toLowerCase()}`}>
+                            <span className={`user-status-pill ${(user.status || 'Active').toLowerCase()}`}>
                               <span className="user-status-dot"></span>
-                              <span>{user.status}</span>
+                              <span>{user.status || 'Active'}</span>
                             </span>
                           </td>
 
@@ -790,7 +1119,7 @@ export const UsersRoles = () => {
                                 type="button"
                                 className="action-btn-circle delete"
                                 title="Delete User"
-                                onClick={() => handleDeleteUser(user.userId, user.employeeName)}
+                                onClick={() => handleDeleteUser(user._id || user.userId, user.employeeName)}
                               >
                                 <Trash2 size={15} />
                               </button>
@@ -813,9 +1142,9 @@ export const UsersRoles = () => {
             {/* Table Footer Pagination */}
             <div className="users-table-footer">
               <div>
-                Showing {filteredUsers.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
-                {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of{' '}
-                {filteredUsers.length} users
+                Showing {totalUsers > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(currentPage * itemsPerPage, totalUsers)} of{' '}
+                {totalUsers} users
               </div>
 
               <div className="users-pagination-controls">
@@ -854,9 +1183,9 @@ export const UsersRoles = () => {
       )}
 
       {/* =====================================================================
-         VIEW 2: DEDICATED IN-PAGE "ADD ROLE" VIEW (Table & Cards are Hidden!)
+         VIEW 2: DEDICATED IN-PAGE "ADD / EDIT ROLE" VIEW (Table & Cards are Hidden!)
          ===================================================================== */}
-      {currentView === 'add-role' && (
+      {(currentView === 'add-role' || currentView === 'edit-role') && (
         <div className="inpage-role-card">
           <form onSubmit={handleSaveRole} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Role Details */}
@@ -1047,7 +1376,7 @@ export const UsersRoles = () => {
                 className="btn-role-submit"
               >
                 <Shield size={16} />
-                <span>Create Role</span>
+                <span>{editingRoleId ? 'Update Role' : 'Create Role'}</span>
               </button>
             </div>
           </form>
@@ -1259,6 +1588,118 @@ export const UsersRoles = () => {
               )}
             </div>
           </form>
+        </div>
+      )}
+
+      {/* =====================================================================
+         MODAL: VIEW ROLE PERMISSIONS (Triggered by "Permissions" button)
+         ===================================================================== */}
+      {viewingPermsRole && (
+        <div
+          className="role-perms-modal-backdrop"
+          onClick={() => setViewingPermsRole(null)}
+        >
+          <div
+            className="role-perms-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="role-perms-modal-header">
+              <div>
+                <h3 className="role-perms-modal-title">
+                  {viewingPermsRole.name} Permissions
+                </h3>
+                <p className="role-perms-modal-sub">
+                  Role code:{' '}
+                  <span className="role-code-val">
+                    {getRoleCode(viewingPermsRole)}
+                  </span>{' '}
+                  • {getRoleUserCount(viewingPermsRole)}{' '}
+                  {getRoleUserCount(viewingPermsRole) === 1 ? 'User' : 'Users'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="role-perms-modal-close"
+                onClick={() => setViewingPermsRole(null)}
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="role-perms-modal-body">
+              {viewingPermsLoading ? (
+                <div style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+                  Loading permissions from backend...
+                </div>
+              ) : (
+                <table className="role-perms-table">
+                  <thead>
+                    <tr>
+                      <th>Module</th>
+                      <th style={{ textAlign: 'center' }}>View</th>
+                      <th style={{ textAlign: 'center' }}>Add</th>
+                      <th style={{ textAlign: 'center' }}>Edit</th>
+                      <th style={{ textAlign: 'center' }}>Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {viewingPermsRole.permissions &&
+                    Object.keys(viewingPermsRole.permissions).length > 0 ? (
+                      Object.entries(viewingPermsRole.permissions).map(
+                        ([modName, perms]) => (
+                          <tr key={modName}>
+                            <td style={{ fontWeight: 500 }}>{modName}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              {perms?.view ? (
+                                <Check size={16} color="#16a34a" />
+                              ) : (
+                                <span style={{ color: '#cbd5e1' }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {perms?.add ? (
+                                <Check size={16} color="#16a34a" />
+                              ) : (
+                                <span style={{ color: '#cbd5e1' }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {perms?.edit ? (
+                                <Check size={16} color="#16a34a" />
+                              ) : (
+                                <span style={{ color: '#cbd5e1' }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {perms?.delete ? (
+                                <Check size={16} color="#16a34a" />
+                              ) : (
+                                <span style={{ color: '#cbd5e1' }}>—</span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      )
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          style={{
+                            textAlign: 'center',
+                            color: '#64748b',
+                            padding: '1.5rem',
+                          }}
+                        >
+                          No permissions configured in backend database for this role.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -11,6 +11,7 @@ import bgImg from '../../assets/login-bg.jpg';
 import { usePortal } from '../../context/PortalContext';
 import { Toast } from '../../components/common/Toast/Toast';
 import { FieldError } from '../../components/common/FieldError/FieldError';
+import { AuthApi } from '../../Api/AuthApi';
 import './LoginPage.css';
 
 // Stylized Brand Emblem Matching Uploaded Design
@@ -90,20 +91,9 @@ export const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://192.168.88.5:5000/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: username.trim(),
-          password: password.trim(),
-        }),
-      });
+      const result = await AuthApi.login(username, password);
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         showToast(result.message || 'Invalid credentials', 'error');
         setIsLoading(false);
         return;

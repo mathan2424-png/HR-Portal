@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Plus,
@@ -11,222 +11,73 @@ import {
   ArrowLeft,
   Save,
   CheckCircle2,
-  MapPin,
+  Building2,
 } from 'lucide-react';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import {
   validateName,
-  validateNumber,
   validateRequired,
   sanitizeNameInput,
-  sanitizeNumberInput,
 } from '../../utils/validation';
 import './DepartmentsModule.css';
-
-// Helper: Format branch address so main street part is visible,
-// and area, city, state, pincode appear in interactive hover tooltip.
-const formatBranchAddress = (rec) => {
-  if (!rec) {
-    return {
-      mainAddress: '—',
-      areaCity: '',
-      fullMeta: '',
-      fullAddress: '',
-    };
-  }
-
-  const rawAddr = (rec.branchAddress || '').trim();
-  const city = (rec.city || '').trim();
-  const state = (rec.state || '').trim();
-  const pincode = (rec.pincode || '').trim();
-
-  // If no branch address, fallback to city
-  if (!rawAddr) {
-    const areaCity = city || '—';
-    const metaParts = [];
-    if (state) metaParts.push(state);
-    if (pincode) metaParts.push(`PIN: ${pincode}`);
-    const fullMeta = metaParts.join(' • ');
-    const fullAddress = [city, state, pincode].filter(Boolean).join(', ');
-    return {
-      mainAddress: areaCity,
-      areaCity,
-      fullMeta,
-      fullAddress,
-    };
-  }
-
-  // Split raw address by commas
-  const parts = rawAddr.split(',').map((p) => p.trim()).filter(Boolean);
-
-  let mainParts = [];
-  let areaParts = [];
-
-  if (parts.length >= 4) {
-    // e.g. "Tidel Park, 4th Floor, Rajiv Gandhi Salai, Taramani"
-    // Visible: first 3 parts ("Tidel Park, 4th Floor, Rajiv Gandhi Salai")
-    // Remaining: 4th part ("Taramani")
-    mainParts = parts.slice(0, 3);
-    areaParts = parts.slice(3);
-  } else if (parts.length >= 2) {
-    // e.g. "ELCOT IT Park, Ring Road, Ilandhaikulam" -> 2 visible, 1 remaining
-    // e.g. "Thuvakudi Industrial Corridor, Cantonment" -> 1 visible, 1 remaining
-    mainParts = parts.slice(0, parts.length - 1);
-    areaParts = parts.slice(parts.length - 1);
-  } else {
-    mainParts = parts;
-    areaParts = [];
-  }
-
-  const mainAddress = mainParts.join(', ');
-
-  // Area & City (e.g. "Taramani, Chennai")
-  const areaCityList = [...areaParts];
-  if (city && !areaCityList.includes(city)) {
-    areaCityList.push(city);
-  }
-  const areaCity = areaCityList.join(', ');
-
-  // State & Pincode meta
-  const metaParts = [];
-  if (state) metaParts.push(state);
-  if (pincode) metaParts.push(`PIN: ${pincode}`);
-  const fullMeta = metaParts.join(' • ');
-
-  const fullAddress = `${rawAddr}${city ? `, ${city}` : ''}${state ? `, ${state}` : ''}${pincode ? ` - ${pincode}` : ''}`;
-
-  return {
-    mainAddress,
-    areaCity,
-    fullMeta,
-    fullAddress,
-  };
-};
+import { DepartmentsApi } from '../../Api/DepartmentsApi';
+import { Toast } from '../../components/common/Toast/Toast';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 
 export const DepartmentsModule = () => {
-  // STRICTLY and ONLY the user-requested fields:
-  // 1. Department: Department ID and department name.
-  // 2. Department Head: Person responsible for the department.
-  // 3. Branch: Branch name/ID.
-  // 4. Branch Address: Branch address.
-  // 5. City / State / Pincode: Branch location.
-  // 6. Status: Active/Inactive.
-
-  const [records, setRecords] = useState([
-    {
-      id: 'REC-001',
-      departmentId: 'DEP-101',
-      departmentName: 'Engineering & Technology',
-      departmentHead: 'Sundar Raman',
-      branchId: 'BR-01',
-      branchName: 'HQ - Chennai Campus',
-      branchAddress: 'Tidel Park, 4th Floor, Rajiv Gandhi Salai, Taramani',
-      city: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600113',
-      status: 'Active',
-    },
-    {
-      id: 'REC-002',
-      departmentId: 'DEP-102',
-      departmentName: 'Human Resources & Talent',
-      departmentHead: 'Abinaya R',
-      branchId: 'BR-01',
-      branchName: 'HQ - Chennai Campus',
-      branchAddress: 'Tidel Park, 4th Floor, Rajiv Gandhi Salai, Taramani',
-      city: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600113',
-      status: 'Active',
-    },
-    {
-      id: 'REC-003',
-      departmentId: 'DEP-103',
-      departmentName: 'Product & UX Design',
-      departmentHead: 'Karthik Raja',
-      branchId: 'BR-02',
-      branchName: 'Madurai Tech Hub',
-      branchAddress: 'ELCOT IT Park, Ring Road, Ilandhaikulam',
-      city: 'Madurai',
-      state: 'Tamil Nadu',
-      pincode: '625020',
-      status: 'Active',
-    },
-    {
-      id: 'REC-004',
-      departmentId: 'DEP-104',
-      departmentName: 'Sales & Business Development',
-      departmentHead: 'Muthuvel Pandian',
-      branchId: 'BR-03',
-      branchName: 'Tiruchirappalli Regional Office',
-      branchAddress: 'Thuvakudi Industrial Corridor, Cantonment',
-      city: 'Tiruchirappalli',
-      state: 'Tamil Nadu',
-      pincode: '620015',
-      status: 'Active',
-    },
-    {
-      id: 'REC-005',
-      departmentId: 'DEP-105',
-      departmentName: 'Finance & Accounts',
-      departmentHead: 'Meenakshi Sundaram',
-      branchId: 'BR-01',
-      branchName: 'HQ - Chennai Campus',
-      branchAddress: 'Tidel Park, 4th Floor, Rajiv Gandhi Salai, Taramani',
-      city: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600113',
-      status: 'Active',
-    },
-    {
-      id: 'REC-006',
-      departmentId: 'DEP-106',
-      departmentName: 'Customer Success & Support',
-      departmentHead: 'Arun Kumar',
-      branchId: 'BR-04',
-      branchName: 'Coimbatore Delivery Center',
-      branchAddress: 'CHIL SEZ IT Park, Keeranatham Road, Saravanampatti',
-      city: 'Coimbatore',
-      state: 'Tamil Nadu',
-      pincode: '641035',
-      status: 'Inactive',
-    },
-  ]);
+  // Real department records from backend API
+  const [records, setRecords] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Views: 'list' | 'add' | 'edit'
   const [currentView, setCurrentView] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [toastMessage, setToastMessage] = useState('');
+  // Toast Notification State
+  const [toast, setToast] = useState(null); // { message: string, type: 'success' | 'delete' | 'error' | 'info' | 'warning' }
+
+  // Delete confirmation modal state
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    record: null,
+    isLoading: false,
+  });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Form State
+  // Form State: strictly Department Name, Department ID (Auto-generated), Department Head, Status
   const initialFormState = {
     id: '',
     departmentId: '',
     departmentName: '',
     departmentHead: '',
-    branchId: '',
-    branchName: '',
-    branchAddress: '',
-    city: '',
-    state: '',
-    pincode: '',
     status: 'Active',
   };
 
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
 
+  // Helper: Auto-generate sequential Department ID (DEP-101, DEP-102, etc.)
+  const generateDeptId = (existingList = []) => {
+    const nums = existingList
+      .map((r) => {
+        const match = (r.departmentId || '').match(/\d+/);
+        return match ? parseInt(match[0], 10) : 0;
+      })
+      .filter((n) => !isNaN(n) && n > 0);
+    const maxNum = nums.length > 0 ? Math.max(...nums) : 100;
+    return `DEP-${maxNum + 1}`;
+  };
+
   const handleFieldChange = (field, val) => {
     let sanitized = val;
-    if (['departmentHead', 'city', 'state'].includes(field)) {
+    if (field === 'departmentHead') {
       sanitized = sanitizeNameInput(val);
-    } else if (field === 'pincode') {
-      sanitized = sanitizeNumberInput(val, 6);
     }
     setFormData((prev) => ({ ...prev, [field]: sanitized }));
     if (errors[field]) {
@@ -235,66 +86,110 @@ export const DepartmentsModule = () => {
   };
 
   // Show Toast
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage('');
-    }, 3500);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
   };
 
-  // Filter Records
-  const filteredRecords = records.filter((rec) => {
-    const matchesSearch =
-      rec.departmentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.departmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.departmentHead.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.branchId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.branchName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (rec.branchAddress && rec.branchAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      rec.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.state.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.pincode.toLowerCase().includes(searchTerm.toLowerCase());
+  // ─── LOAD DEPARTMENTS FROM BACKEND API ───────────────────────────
+  const loadDepartments = async (
+    page = currentPage,
+    search = searchTerm,
+    status = statusFilter
+  ) => {
+    setIsLoading(true);
+    try {
+      const params = {
+        page,
+        limit: itemsPerPage,
+      };
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+      if (status && status !== 'All') {
+        params.status = status;
+      }
 
-    const matchesStatus =
-      statusFilter === 'All' ? true : rec.status === statusFilter;
+      const res = await DepartmentsApi.getDepartments(params);
+      const data = res?.data || res;
+      const list = Array.isArray(data?.departments)
+        ? data.departments
+        : Array.isArray(data)
+        ? data
+        : [];
 
-    return matchesSearch && matchesStatus;
-  });
+      setRecords(list);
 
-  // Pagination Logic
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage) || 1;
-  const paginatedRecords = filteredRecords.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+      if (data?.pagination) {
+        setTotalRecords(data.pagination.total ?? list.length);
+        setTotalPages(data.pagination.totalPages ?? (Math.ceil((data.pagination.total || list.length) / itemsPerPage) || 1));
+      } else {
+        const tot = res?.total ?? list.length;
+        setTotalRecords(tot);
+        setTotalPages(Math.ceil(tot / itemsPerPage) || 1);
+      }
+    } catch (err) {
+      console.error('Failed to load departments from API:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Handler: Open Add View
-  const handleOpenAdd = () => {
-    const nextDeptNum = 100 + records.length + 1;
-    const nextBranchNum = records.length + 1;
+  // Live Server-side Query debounced 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadDepartments(currentPage, searchTerm, statusFilter);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [currentPage, searchTerm, statusFilter]);
+
+  // Use server records directly
+  const paginatedRecords = records;
+  const filteredRecords = records;
+
+  // Handler: Open Add View with live backend auto-generated Department ID
+  const handleOpenAdd = async () => {
     setErrors({});
     setFormData({
-      ...initialFormState,
-      id: `REC-${Date.now()}`,
-      departmentId: `DEP-${nextDeptNum}`,
+      id: '',
+      departmentId: 'Generating...',
       departmentName: '',
-      departmentHead: 'Sundar Raman',
-      branchId: `BR-0${nextBranchNum}`,
-      branchName: 'HQ - Chennai Campus',
-      branchAddress: 'Tidel Park, 4th Floor, Rajiv Gandhi Salai, Taramani',
-      city: 'Chennai',
-      state: 'Tamil Nadu',
-      pincode: '600113',
+      departmentHead: '',
       status: 'Active',
     });
     setCurrentView('add');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    try {
+      const res = await DepartmentsApi.getNextDepartmentId();
+      if (res && res.success && res.data?.departmentId) {
+        setFormData((prev) => ({
+          ...prev,
+          departmentId: res.data.departmentId,
+        }));
+      } else {
+        // Fallback to local sequence if needed
+        const autoId = generateDeptId(records);
+        setFormData((prev) => ({ ...prev, departmentId: autoId }));
+      }
+    } catch (err) {
+      console.error('Error fetching next department ID:', err);
+      const autoId = generateDeptId(records);
+      setFormData((prev) => ({ ...prev, departmentId: autoId }));
+    }
   };
 
   // Handler: Open Edit View
   const handleOpenEdit = (record) => {
     setErrors({});
-    setFormData({ ...record });
+    setFormData({
+      _id: record._id,
+      id: record.id || record.departmentId,
+      departmentId: record.departmentId || '',
+      departmentName: record.departmentName || '',
+      departmentHead: record.departmentHead || '',
+      status: record.status || 'Active',
+    });
     setCurrentView('edit');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -307,41 +202,22 @@ export const DepartmentsModule = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Handler: Save (Add or Edit)
-  const handleSaveRecord = (e) => {
-    e.preventDefault();
+  // Handler: Save (Add or Edit) via Backend API
+  const handleSaveRecord = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     const newErrors = {};
 
-    const deptIdErr = validateRequired(formData.departmentId, 'Department ID');
-    if (deptIdErr) newErrors.departmentId = deptIdErr;
-
     const deptNameErr = validateRequired(formData.departmentName, 'Department Name');
-    if (deptNameErr) newErrors.departmentName = deptNameErr;
-
-    if (formData.departmentHead) {
-      const headErr = validateName(formData.departmentHead, 'Department Head', true);
-      if (headErr) newErrors.departmentHead = headErr;
+    if (deptNameErr) {
+      newErrors.departmentName = deptNameErr;
     }
 
-    const branchIdErr = validateRequired(formData.branchId, 'Branch ID');
-    if (branchIdErr) newErrors.branchId = branchIdErr;
-
-    const branchNameErr = validateRequired(formData.branchName, 'Branch Name');
-    if (branchNameErr) newErrors.branchName = branchNameErr;
-
-    if (formData.city) {
-      const cityErr = validateName(formData.city, 'City', true);
-      if (cityErr) newErrors.city = cityErr;
-    }
-
-    if (formData.state) {
-      const stateErr = validateName(formData.state, 'State', true);
-      if (stateErr) newErrors.state = stateErr;
-    }
-
-    if (formData.pincode) {
-      const pinErr = validateNumber(formData.pincode, 'Pincode', true, 6, 6);
-      if (pinErr) newErrors.pincode = pinErr;
+    const deptHeadErr = validateRequired(formData.departmentHead, 'Department Head');
+    if (deptHeadErr) {
+      newErrors.departmentHead = deptHeadErr;
+    } else {
+      const headNameErr = validateName(formData.departmentHead, 'Department Head', true);
+      if (headNameErr) newErrors.departmentHead = headNameErr;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -351,40 +227,100 @@ export const DepartmentsModule = () => {
     }
 
     setErrors({});
+    setIsSubmitting(true);
 
-    if (currentView === 'add') {
-      const newRec = {
-        ...formData,
-        id: `REC-${Date.now()}`,
-      };
-      setRecords([newRec, ...records]);
-      showToast(`Department "${newRec.departmentName}" added successfully.`);
-    } else if (currentView === 'edit') {
-      setRecords(
-        records.map((r) => (r.id === formData.id ? { ...formData } : r))
-      );
-      showToast(`Department "${formData.departmentName}" updated successfully.`);
+    try {
+      if (currentView === 'add') {
+        const payload = {
+          departmentName: formData.departmentName.trim(),
+          departmentHead: formData.departmentHead.trim(),
+          departmentId: formData.departmentId,
+          status: formData.status,
+        };
+
+        const res = await DepartmentsApi.createDepartment(payload);
+        if (res && res.success) {
+          showToast(res.message || `Department "${payload.departmentName}" added successfully.`, 'success');
+          await loadDepartments(1, searchTerm, statusFilter);
+          handleBackToList();
+        } else {
+          showToast(res?.message || 'Failed to add department', 'error');
+          if (res?.message && res.message.toLowerCase().includes('already exists')) {
+            setErrors({ departmentName: res.message });
+          }
+        }
+      } else if (currentView === 'edit') {
+        const editId = formData._id || formData.departmentId;
+        const payload = {
+          departmentName: formData.departmentName.trim(),
+          departmentHead: formData.departmentHead.trim(),
+          status: formData.status,
+        };
+
+        const res = await DepartmentsApi.updateDepartment(editId, payload);
+        if (res && res.success) {
+          showToast(res.message || `Department "${payload.departmentName}" updated successfully.`, 'success');
+          await loadDepartments(currentPage, searchTerm, statusFilter);
+          handleBackToList();
+        } else {
+          showToast(res?.message || 'Failed to update department', 'error');
+          if (res?.message && res.message.toLowerCase().includes('already exists')) {
+            setErrors({ departmentName: res.message });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error saving department:', err);
+      showToast(err.response?.data?.message || err.message || 'Error saving department', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    handleBackToList();
   };
 
-  // Handler: Toggle Status
-  const handleToggleStatus = (record) => {
-    const nextStatus = record.status === 'Active' ? 'Inactive' : 'Active';
-    setRecords(
-      records.map((r) =>
-        r.id === record.id ? { ...r, status: nextStatus } : r
-      )
-    );
-    showToast(`Status for "${record.departmentName}" changed to ${nextStatus}.`);
+  // Handler: Toggle Status via Backend API
+  const handleToggleStatus = async (record) => {
+    const targetId = record._id || record.departmentId;
+    try {
+      const res = await DepartmentsApi.toggleDepartmentStatus(targetId);
+      if (res && res.success) {
+        showToast(res.message || `Status for "${record.departmentName}" updated.`, 'success');
+        await loadDepartments(currentPage, searchTerm, statusFilter);
+      } else {
+        showToast(res?.message || 'Failed to change status', 'error');
+      }
+    } catch (err) {
+      console.error('Error toggling status:', err);
+      showToast('Failed to change status', 'error');
+    }
   };
 
-  // Handler: Delete Record
+  // Handler: Delete Record via Backend API
   const handleDeleteRecord = (record) => {
-    if (window.confirm(`Are you sure you want to delete "${record.departmentName} - ${record.branchName}"?`)) {
-      setRecords(records.filter((r) => r.id !== record.id));
-      showToast(`Record "${record.departmentName}" deleted successfully.`);
+    setDeleteConfirm({
+      isOpen: true,
+      record,
+      isLoading: false,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.record) return;
+    const record = deleteConfirm.record;
+    setDeleteConfirm((prev) => ({ ...prev, isLoading: true }));
+    const targetId = record._id || record.departmentId;
+    try {
+      const res = await DepartmentsApi.deleteDepartment(targetId);
+      if (res && res.success) {
+        showToast(res.message || `Department "${record.departmentName}" deleted successfully.`, 'delete');
+        await loadDepartments(currentPage, searchTerm, statusFilter);
+      } else {
+        showToast(res?.message || 'Failed to delete department', 'error');
+      }
+    } catch (err) {
+      console.error('Error deleting department:', err);
+      showToast(err.response?.data?.message || err.message || 'Failed to delete department', 'error');
+    } finally {
+      setDeleteConfirm({ isOpen: false, record: null, isLoading: false });
     }
   };
 
@@ -397,12 +333,13 @@ export const DepartmentsModule = () => {
         {currentView === 'list' ? (
           <>
             <div>
-              <h1 className="dept-page-title">Departments & Branches</h1>
+              <h1 className="dept-page-title">Departments</h1>
             </div>
             <button
               type="button"
               className="btn-add-dept"
               onClick={handleOpenAdd}
+              id="btn-add-department"
             >
               <Plus size={16} strokeWidth={2.5} />
               <span>Add Department</span>
@@ -413,8 +350,8 @@ export const DepartmentsModule = () => {
             <div>
               <h1 className="dept-page-title">
                 {currentView === 'add'
-                  ? 'Add Department & Branch'
-                  : `Edit Department & Branch — ${formData.departmentName}`}
+                  ? 'Add Department'
+                  : `Edit Department — ${formData.departmentName}`}
               </h1>
             </div>
 
@@ -431,13 +368,31 @@ export const DepartmentsModule = () => {
         )}
       </div>
 
-      {/* Toast Notification Alert */}
-      {toastMessage && (
-        <div className="dept-toast-alert">
-          <CheckCircle2 size={18} />
-          <span>{toastMessage}</span>
-        </div>
+      {/* Floating Animated Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={3500}
+          onClose={() => setToast(null)}
+        />
       )}
+
+      {/* Custom Modern Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirm.isOpen}
+        title="Confirm Delete"
+        message={
+          deleteConfirm.record
+            ? `Are you sure you want to delete department "${deleteConfirm.record.departmentName}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this department? This action cannot be undone.'
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={deleteConfirm.isLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, record: null, isLoading: false })}
+      />
 
       {/* =========================================================================
           MAIN CARD CONTAINER
@@ -454,7 +409,7 @@ export const DepartmentsModule = () => {
                 <Search size={16} style={{ color: 'var(--text-muted)' }} />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search departments..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -478,196 +433,201 @@ export const DepartmentsModule = () => {
               </select>
             </div>
 
-            {/* Table */}
+            {/* Table with EXACT requested column headers:
+                S.No | Department Name | Department ID | Department Head | Status | Actions */}
             <div className="dept-table-wrapper">
               <table className="dept-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '55px' }}>S.NO</th>
-                    <th>Department</th>
-                    <th>Branch</th>
-                    <th>Branch Address</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'center', width: '120px' }}>Actions</th>
+                    <th style={{ width: '70px', textAlign: 'center' }}>S.No</th>
+                    <th style={{ width: '180px' }}>Department ID</th>
+                    <th>Department Name</th>
+                    <th>Department Head</th>
+                    <th style={{ width: '140px' }}>Status</th>
+                    <th style={{ textAlign: 'center', width: '130px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRecords.length === 0 ? (
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                        Loading departments from database...
+                      </td>
+                    </tr>
+                  ) : filteredRecords.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="dept-empty-state">
                         <div className="dept-empty-icon">🏢</div>
                         <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>
-                          No departments or branches found
+                          No departments found
                         </p>
                         <p style={{ fontSize: '0.8rem', margin: 0 }}>
-                          Try adjusting your search terms or filters
+                          Try adjusting your search terms or status filter
                         </p>
                       </td>
                     </tr>
                   ) : (
                     paginatedRecords.map((rec, index) => {
-                      const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
+                      const serialNumber =
+                        (currentPage - 1) * itemsPerPage + index + 1;
                       return (
-                      <tr key={rec.id}>
-                        {/* S.NO */}
-                        <td style={{ fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
-                          {serialNumber}
-                        </td>
-
-                        {/* 1. Department: Department ID & Name */}
-                        <td>
-                          <div className="dept-cell-main">
-                            <span className="dept-name-text">{rec.departmentName}</span>
-                            <span className="dept-id-badge">{rec.departmentId}</span>
-                          </div>
-                        </td>
-
-                        {/* 2. Branch: Branch name/ID */}
-                        <td>
-                          <div className="branch-cell-main">
-                            <span className="branch-name-text">{rec.branchName}</span>
-                            <span className="branch-id-badge">{rec.branchId}</span>
-                          </div>
-                        </td>
-
-                        {/* 3. Branch Address: Street address visible + Interactive Hover Tooltip for Area, City, State, PIN */}
-                        <td>
-                          {(() => {
-                            const { mainAddress, areaCity, fullMeta, fullAddress } =
-                              formatBranchAddress(rec);
-                            return (
-                              <div
-                                className="branch-address-cell-wrapper"
-                                title={fullAddress}
-                              >
-                                <span className="branch-address-text">
-                                  {mainAddress}
-                                </span>
-
-                                {/* Hover Tooltip Box */}
-                                <div className="branch-address-tooltip">
-                                  <div className="tooltip-title">Area & Location</div>
-                                  <div className="tooltip-area-city">{areaCity}</div>
-                                  {fullMeta && (
-                                    <div className="tooltip-meta">
-                                      <span>{rec.state}</span>
-                                      {rec.pincode && (
-                                        <span className="tooltip-pin">PIN: {rec.pincode}</span>
-                                      )}
-                                    </div>
-                                  )}
-                                  <div className="tooltip-arrow" />
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </td>
-
-                        {/* 4. Status: Active / Inactive */}
-                        <td>
-                          <span
-                            className={`status-pill ${rec.status === 'Active' ? 'active' : 'inactive'
-                              }`}
+                        <tr key={rec.id || rec.departmentId}>
+                          {/* 1. S.No */}
+                          <td
+                            style={{
+                              fontWeight: 600,
+                              color: 'var(--text-muted)',
+                              textAlign: 'center',
+                            }}
                           >
-                            <span className="status-dot"></span>
-                            {rec.status}
-                          </span>
-                        </td>
+                            {serialNumber}
+                          </td>
 
-                        {/* Actions */}
-                        <td>
-                          <div className="dept-row-actions" style={{ justifyContent: 'center' }}>
-                            <button
-                              type="button"
-                              className="action-icon-btn edit"
-                              title="Edit Record"
-                              onClick={() => handleOpenEdit(rec)}
+                          {/* 2. Department ID */}
+                          <td>
+                            <span className="dept-id-badge">
+                              {rec.departmentId}
+                            </span>
+                          </td>
+
+                          {/* 3. Department Name */}
+                          <td>
+                            <span className="dept-name-text">
+                              {rec.departmentName}
+                            </span>
+                          </td>
+
+                          {/* 4. Department Head */}
+                          <td>
+                            <div className="dept-head-cell">
+                              {/*  */}
+                              <span className="dept-head-name">
+                                {rec.departmentHead || '—'}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* 5. Status */}
+                          <td>
+                            <span
+                              className={`status-pill ${
+                                rec.status === 'Active' ? 'active' : 'inactive'
+                              }`}
                             >
-                              <Edit2 size={15} />
-                            </button>
+                              <span className="status-dot"></span>
+                              {rec.status}
+                            </span>
+                          </td>
 
-                            <button
-                              type="button"
-                              className="action-icon-btn status-toggle"
-                              title={rec.status === 'Active' ? 'Deactivate' : 'Activate'}
-                              onClick={() => handleToggleStatus(rec)}
+                          {/* 6. Actions */}
+                          <td>
+                            <div
+                              className="dept-row-actions"
+                              style={{ justifyContent: 'center' }}
                             >
-                              {rec.status === 'Active' ? (
-                                <Lock size={15} />
-                              ) : (
-                                <Unlock size={15} />
-                              )}
-                            </button>
+                              <button
+                                type="button"
+                                className="action-icon-btn edit"
+                                title="Edit Department"
+                                onClick={() => handleOpenEdit(rec)}
+                              >
+                                <Edit2 size={15} />
+                              </button>
 
-                            <button
-                              type="button"
-                              className="action-icon-btn delete"
-                              title="Delete Record"
-                              onClick={() => handleDeleteRecord(rec)}
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                              <button
+                                type="button"
+                                className="action-icon-btn status-toggle"
+                                title={
+                                  rec.status === 'Active'
+                                    ? 'Deactivate Department'
+                                    : 'Activate Department'
+                                }
+                                onClick={() => handleToggleStatus(rec)}
+                              >
+                                {rec.status === 'Active' ? (
+                                  <Lock size={15} />
+                                ) : (
+                                  <Unlock size={15} />
+                                )}
+                              </button>
 
-          {/* Pagination Footer */}
-          <div className="dept-table-footer">
-            <div>
-              Showing {filteredRecords.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
-              {Math.min(currentPage * itemsPerPage, filteredRecords.length)} of{' '}
-              {filteredRecords.length} Entries
+                              <button
+                                type="button"
+                                className="action-icon-btn delete"
+                                title="Delete Department"
+                                onClick={() => handleDeleteRecord(rec)}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            <div className="dept-pagination-controls">
-              <button
-                type="button"
-                className="btn-dept-page"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                title="Previous Page"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            {/* Pagination Footer */}
+            <div className="dept-table-footer">
+              <div>
+                Showing{' '}
+                {filteredRecords.length > 0
+                  ? (currentPage - 1) * itemsPerPage + 1
+                  : 0}{' '}
+                to{' '}
+                {Math.min(currentPage * itemsPerPage, filteredRecords.length)}{' '}
+                of {filteredRecords.length} Entries
+              </div>
+
+              <div className="dept-pagination-controls">
                 <button
-                  key={page}
                   type="button"
-                  className={`btn-dept-page ${currentPage === page ? 'active' : ''}`}
-                  onClick={() => setCurrentPage(page)}
+                  className="btn-dept-page"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  title="Previous Page"
                 >
-                  {page}
+                  <ChevronLeft size={14} />
                 </button>
-              ))}
-              <button
-                type="button"
-                className="btn-dept-page"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                title="Next Page"
-              >
-                <ChevronRight size={14} />
-              </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      type="button"
+                      className={`btn-dept-page ${
+                        currentPage === page ? 'active' : ''
+                      }`}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+                <button
+                  type="button"
+                  className="btn-dept-page"
+                  disabled={currentPage === totalPages}
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  title="Next Page"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
             </div>
-          </div>
           </>
         )}
 
         {/* =======================================================================
             VIEW 2: IN-PAGE ADD / EDIT FORM (NO MODALS / POPUPS!)
-            Strictly and only the requested fields:
-            • Department: Department ID and department name.
-            • Department Head: Person responsible for the department.
-            • Branch: Branch name/ID.
-            • Branch Address: Branch address.
-            • City / State / Pincode: Branch location.
-            • Status: Active/Inactive.
+            Strictly the user requested fields:
+            • Department Name
+            • Department ID (Auto-generated)
+            • Department Head
+            • Status (Active / Inactive)
             ======================================================================= */}
         {currentView !== 'list' && (
           <form
@@ -676,150 +636,74 @@ export const DepartmentsModule = () => {
             className="inpage-dept-form"
             noValidate
           >
-            {/* SECTION 1: DEPARTMENT */}
             <div className="inpage-section-box">
               <div className="inpage-section-header">
-                1. DEPARTMENT INFORMATION
+                DEPARTMENT DETAILS
               </div>
 
-              <div className="inpage-grid-3col">
-                {/* Department ID */}
+              <div className="inpage-grid-2col">
+                {/* 1. Department ID (Auto-generated) */}
                 <div className="form-field-group">
-                  <label>Department ID *</label>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <label>Department ID (Auto-generated)</label>
+                    <span className="auto-gen-pill">Auto</span>
+                  </div>
                   <input
                     type="text"
                     value={formData.departmentId}
-                    onChange={(e) => handleFieldChange('departmentId', e.target.value)}
-                    placeholder="e.g. DEP-101"
-                    className={`form-control-input ${errors.departmentId ? 'has-error' : ''}`}
+                    readOnly
+                    className="form-control-input auto-generated"
+                    title="System generated unique Department ID"
                   />
-                  <FieldError error={errors.departmentId} />
+                  <span className="form-field-hint">
+                    System generated unique department identifier
+                  </span>
                 </div>
 
-                {/* Department Name */}
+                {/* 2. Department Name */}
                 <div className="form-field-group">
                   <label>Department Name *</label>
                   <input
                     type="text"
                     value={formData.departmentName}
-                    onChange={(e) => handleFieldChange('departmentName', e.target.value)}
-                    placeholder="e.g. Engineering & Technology"
-                    className={`form-control-input ${errors.departmentName ? 'has-error' : ''}`}
+                    onChange={(e) =>
+                      handleFieldChange('departmentName', e.target.value)
+                    }
+                    placeholder="Enter department name (e.g. Engineering & Technology)"
+                    className={`form-control-input ${
+                      errors.departmentName ? 'has-error' : ''
+                    }`}
+                    autoFocus
                   />
                   <FieldError error={errors.departmentName} />
                 </div>
 
-                {/* Department Head */}
+                {/* 3. Department Head */}
                 <div className="form-field-group">
-                  <label>Department Head (Person Responsible) *</label>
+                  <label>Department Head *</label>
                   <input
                     type="text"
                     value={formData.departmentHead}
-                    onChange={(e) => handleFieldChange('departmentHead', e.target.value)}
-                    placeholder="e.g. Sundar Raman (letters only)"
-                    className={`form-control-input ${errors.departmentHead ? 'has-error' : ''}`}
+                    onChange={(e) =>
+                      handleFieldChange('departmentHead', e.target.value)
+                    }
+                    placeholder="Enter head of department (e.g. Sundar Raman)"
+                    className={`form-control-input ${
+                      errors.departmentHead ? 'has-error' : ''
+                    }`}
                   />
                   <FieldError error={errors.departmentHead} />
                 </div>
-              </div>
-            </div>
 
-            {/* SECTION 2: BRANCH & LOCATION */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                2. BRANCH & LOCATION DETAILS
-              </div>
-
-              <div className="inpage-grid-2col">
-                {/* Branch ID */}
+                {/* 4. Status (Active / Inactive) */}
                 <div className="form-field-group">
-                  <label>Branch ID *</label>
-                  <input
-                    type="text"
-                    value={formData.branchId}
-                    onChange={(e) => handleFieldChange('branchId', e.target.value)}
-                    placeholder="e.g. BR-01"
-                    className={`form-control-input ${errors.branchId ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.branchId} />
-                </div>
-
-                {/* Branch Name */}
-                <div className="form-field-group">
-                  <label>Branch Name *</label>
-                  <input
-                    type="text"
-                    value={formData.branchName}
-                    onChange={(e) => handleFieldChange('branchName', e.target.value)}
-                    placeholder="e.g. HQ - Chennai Campus"
-                    className={`form-control-input ${errors.branchName ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.branchName} />
-                </div>
-              </div>
-
-              {/* Branch Address */}
-              <div className="form-field-group">
-                <label>Branch Address *</label>
-                <textarea
-                  value={formData.branchAddress}
-                  onChange={(e) => handleFieldChange('branchAddress', e.target.value)}
-                  placeholder="e.g. Tidel Park, 4th Floor, Rajiv Gandhi Salai, Taramani"
-                  className={`form-control-textarea ${errors.branchAddress ? 'has-error' : ''}`}
-                  rows={2}
-                />
-                <FieldError error={errors.branchAddress} />
-              </div>
-
-              {/* City / State / Pincode */}
-              <div className="inpage-grid-3col">
-                <div className="form-field-group">
-                  <label>City *</label>
-                  <input
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => handleFieldChange('city', e.target.value)}
-                    placeholder="e.g. Chennai (letters only)"
-                    className={`form-control-input ${errors.city ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.city} />
-                </div>
-
-                <div className="form-field-group">
-                  <label>State *</label>
-                  <input
-                    type="text"
-                    value={formData.state}
-                    onChange={(e) => handleFieldChange('state', e.target.value)}
-                    placeholder="e.g. Tamil Nadu (letters only)"
-                    className={`form-control-input ${errors.state ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.state} />
-                </div>
-
-                <div className="form-field-group">
-                  <label>Pincode *</label>
-                  <input
-                    type="text"
-                    value={formData.pincode}
-                    onChange={(e) => handleFieldChange('pincode', e.target.value)}
-                    placeholder="e.g. 600113 (6 digits)"
-                    className={`form-control-input ${errors.pincode ? 'has-error' : ''}`}
-                  />
-                  <FieldError error={errors.pincode} />
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 3: STATUS */}
-            <div className="inpage-section-box">
-              <div className="inpage-section-header">
-                3. STATUS CONFIGURATION
-              </div>
-
-              <div className="inpage-grid-2col">
-                <div className="form-field-group">
-                  <label>Status *</label>
+                  <label>Status (Active / Inactive) *</label>
                   <select
                     value={formData.status}
                     onChange={(e) =>
@@ -843,12 +727,11 @@ export const DepartmentsModule = () => {
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                className="btn-save-header-action"
-              >
+              <button type="submit" className="btn-save-header-action">
                 <Save size={16} />
-                <span>{currentView === 'add' ? 'Add Department' : 'Save Changes'}</span>
+                <span>
+                  {currentView === 'add' ? 'Add Department' : 'Save Changes'}
+                </span>
               </button>
             </div>
           </form>

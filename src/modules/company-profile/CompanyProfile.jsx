@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import defaultLogo from '../../assets/logo.png';
 import { Toast } from '../../components/common/Toast/Toast';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import {
   validateEmail,
@@ -38,110 +39,9 @@ import {
 } from '../../utils/validation';
 import './CompanyProfile.css';
 
-// Initial Mock Fallback (Ocean Software Main Company & Multi-Branch Network)
-const INITIAL_COMPANIES = [
-  {
-    companyId: 'OCN-001',
-    companyName: 'Ocean Software',
-    companyLogo: defaultLogo,
-    aboutCompany:
-      'Enterprise software engineering firm specializing in scalable SaaS architectures, cloud solutions, and recruitment infrastructure based in Chennai & Tamil Nadu.',
-    industry: 'Information Technology',
-    companySize: '500-1000 Employees',
-    website: 'https://oceansoftware.example.com',
-    companyEmail: 'admin@oceansoftware.com',
-    companyMobile: '+91 99887 75544',
-    contactPerson: 'MATHAN',
-    contactDesignation: 'VP of Human Resources',
-    registeredAddress: '42 GST Road, Guindy Industrial Estate',
-    city: 'Chennai',
-    state: 'Tamil Nadu',
-    pincode: '600032',
-    gstNumber: '33AABCO1234F1Z5',
-    gstVerificationStatus: 'Valid',
-    gstLegalName: 'Ocean Software Private Limited',
-    gstBusinessStatus: 'Active',
-    gstVerificationDate: '2025-01-15',
-    panCin: 'U72200TN2015PTC123456',
-    status: 'Active',
-    isMainCompany: true,
-    branchCount: 4,
-    branches: [
-      {
-        _id: 'br-1',
-        companyId: 'OCN-001',
-        branchName: 'Tambaram Branch',
-        branchCode: 'OCN-TAM-001',
-        contactPerson: 'Kavitha R',
-        contactDesignation: 'Operations Lead',
-        email: 'tambaram@oceansoftware.com',
-        mobile: '9840112233',
-        address: 'GST Road, Near Sanatorium Railway Station',
-        city: 'Chennai',
-        state: 'Tamil Nadu',
-        pincode: '600045',
-        industry: 'Information Technology',
-        employeeSize: '51-200 Employees',
-        status: 'Active',
-      },
-      {
-        _id: 'br-2',
-        companyId: 'OCN-001',
-        branchName: 'Coimbatore Branch',
-        branchCode: 'OCN-CBE-001',
-        contactPerson: 'Senthil Kumar',
-        contactDesignation: 'Branch Manager',
-        email: 'coimbatore@oceansoftware.com',
-        mobile: '9443211223',
-        address: 'TIDEL Park Coimbatore, Civil Aerodrome Post',
-        city: 'Coimbatore',
-        state: 'Tamil Nadu',
-        pincode: '641014',
-        industry: 'Information Technology',
-        employeeSize: '201-500 Employees',
-        status: 'Active',
-      },
-      {
-        _id: 'br-3',
-        companyId: 'OCN-001',
-        branchName: 'Trichy Branch',
-        branchCode: 'OCN-TRY-001',
-        contactPerson: 'Dhakshan S',
-        contactDesignation: 'Branch Supervisor',
-        email: 'trichy@oceansoftware.com',
-        mobile: '9789012345',
-        address: 'Thuvakudi Industrial Corridor, Cantonment',
-        city: 'Tiruchirappalli',
-        state: 'Tamil Nadu',
-        pincode: '620015',
-        industry: 'Information Technology',
-        employeeSize: '10-50 Employees',
-        status: 'Active',
-      },
-      {
-        _id: 'br-4',
-        companyId: 'OCN-001',
-        branchName: 'Puducherry Branch',
-        branchCode: 'OCN-PDY-001',
-        contactPerson: 'Ananya M',
-        contactDesignation: 'Regional Coordinator',
-        email: 'puducherry@oceansoftware.com',
-        mobile: '9842134567',
-        address: 'Mission Street, Heritage Town',
-        city: 'Puducherry',
-        state: 'Puducherry',
-        pincode: '605001',
-        industry: 'Information Technology',
-        employeeSize: '10-50 Employees',
-        status: 'Active',
-      },
-    ],
-  },
-];
-
 export const CompanyProfile = () => {
   // State for companies and branches
-  const [companies, setCompanies] = useState(INITIAL_COMPANIES);
+  const [companies, setCompanies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -153,6 +53,12 @@ export const CompanyProfile = () => {
   // Active view: 'list' | 'add-branch' | 'edit-branch' | 'view-branch' | 'edit-company' | 'view-company'
   const [currentView, setCurrentView] = useState('list');
   const [toast, setToast] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    branch: null,
+    parentCompany: null,
+    isLoading: false,
+  });
   const [isSaving, setIsSaving] = useState(false);
   const isPageMounted = useRef(false);
 
@@ -236,10 +142,14 @@ export const CompanyProfile = () => {
         setTotalCount(res.data.pagination?.total ?? fetched.length);
         setIsBackendConnected(true);
       } else {
+        setCompanies([]);
+        setTotalCount(0);
         setIsBackendConnected(false);
       }
     } catch (err) {
       console.error('Failed to load companies:', err);
+      setCompanies([]);
+      setTotalCount(0);
       setIsBackendConnected(false);
     } finally {
       setIsLoading(false);
@@ -320,15 +230,19 @@ export const CompanyProfile = () => {
   // 3. ACTION HANDLERS
   // ─────────────────────────────────────────────────────────────
   const handleOpenAddBranch = (parent = null) => {
-    const mainComp = parent || companies.find((c) => c.isMainCompany) || companies[0] || INITIAL_COMPANIES[0];
+    const mainComp = parent || companies.find((c) => c.isMainCompany) || companies[0] || null;
+    if (!mainComp) {
+      showToast('Please register a main company before adding branch locations.', 'error');
+      return;
+    }
     setSelectedCompany(mainComp);
     setSelectedBranch(null);
     setShowPassword(false);
 
     setBranchFormData({
-      parentCompanyId: mainComp.companyId,
-      parentCompanyName: mainComp.companyName,
-      parentGst: mainComp.gstNumber || '33AABCO1234F1Z5',
+      parentCompanyId: mainComp.companyId || '',
+      parentCompanyName: mainComp.companyName || '',
+      parentGst: mainComp.gstNumber || '',
       branchName: '',
       branchCode: '',
       adminUsername: '',
@@ -351,15 +265,15 @@ export const CompanyProfile = () => {
   };
 
   const handleOpenEditBranch = (branch, parentComp = null) => {
-    const parent = parentComp || branch.parentCompanyObj || companies.find((c) => c.companyId === branch.companyId) || companies[0];
+    const parent = parentComp || branch.parentCompanyObj || companies.find((c) => c.companyId === branch.companyId) || companies[0] || null;
     setSelectedCompany(parent);
     setSelectedBranch(branch);
     setShowPassword(false);
 
     setBranchFormData({
-      parentCompanyId: parent.companyId,
-      parentCompanyName: parent.companyName,
-      parentGst: parent.gstNumber || '33AABCO1234F1Z5',
+      parentCompanyId: parent?.companyId || branch.companyId || '',
+      parentCompanyName: parent?.companyName || branch.parentCompanyName || '',
+      parentGst: parent?.gstNumber || '',
       branchName: branch.branchName || '',
       branchCode: branch.branchCode || '',
       adminUsername: branch.adminUsername || '',
@@ -371,9 +285,9 @@ export const CompanyProfile = () => {
       mobile: branch.mobile || '',
       address: branch.address || '',
       city: branch.city || '',
-      state: branch.state || 'Tamil Nadu',
+      state: branch.state || parent?.state || 'Tamil Nadu',
       pincode: branch.pincode || '',
-      industry: branch.industry || parent.industry || 'Information Technology',
+      industry: branch.industry || parent?.industry || 'Information Technology',
       employeeSize: branch.employeeSize || '10-50 Employees',
       status: branch.status || 'Active',
     });
@@ -535,23 +449,34 @@ export const CompanyProfile = () => {
     }
   };
 
-  const handleDeleteBranch = async (branch, parentCompany) => {
-    if (!window.confirm(`Are you sure you want to delete "${branch.branchName}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDeleteBranch = (branch, parentCompany) => {
+    setDeleteConfirm({
+      isOpen: true,
+      branch,
+      parentCompany,
+      isLoading: false,
+    });
+  };
+
+  const handleConfirmDeleteBranch = async () => {
+    if (!deleteConfirm.branch || !deleteConfirm.parentCompany) return;
+    const { branch, parentCompany } = deleteConfirm;
+    setDeleteConfirm((prev) => ({ ...prev, isLoading: true }));
 
     try {
       const branchId = branch._id || branch.id;
       const res = await CompanyApi.deleteBranch(parentCompany.companyId, branchId);
       if (res && res.success) {
-        showToast(`Branch "${branch.branchName}" deleted successfully.`, 'success');
+        showToast(res.message || `Branch "${branch.branchName}" deleted successfully.`, 'success');
         await loadCompanies();
       } else {
         showToast(res?.message || 'Failed to delete branch.', 'error');
       }
     } catch (err) {
       console.error('Delete branch error:', err);
-      showToast('Error deleting branch.', 'error');
+      showToast(err.response?.data?.message || err.message || 'Error deleting branch.', 'error');
+    } finally {
+      setDeleteConfirm({ isOpen: false, branch: null, parentCompany: null, isLoading: false });
     }
   };
 
@@ -600,6 +525,22 @@ export const CompanyProfile = () => {
       {/* Toast Notification */}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
+      {/* Custom Modern Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirm.isOpen}
+        title="Confirm Delete"
+        message={
+          deleteConfirm.branch
+            ? `Are you sure you want to delete branch "${deleteConfirm.branch.branchName}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this branch? This action cannot be undone.'
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={deleteConfirm.isLoading}
+        onConfirm={handleConfirmDeleteBranch}
+        onCancel={() => setDeleteConfirm({ isOpen: false, branch: null, parentCompany: null, isLoading: false })}
+      />
+
       {/* ══════════════════════════════════════════════════════════
           VIEW 1: DUAL TABLES (Company List & Branch List)
           ══════════════════════════════════════════════════════════ */}
@@ -612,7 +553,7 @@ export const CompanyProfile = () => {
               type="button"
               className="btn-save-header-action"
               onClick={() => handleOpenAddBranch()}
-              title="Add a new sub-branch under Ocean Software"
+              title="Add a new sub-branch"
             >
               <Plus size={16} />
               <span>Add Branch</span>
@@ -636,7 +577,7 @@ export const CompanyProfile = () => {
                   />
                   <input
                     type="text"
-                    placeholder="Search company, branch, code or location..."
+                    placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="company-search-input"
@@ -739,9 +680,9 @@ export const CompanyProfile = () => {
                             <div className="location-cell-wrapper" style={{ justifyContent: 'flex-start' }}>
                               <span className="location-pill">
                                 <MapPin size={12} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                                <span style={{ fontWeight: 600 }}>{company.city || 'Chennai'}</span>
+                                <span style={{ fontWeight: 600 }}>{company.city || '—'}</span>
                                 <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-                                  {company.state || 'Tamil Nadu'}
+                                  {company.state || ''}
                                 </span>
                               </span>
 
@@ -759,7 +700,7 @@ export const CompanyProfile = () => {
 
                           {/* CONTACT PERSON */}
                           <td style={{ textAlign: 'left' }}>
-                            <div className="contact-name-title">{company.contactPerson || 'MATHAN'}</div>
+                            <div className="contact-name-title">{company.contactPerson || '—'}</div>
                             <div className="contact-sub-meta">
                               {company.companyMobile || company.mobile || company.companyEmail || company.email}
                             </div>
@@ -870,7 +811,7 @@ export const CompanyProfile = () => {
                         {/* PARENT COMPANY */}
                         <td style={{ textAlign: 'left' }}>
                           <span className="parent-company-name">
-                            {branch.parentCompanyName || 'Ocean Software'}
+                            {branch.parentCompanyName || '—'}
                           </span>
                         </td>
 
@@ -879,7 +820,7 @@ export const CompanyProfile = () => {
                           <div className="location-cell-wrapper" style={{ justifyContent: 'flex-start' }}>
                             <span className="location-pill">
                               <MapPin size={12} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                              <span>{branch.city || 'Tamil Nadu'}</span>
+                              <span>{branch.city || '—'}</span>
                             </span>
 
                             <div className="location-tooltip">
@@ -896,7 +837,7 @@ export const CompanyProfile = () => {
 
                         {/* CONTACT PERSON */}
                         <td style={{ textAlign: 'left' }}>
-                          <div className="contact-name-title">{branch.contactPerson || 'Branch Admin'}</div>
+                          <div className="contact-name-title">{branch.contactPerson || '—'}</div>
                           <div className="contact-sub-meta">
                             {branch.mobile ? `+91 ${branch.mobile}` : branch.email}
                           </div>
@@ -968,8 +909,8 @@ export const CompanyProfile = () => {
               </h1>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: 'var(--text-muted)' }}>
                 {currentView === 'add-branch'
-                  ? 'Manage sub-branch parameters under Ocean Software organization.'
-                  : 'Manage sub-branch parameters under Ocean Software organization.'}
+                  ? 'Manage sub-branch parameters under registered parent organization.'
+                  : 'Manage sub-branch parameters under registered parent organization.'}
               </p>
             </div>
           </div>
@@ -984,9 +925,9 @@ export const CompanyProfile = () => {
                 <div>
                   <div className="parent-title">
                     <Building2 size={18} style={{ color: 'var(--primary)' }} />
-                    <span>{branchFormData.parentCompanyName || 'Ocean Software'}</span>
+                    <span>{branchFormData.parentCompanyName || 'Main Company'}</span>
                     <span className="parent-code-badge">
-                      {branchFormData.parentCompanyId || 'OCN-001'}
+                      {branchFormData.parentCompanyId || '—'}
                     </span>
                   </div>
                   <div style={{ marginTop: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -996,7 +937,7 @@ export const CompanyProfile = () => {
 
                 <div className="super-admin-gst-tag">
                   <ShieldCheck size={14} />
-                  <span>GSTIN: {branchFormData.parentGst || '33AABCO1234F1Z5'} (Super Admin Verified)</span>
+                  <span>GSTIN: {branchFormData.parentGst || '—'} (Super Admin Verified)</span>
                 </div>
               </div>
             </div>
@@ -1015,7 +956,7 @@ export const CompanyProfile = () => {
                   <input
                     type="text"
                     name="branchName"
-                    placeholder="e.g. Tambaram Branch"
+                    placeholder="e.g. Central Branch"
                     value={branchFormData.branchName}
                     onChange={handleBranchInputChange}
                     readOnly={currentView === 'view-branch'}
@@ -1034,7 +975,7 @@ export const CompanyProfile = () => {
                   <input
                     type="text"
                     name="branchCode"
-                    placeholder="e.g. OCN-TAM-001"
+                    placeholder="e.g. BR-001"
                     value={branchFormData.branchCode}
                     onChange={handleBranchInputChange}
                     readOnly={currentView === 'view-branch'}
@@ -1235,7 +1176,7 @@ export const CompanyProfile = () => {
                   <input
                     type="email"
                     name="email"
-                    placeholder="e.g. tambaram@oceansoftware.com"
+                    placeholder="e.g. branch@company.com"
                     value={branchFormData.email}
                     onChange={handleBranchInputChange}
                     readOnly={currentView === 'view-branch'}
@@ -1441,7 +1382,7 @@ export const CompanyProfile = () => {
                   </label>
                   <input
                     type="text"
-                    value={companyFormData.gstNumber || '33AABCO1234F1Z5'}
+                    value={companyFormData.gstNumber || ''}
                     readOnly
                     className="form-control-input readonly"
                   />

@@ -10,6 +10,7 @@ import {
   History,
   LifeBuoy,
 } from 'lucide-react';
+import { Toast } from '../../components/common/Toast/Toast';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import { HelpSupportModule } from '../support/HelpSupportModule';
 import './CompanySettingsModule.css';
@@ -31,7 +32,7 @@ export const CompanySettingsModule = () => {
     }
   }, [tabParam]);
 
-  const [toastMessage, setToastMessage] = useState('');
+  const [toast, setToast] = useState(null); // { message: string, type: 'success' | 'delete' | 'error' | 'info' | 'warning' }
 
   // 1. Company Preferences State
   const [preferences, setPreferences] = useState({
@@ -167,11 +168,8 @@ export const CompanySettingsModule = () => {
     },
   ]);
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage('');
-    }, 3500);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
   };
 
   const [errors, setErrors] = useState({});
@@ -215,12 +213,14 @@ export const CompanySettingsModule = () => {
 
   return (
     <div className="settings-page-container">
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div className="settings-toast-alert">
-          <CheckCircle2 size={18} />
-          <span>{toastMessage}</span>
-        </div>
+      {/* Floating Animated Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={3500}
+          onClose={() => setToast(null)}
+        />
       )}
 
       {/* Page Header */}

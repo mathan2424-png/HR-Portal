@@ -512,13 +512,6 @@ export const JobsModule = () => {
         )}
       </div>
 
-      {/* Toast Alert */}
-      {toastMessage && (
-        <div className="jobs-toast-alert">
-          <CheckCircle2 size={18} />
-          <span>{toastMessage}</span>
-        </div>
-      )}
 
       {/* =========================================================================
           MAIN CARD CONTAINER

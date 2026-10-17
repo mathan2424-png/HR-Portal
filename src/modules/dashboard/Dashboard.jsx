@@ -14,6 +14,8 @@ import {
   RotateCw,
 } from 'lucide-react';
 import { companyRecruitmentData } from '../../services/mockData';
+import { CompanyApi } from '../../Api/CompanyApi';
+import { usePortal } from '../../context/PortalContext';
 import { Link } from 'react-router-dom';
 import './Dashboard.css';
 
@@ -427,6 +429,7 @@ const QuotaGaugeChart = ({
 
 export const Dashboard = () => {
   const [animationKey, setAnimationKey] = useState(0);
+  const { currentUser } = usePortal();
 
   const {
     companyProfile,
@@ -440,16 +443,41 @@ export const Dashboard = () => {
     activeJobsOverview,
   } = companyRecruitmentData;
 
+  const [liveCompany, setLiveCompany] = useState({
+    name: currentUser?.companyName || '',
+    plan: 'Standard',
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    CompanyApi.getCompanies({ limit: 1 })
+      .then((res) => {
+        if (isMounted && res?.success && res.data?.companies?.[0]) {
+          const c = res.data.companies[0];
+          setLiveCompany({
+            name: c.companyName || '',
+            plan: c.plan || 'Standard',
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const calcPct = (val = 0, total = 0) => (total > 0 ? `${Math.round((val / total) * 100)}%` : '0%');
+
   const quotaItems = [
     {
       id: 'jobs',
       title: 'Job Postings Limit',
       unit: 'jobs',
-      used: planUsage.jobs.used,
-      total: planUsage.jobs.total,
-      remaining: planUsage.jobs.remaining,
-      percent: (planUsage.jobs.used / planUsage.jobs.total) * 100,
-      badge: `${planUsage.jobs.remaining} Left`,
+      used: planUsage?.jobs?.used || 0,
+      total: planUsage?.jobs?.total || 0,
+      remaining: planUsage?.jobs?.remaining || 0,
+      percent: planUsage?.jobs?.total ? ((planUsage.jobs.used || 0) / planUsage.jobs.total) * 100 : 0,
+      badge: `${planUsage?.jobs?.remaining || 0} Left`,
       badgeClass: 'green',
       icon: Briefcase,
       colorStart: '#2563EB',
@@ -457,17 +485,17 @@ export const Dashboard = () => {
       glowColor: 'rgba(37, 99, 235, 0.4)',
       classKey: 'job',
       label: 'USED',
-      subMeta: `${planUsage.jobs.remaining} jobs remaining`,
+      subMeta: `${planUsage?.jobs?.remaining || 0} jobs remaining`,
     },
     {
       id: 'alerts',
       title: 'Candidate Alerts Quota',
       unit: 'alerts',
-      used: planUsage.alerts?.used || 1450,
-      total: planUsage.alerts?.total || 2000,
-      remaining: planUsage.alerts?.remaining || 550,
-      percent: ((planUsage.alerts?.used || 1450) / (planUsage.alerts?.total || 2000)) * 100,
-      badge: `${planUsage.alerts?.remaining || 550} Left`,
+      used: planUsage?.alerts?.used || 0,
+      total: planUsage?.alerts?.total || 0,
+      remaining: planUsage?.alerts?.remaining || 0,
+      percent: planUsage?.alerts?.total ? ((planUsage.alerts.used || 0) / planUsage.alerts.total) * 100 : 0,
+      badge: `${planUsage?.alerts?.remaining || 0} Left`,
       badgeClass: 'teal',
       icon: Bell,
       colorStart: '#0D9488',
@@ -475,17 +503,17 @@ export const Dashboard = () => {
       glowColor: 'rgba(13, 148, 136, 0.4)',
       classKey: 'alerts',
       label: 'USED',
-      subMeta: `${planUsage.alerts?.remaining || 550} alerts left`,
+      subMeta: `${planUsage?.alerts?.remaining || 0} alerts left`,
     },
     {
       id: 'resumes',
       title: 'Resume Database Access',
       unit: 'profiles',
-      used: planUsage.resumes.used,
-      total: planUsage.resumes.total,
-      remaining: planUsage.resumes.remaining,
-      percent: (planUsage.resumes.used / planUsage.resumes.total) * 100,
-      badge: `${planUsage.resumes.remaining} Left`,
+      used: planUsage?.resumes?.used || 0,
+      total: planUsage?.resumes?.total || 0,
+      remaining: planUsage?.resumes?.remaining || 0,
+      percent: planUsage?.resumes?.total ? ((planUsage.resumes.used || 0) / planUsage.resumes.total) * 100 : 0,
+      badge: `${planUsage?.resumes?.remaining || 0} Left`,
       badgeClass: 'amber',
       icon: FileText,
       colorStart: '#EA580C',
@@ -493,17 +521,17 @@ export const Dashboard = () => {
       glowColor: 'rgba(234, 88, 12, 0.4)',
       classKey: 'resumes',
       label: 'USED',
-      subMeta: `${planUsage.resumes.remaining} unlocks left`,
+      subMeta: `${planUsage?.resumes?.remaining || 0} unlocks left`,
     },
     {
       id: 'screenings',
       title: 'Screening Assessments',
       unit: 'assessments',
-      used: planUsage.screenings.used,
-      total: planUsage.screenings.total,
-      remaining: planUsage.screenings.remaining,
-      percent: (planUsage.screenings.used / planUsage.screenings.total) * 100,
-      badge: `${planUsage.screenings.remaining} Left`,
+      used: planUsage?.screenings?.used || 0,
+      total: planUsage?.screenings?.total || 0,
+      remaining: planUsage?.screenings?.remaining || 0,
+      percent: planUsage?.screenings?.total ? ((planUsage.screenings.used || 0) / planUsage.screenings.total) * 100 : 0,
+      badge: `${planUsage?.screenings?.remaining || 0} Left`,
       badgeClass: 'purple',
       icon: ShieldCheck,
       colorStart: '#7C3AED',
@@ -511,17 +539,17 @@ export const Dashboard = () => {
       glowColor: 'rgba(124, 58, 237, 0.4)',
       classKey: 'screenings',
       label: 'USED',
-      subMeta: `${planUsage.screenings.remaining} assessments left`,
+      subMeta: `${planUsage?.screenings?.remaining || 0} assessments left`,
     },
     {
       id: 'seats',
       title: 'HR Recruiter Seats',
       unit: 'active seats',
-      used: planUsage.userSeats.used,
-      total: planUsage.userSeats.total,
-      remaining: planUsage.userSeats.remaining,
-      percent: (planUsage.userSeats.used / planUsage.userSeats.total) * 100,
-      badge: `${planUsage.userSeats.remaining} Available`,
+      used: planUsage?.userSeats?.used || 0,
+      total: planUsage?.userSeats?.total || 0,
+      remaining: planUsage?.userSeats?.remaining || 0,
+      percent: planUsage?.userSeats?.total ? ((planUsage.userSeats.used || 0) / planUsage.userSeats.total) * 100 : 0,
+      badge: `${planUsage?.userSeats?.remaining || 0} Available`,
       badgeClass: 'green',
       icon: Users,
       colorStart: '#059669',
@@ -529,56 +557,21 @@ export const Dashboard = () => {
       glowColor: 'rgba(16, 185, 129, 0.4)',
       classKey: 'seats',
       label: 'ALLOCATED',
-      subMeta: `${planUsage.userSeats.remaining} seats open`,
+      subMeta: `${planUsage?.userSeats?.remaining || 0} seats open`,
     },
   ];
 
-  const alertCards = [
-    {
-      id: 'ALT-1',
-      badge: 'UPCOMING INTERVIEW',
-      count: 1,
-      icon: User,
-      title: 'Senior Frontend Engineer Interview',
-      metaIcon: Clock,
-      metaText: 'Today, 02:00 PM',
-      link: '/interviews',
-      classKey: 'blue',
-    },
-    {
-      id: 'ALT-2',
-      badge: 'PENDING ACTION',
-      count: 3,
-      icon: FileText,
-      title: 'Candidates Awaiting Screening Assessment',
-      metaIcon: Users,
-      metaText: '3 candidates',
-      link: '/screenings',
-      classKey: 'orange',
-    },
-    {
-      id: 'ALT-3',
-      badge: 'PLAN LIMIT WARNING',
-      count: 1,
-      icon: AlertCircle,
-      title: 'Resume Access Quota at 68%',
-      metaIcon: Clock,
-      metaText: '340 / 500 used',
-      link: '/subscription',
-      classKey: 'purple',
-    },
-    {
-      id: 'ALT-4',
-      badge: 'SUBSCRIPTION RENEWAL',
-      count: 1,
-      icon: RotateCw,
-      title: 'Enterprise Pro Plan Renewal',
-      metaIcon: Calendar,
-      metaText: 'In 20 days',
-      link: '/subscription',
-      classKey: 'green',
-    },
-  ];
+  const alertCards = (importantAlerts || []).map((alert) => ({
+    id: alert.id,
+    badge: (alert.badge || 'ALERT').toUpperCase(),
+    count: alert.count || 1,
+    icon: alert.type === 'interview' ? User : alert.type === 'action' ? FileText : alert.type === 'plan_limit' ? AlertCircle : RotateCw,
+    title: alert.title,
+    metaIcon: alert.type === 'interview' ? Clock : alert.type === 'action' ? Users : alert.type === 'plan_limit' ? Clock : Calendar,
+    metaText: alert.time || alert.description,
+    link: alert.type === 'interview' ? '/interviews' : alert.type === 'action' ? '/screenings' : '/subscription',
+    classKey: alert.severity === 'info' ? 'blue' : alert.severity === 'warning' ? 'orange' : alert.severity === 'success' ? 'green' : 'purple',
+  }));
 
   return (
     <div className="dashboard-page animate-fade-in">
@@ -599,49 +592,55 @@ export const Dashboard = () => {
             </div>
           </div>
           <Link to="/notifications" className="alerts-count-tag" title="View all active notifications">
-            <span>4 Active Alerts</span>
+            <span>{alertCards.length} Active {alertCards.length === 1 ? 'Alert' : 'Alerts'}</span>
             <ArrowRight size={13} />
           </Link>
         </div>
 
-        <div className="alerts-quad-grid">
-          {alertCards.map((alert) => {
-            const Icon = alert.icon;
-            const MetaIcon = alert.metaIcon;
-            return (
-              <Link
-                key={alert.id}
-                to={alert.link}
-                className={`premium-alert-item ${alert.classKey}`}
-              >
-                {/* Top Row: Icon + Badge + Count */}
-                <div className="alert-item-top">
-                  <div className="alert-top-left">
-                    <div className="alert-type-icon">
-                      <Icon size={14} />
+        {alertCards.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '1.75rem 1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            No active alerts or urgent actions required at this time.
+          </div>
+        ) : (
+          <div className="alerts-quad-grid">
+            {alertCards.map((alert) => {
+              const Icon = alert.icon;
+              const MetaIcon = alert.metaIcon;
+              return (
+                <Link
+                  key={alert.id}
+                  to={alert.link}
+                  className={`premium-alert-item ${alert.classKey}`}
+                >
+                  {/* Top Row: Icon + Badge + Count */}
+                  <div className="alert-item-top">
+                    <div className="alert-top-left">
+                      <div className="alert-type-icon">
+                        <Icon size={14} />
+                      </div>
+                      <span className="alert-category-pill">{alert.badge}</span>
                     </div>
-                    <span className="alert-category-pill">{alert.badge}</span>
+                    <span className="alert-count-badge">{alert.count}</span>
                   </div>
-                  <span className="alert-count-badge">{alert.count}</span>
-                </div>
 
-                {/* Middle: Title */}
-                <h4 className="alert-headline">{alert.title}</h4>
+                  {/* Middle: Title */}
+                  <h4 className="alert-headline">{alert.title}</h4>
 
-                {/* Bottom Row: Meta Info + Arrow Action */}
-                <div className="alert-item-bottom">
-                  <span className="alert-meta-info">
-                    <MetaIcon size={13} />
-                    <span>{alert.metaText}</span>
-                  </span>
-                  <div className="alert-action-arrow">
-                    <ArrowRight size={13} />
+                  {/* Bottom Row: Meta Info + Arrow Action */}
+                  <div className="alert-item-bottom">
+                    <span className="alert-meta-info">
+                      <MetaIcon size={13} />
+                      <span>{alert.metaText}</span>
+                    </span>
+                    <div className="alert-action-arrow">
+                      <ArrowRight size={13} />
+                    </div>
                   </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* 3. Core Recruitment Summaries (Quad 2x2 Grid) */}
@@ -696,7 +695,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Active</span>
                 </div>
                 <span className="legend-count">{jobSummary.active}</span>
-                <span className="legend-pct">40%</span>
+                <span className="legend-pct">{calcPct(jobSummary.active, jobSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -704,7 +703,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Draft</span>
                 </div>
                 <span className="legend-count">{jobSummary.draft}</span>
-                <span className="legend-pct">10%</span>
+                <span className="legend-pct">{calcPct(jobSummary.draft, jobSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -712,7 +711,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Paused</span>
                 </div>
                 <span className="legend-count">{jobSummary.paused}</span>
-                <span className="legend-pct">7%</span>
+                <span className="legend-pct">{calcPct(jobSummary.paused, jobSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -720,7 +719,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Filled</span>
                 </div>
                 <span className="legend-count">{jobSummary.filled}</span>
-                <span className="legend-pct">27%</span>
+                <span className="legend-pct">{calcPct(jobSummary.filled, jobSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -728,7 +727,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Closed</span>
                 </div>
                 <span className="legend-count">{jobSummary.closed}</span>
-                <span className="legend-pct">17%</span>
+                <span className="legend-pct">{calcPct(jobSummary.closed, jobSummary.total)}</span>
               </div>
             </div>
           </div>
@@ -780,7 +779,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Matched</span>
                 </div>
                 <span className="legend-count">{candidateSummary.matched}</span>
-                <span className="legend-pct">56.1%</span>
+                <span className="legend-pct">{calcPct(candidateSummary.matched, candidateSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -788,7 +787,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Interested</span>
                 </div>
                 <span className="legend-count">{candidateSummary.interested}</span>
-                <span className="legend-pct">25.1%</span>
+                <span className="legend-pct">{calcPct(candidateSummary.interested, candidateSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -796,7 +795,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Shortlisted</span>
                 </div>
                 <span className="legend-count">{candidateSummary.shortlisted}</span>
-                <span className="legend-pct">8.0%</span>
+                <span className="legend-pct">{calcPct(candidateSummary.shortlisted, candidateSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -804,7 +803,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Rejected</span>
                 </div>
                 <span className="legend-count">{candidateSummary.rejected}</span>
-                <span className="legend-pct">10.8%</span>
+                <span className="legend-pct">{calcPct(candidateSummary.rejected, candidateSummary.total)}</span>
               </div>
             </div>
           </div>
@@ -857,7 +856,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Pending</span>
                 </div>
                 <span className="legend-count">{screeningSummary.pending}</span>
-                <span className="legend-pct">14.5%</span>
+                <span className="legend-pct">{calcPct(screeningSummary.pending, screeningSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -865,7 +864,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Completed</span>
                 </div>
                 <span className="legend-count">{screeningSummary.completed}</span>
-                <span className="legend-pct">85.5%</span>
+                <span className="legend-pct">{calcPct(screeningSummary.completed, screeningSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -873,9 +872,9 @@ export const Dashboard = () => {
                   <span className="legend-name">Pass Rate</span>
                 </div>
                 <div className="legend-bar-wrap">
-                  <div className="legend-bar-fill animated-shimmer-bar" style={{ width: '79.2%' }} />
+                  <div className="legend-bar-fill animated-shimmer-bar" style={{ width: screeningSummary.passRate || '0%' }} />
                 </div>
-                <span className="legend-pct">79.2%</span>
+                <span className="legend-pct">{screeningSummary.passRate || '0%'}</span>
               </div>
             </div>
           </div>
@@ -929,7 +928,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Upcoming</span>
                 </div>
                 <span className="legend-count">{interviewSummary.upcoming}</span>
-                <span className="legend-pct">14.3%</span>
+                <span className="legend-pct">{calcPct(interviewSummary.upcoming, interviewSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -937,7 +936,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Completed</span>
                 </div>
                 <span className="legend-count">{interviewSummary.completed}</span>
-                <span className="legend-pct">80.4%</span>
+                <span className="legend-pct">{calcPct(interviewSummary.completed, interviewSummary.total)}</span>
               </div>
               <div className="summary-legend-row">
                 <div className="legend-label-wrap">
@@ -945,7 +944,7 @@ export const Dashboard = () => {
                   <span className="legend-name">Cancelled</span>
                 </div>
                 <span className="legend-count">{interviewSummary.cancelled}</span>
-                <span className="legend-pct">5.4%</span>
+                <span className="legend-pct">{calcPct(interviewSummary.cancelled, interviewSummary.total)}</span>
               </div>
             </div>
           </div>
@@ -958,7 +957,7 @@ export const Dashboard = () => {
           <div>
             <div className="plan-card-title-row">
               <h2 className="plan-card-heading">Company Plan Usage & Resource Quotas</h2>
-              <span className="tier-tag">{companyProfile.plan} Tier</span>
+              <span className="tier-tag">{liveCompany.plan || companyProfile?.plan || 'Standard'} Tier</span>
             </div>
           </div>
 
@@ -1049,31 +1048,37 @@ export const Dashboard = () => {
           </div>
 
           <div className="activity-items-list">
-            {upcomingInterviewsList.map((item) => (
-              <div key={item.id} className="interview-schedule-item">
-                <div className="candidate-info-group">
-                  <img
-                    src={item.candidateAvatar}
-                    alt={item.candidateName}
-                    className="candidate-avatar-thumb"
-                  />
-                  <div>
-                    <h4 className="candidate-name-text">{item.candidateName}</h4>
-                    <span className="candidate-role-sub">
-                      {item.jobTitle} • <span className="interview-type-tag">{item.type}</span>
-                    </span>
-                  </div>
-                </div>
-
-                <div className="interview-timing-group">
-                  <div className="time-badge">
-                    <Clock size={12} color="var(--primary)" />
-                    <span>{item.dateTime}</span>
-                  </div>
-                  <span className="interviewer-name">Interviewer: {item.interviewer}</span>
-                </div>
+            {upcomingInterviewsList.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                No upcoming interviews scheduled.
               </div>
-            ))}
+            ) : (
+              upcomingInterviewsList.map((item) => (
+                <div key={item.id} className="interview-schedule-item">
+                  <div className="candidate-info-group">
+                    <img
+                      src={item.candidateAvatar}
+                      alt={item.candidateName}
+                      className="candidate-avatar-thumb"
+                    />
+                    <div>
+                      <h4 className="candidate-name-text">{item.candidateName}</h4>
+                      <span className="candidate-role-sub">
+                        {item.jobTitle} • <span className="interview-type-tag">{item.type}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="interview-timing-group">
+                    <div className="time-badge">
+                      <Clock size={12} color="var(--primary)" />
+                      <span>{item.dateTime}</span>
+                    </div>
+                    <span className="interviewer-name">Interviewer: {item.interviewer}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -1088,24 +1093,30 @@ export const Dashboard = () => {
           </div>
 
           <div className="activity-items-list">
-            {activeJobsOverview.map((job) => (
-              <div key={job.id} className="job-pipeline-item">
-                <div>
-                  <h4 className="job-pipeline-title">{job.title}</h4>
-                  <span className="job-dept-text">{job.department}</span>
-                </div>
-
-                <div className="job-pipeline-stats">
-                  <div className="pipeline-numbers">
-                    <span className="matched-count">{job.matched} Matched</span>
-                    <span className="shortlist-meta">
-                      {job.shortlisted} Shortlisted • {job.interviews} Intv
-                    </span>
-                  </div>
-                  <span className="job-status-chip">{job.status}</span>
-                </div>
+            {activeJobsOverview.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                No active jobs open at this moment.
               </div>
-            ))}
+            ) : (
+              activeJobsOverview.map((job) => (
+                <div key={job.id} className="job-pipeline-item">
+                  <div>
+                    <h4 className="job-pipeline-title">{job.title}</h4>
+                    <span className="job-dept-text">{job.department}</span>
+                  </div>
+
+                  <div className="job-pipeline-stats">
+                    <div className="pipeline-numbers">
+                      <span className="matched-count">{job.matched} Matched</span>
+                      <span className="shortlist-meta">
+                        {job.shortlisted} Shortlisted • {job.interviews} Intv
+                      </span>
+                    </div>
+                    <span className="job-status-chip">{job.status}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -44,7 +44,7 @@ const navItems = [
   { path: '/company-profile', label: 'Company Details', icon: Building2 },
   { path: '/subscription', label: 'Subscription & Billing', icon: CreditCard },
   { path: '/users-roles', label: 'Users & Roles', icon: ShieldCheck },
-  { path: '/departments', label: 'Departments & Branches', icon: GitFork },
+  { path: '/departments', label: 'Departments', icon: GitFork },
   { path: '/jobs', label: 'Jobs', icon: Briefcase },
   { path: '/candidate-matching', label: 'Matching & Alerts', icon: Sparkles },
   { path: '/candidate-responses', label: 'Candidate Responses', icon: UserCheck },
