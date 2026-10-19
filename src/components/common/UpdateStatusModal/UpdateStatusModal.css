@@ -1,0 +1,268 @@
+/* =========================================================================
+   UPDATE STATUS MODAL STYLES
+   ========================================================================= */
+
+/* Backdrop Overlay */
+.update-status-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: statusFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Modal Dialog Card */
+.update-status-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 440px;
+  border-radius: 16px;
+  padding: 24px 26px 22px 26px;
+  box-shadow:
+    0 20px 45px -10px rgba(0, 0, 0, 0.18),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+  position: relative;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+/* Scale & Fade Entrance */
+.animate-scale-in {
+  animation: statusScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Header */
+.update-status-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 20px;
+}
+
+.update-status-header-text {
+  flex: 1;
+}
+
+.update-status-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+.update-status-subtitle {
+  margin: 6px 0 0 0;
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.update-status-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+  margin-top: -2px;
+  margin-right: -4px;
+}
+
+.update-status-close-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.update-status-close-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Form */
+.update-status-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.update-status-field-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+}
+
+.update-status-label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+/* Select Wrapper */
+.update-status-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.update-status-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 40px 0 14px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #0f172a;
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: all 0.18s ease;
+  outline: none;
+}
+
+.update-status-select:hover:not(:disabled) {
+  border-color: #94a3b8;
+}
+
+.update-status-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.15);
+}
+
+.update-status-select:disabled {
+  background-color: #f8fafc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.update-status-chevron {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+  transition: transform 0.18s ease;
+}
+
+/* Action Buttons Row */
+.update-status-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-update-status-cancel {
+  height: 42px;
+  padding: 0 22px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+
+.btn-update-status-cancel:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.btn-update-status-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Update Status Button (Portal Theme Color: #2563eb) */
+.btn-update-status-confirm {
+  height: 42px;
+  padding: 0 24px;
+  background: #2563eb;
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+}
+
+.btn-update-status-confirm:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.36);
+  transform: translateY(-1px);
+}
+
+.btn-update-status-confirm:active:not(:disabled) {
+  transform: translateY(0);
+  background: #1e40af;
+}
+
+.btn-update-status-confirm:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner Loader */
+.update-status-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: statusSpin 0.7s linear infinite;
+}
+
+@keyframes statusFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes statusScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes statusSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../../Api/Api';
 import {
   Search,
   Plus,
@@ -11,6 +12,8 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Toast } from '../../components/common/Toast/Toast';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
+import { UpdateStatusModal } from '../../components/common/UpdateStatusModal';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import {
   validateName,
@@ -20,6 +23,17 @@ import {
   sanitizeNumberInput,
 } from '../../utils/validation';
 import './JobsModule.css';
+
+// Status options for the Update Status Modal matching requested specifications
+const JOB_STATUS_OPTIONS = [
+  { value: 'Active', label: 'Active' },
+  { value: 'Pending Approval', label: 'Pending' },
+  { value: 'Draft', label: 'Draft' },
+  { value: 'Paused', label: 'Paused' },
+  { value: 'Closed', label: 'Closed' },
+  { value: 'Filled', label: 'Filled' },
+  { value: 'Expired', label: 'Expired' },
+];
 
 export const JobsModule = () => {
   const [jobErrors, setJobErrors] = useState({});
@@ -32,182 +46,10 @@ export const JobsModule = () => {
   // 18. Priority, 19. Target Joining Date, 20. Job Status,
   // 21. Created / Updated By & Timestamps
 
-  const [jobs, setJobs] = useState([
-    {
-      id: 'REC-JOB-001',
-      jobId: 'JOB-2026-001',
-      jobTitle: 'Senior Frontend Engineer',
-      department: 'Engineering & Technology',
-      hiringManager: 'Sundar Raman',
-      recruiter: 'Dhakshan S',
-      vacancies: 3,
-      jobCategory: 'Software Engineering / IT',
-      employmentType: 'Full-time',
-      minExperience: 4,
-      maxExperience: 8,
-      requiredSkills: 'React.js, TypeScript, Next.js, Redux, TailwindCSS',
-      preferredSkills: 'GraphQL, AWS Cloud, Web Vitals, Node.js',
-      qualification: 'B.Tech / B.E in CS / IT or relevant engineering degree',
-      minSalary: '₹18,00,000',
-      maxSalary: '₹28,00,000',
-      salaryVisibility: 'Visible to Candidates',
-      location: 'Chennai HQ Campus',
-      workMode: 'Hybrid',
-      noticePeriod: '30 Days',
-      jobDescription: 'Lead frontend architecture for enterprise HRMS portal, build scalable UI components, and mentor junior engineers.',
-      benefits: 'Comprehensive Health Insurance, Performance Bonus, Flexible Working Hours, Annual Learning Stipend',
-      priority: 'Urgent',
-      targetJoiningDate: '2026-11-15',
-      jobStatus: 'Active',
-      createdBy: 'Dhakshan S (10-Oct-2026 10:30 AM)',
-      updatedBy: 'Dhakshan S (12-Oct-2026 04:15 PM)',
-    },
-    {
-      id: 'REC-JOB-002',
-      jobId: 'JOB-2026-002',
-      jobTitle: 'Lead Product Designer (UI/UX)',
-      department: 'Product & UX Design',
-      hiringManager: 'Karthik Raja',
-      recruiter: 'Dhakshan S',
-      vacancies: 1,
-      jobCategory: 'Product & Design',
-      employmentType: 'Full-time',
-      minExperience: 5,
-      maxExperience: 9,
-      requiredSkills: 'Figma, Design Systems, User Research, Prototyping',
-      preferredSkills: 'Design Tokens, Micro-interactions, Design Sprints',
-      qualification: 'Bachelor or Master in Design / Human-Computer Interaction',
-      minSalary: '₹20,00,000',
-      maxSalary: '₹30,00,000',
-      salaryVisibility: 'Visible to Candidates',
-      location: 'Coimbatore Tech Park',
-      workMode: 'Hybrid',
-      noticePeriod: '45 Days',
-      jobDescription: 'Own end-to-end design strategy for admin portal workflows, recruit design system tokens, and conduct user testing sessions.',
-      benefits: 'MacBook Pro M-Series, Wellness Reimbursement, Health Insurance, Stock Options',
-      priority: 'High',
-      targetJoiningDate: '2026-11-30',
-      jobStatus: 'Active',
-      createdBy: 'Abinaya R (08-Oct-2026 11:15 AM)',
-      updatedBy: 'Abinaya R (11-Oct-2026 02:40 PM)',
-    },
-    {
-      id: 'REC-JOB-003',
-      jobId: 'JOB-2026-003',
-      jobTitle: 'Senior Technical Recruiter',
-      department: 'Human Resources & Talent',
-      hiringManager: 'Abinaya R',
-      recruiter: 'Nathiya  ',
-      vacancies: 2,
-      jobCategory: 'Human Resources',
-      employmentType: 'Full-time',
-      minExperience: 3,
-      maxExperience: 6,
-      requiredSkills: 'Tech Sourcing, LinkedIn Recruiter, Candidate Screening, Offer Negotiation',
-      preferredSkills: 'Campus Recruitment, ATS Workflow Setup',
-      qualification: 'MBA in HR or Bachelor Degree with Recruitment Expertise',
-      minSalary: '₹10,00,000',
-      maxSalary: '₹15,00,000',
-      salaryVisibility: 'Visible to Candidates',
-      location: 'Chennai HQ Campus',
-      workMode: 'Office',
-      noticePeriod: 'Immediate to 15 Days',
-      jobDescription: 'Drive tech recruitment pipelines across Frontend, Backend and Cloud hiring requirements with aggressive turnaround times.',
-      benefits: 'Quarterly Hiring Incentives, Mediclaim Insurance, Gym Membership',
-      priority: 'High',
-      targetJoiningDate: '2026-10-31',
-      jobStatus: 'Active',
-      createdBy: 'Abinaya R (05-Oct-2026 09:20 AM)',
-      updatedBy: 'Dhakshan S (10-Oct-2026 05:00 PM)',
-    },
-    {
-      id: 'REC-JOB-004',
-      jobId: 'JOB-2026-004',
-      jobTitle: 'DevOps & Cloud Architect',
-      department: 'Engineering & Technology',
-      hiringManager: 'Sundar Raman',
-      recruiter: 'Dhakshan S',
-      vacancies: 1,
-      jobCategory: 'Infrastructure & Cloud',
-      employmentType: 'Contract',
-      minExperience: 6,
-      maxExperience: 10,
-      requiredSkills: 'Kubernetes, AWS, Terraform, Docker, CI/CD Pipelines',
-      preferredSkills: 'SOC2 Compliance, Datadog Monitoring, Helm',
-      qualification: 'B.Tech / B.E or Cloud Certification (AWS Solutions Architect)',
-      minSalary: '₹25,00,000',
-      maxSalary: '₹35,00,000',
-      salaryVisibility: 'Competitive as per Market',
-      location: 'Remote - Tamil Nadu',
-      workMode: 'Remote',
-      noticePeriod: '30 Days',
-      jobDescription: 'Architect high-availability Kubernetes clusters, optimize AWS infrastructure costs and implement zero-trust security postures.',
-      benefits: 'Work From Home Setup Allowance, Internet Allowance, Health Cover',
-      priority: 'Urgent',
-      targetJoiningDate: '2026-11-10',
-      jobStatus: 'Pending Approval',
-      createdBy: 'Sundar Raman (11-Oct-2026 03:10 PM)',
-      updatedBy: 'Sundar Raman (11-Oct-2026 03:10 PM)',
-    },
-    {
-      id: 'REC-JOB-005',
-      jobId: 'JOB-2026-005',
-      jobTitle: 'Enterprise Account Executive',
-      department: 'Sales & Business Development',
-      hiringManager: 'Muthuvel Pandian',
-      recruiter: 'Nathiya  ',
-      vacancies: 2,
-      jobCategory: 'Sales & Marketing',
-      employmentType: 'Full-time',
-      minExperience: 4,
-      maxExperience: 7,
-      requiredSkills: 'B2B SaaS Sales, Enterprise Client Demos, Deal Closure, CRM Management',
-      preferredSkills: 'HR Tech Domain Knowledge, Account Planning',
-      qualification: 'MBA in Marketing / Sales or Graduate degree with SaaS sales record',
-      minSalary: '₹14,00,000',
-      maxSalary: '₹22,00,000',
-      salaryVisibility: 'Visible to Candidates',
-      location: 'Madurai Delivery Center',
-      workMode: 'Hybrid',
-      noticePeriod: '30 Days',
-      jobDescription: 'Drive SaaS ARR growth by closing mid-market and enterprise HR platform contracts across South India.',
-      benefits: 'Uncapped Sales Commission, Travel Allowances, Executive Health Plan',
-      priority: 'Medium',
-      targetJoiningDate: '2026-12-01',
-      jobStatus: 'Draft',
-      createdBy: 'Muthuvel Pandian (09-Oct-2026 04:50 PM)',
-      updatedBy: 'Muthuvel Pandian (10-Oct-2026 11:00 AM)',
-    },
-    {
-      id: 'REC-JOB-006',
-      jobId: 'JOB-2026-006',
-      jobTitle: 'Finance & Payroll Specialist',
-      department: 'Finance & Accounts',
-      hiringManager: 'Meera Nambiar',
-      recruiter: 'Nathiya  ',
-      vacancies: 1,
-      jobCategory: 'Finance & Accounting',
-      employmentType: 'Full-time',
-      minExperience: 3,
-      maxExperience: 5,
-      requiredSkills: 'Statutory Compliance, Payroll Processing, TDS, GST, Excel Modelling',
-      preferredSkills: 'SAP ERP, Payroll Auditing',
-      qualification: 'B.Com / M.Com / Inter CA',
-      minSalary: '₹8,00,000',
-      maxSalary: '₹12,00,000',
-      salaryVisibility: 'Hidden / Confidential',
-      location: 'Chennai HQ Campus',
-      workMode: 'Office',
-      noticePeriod: 'Immediate to 30 Days',
-      jobDescription: 'Handle monthly employee payroll, PF/ESI filing, vendor invoicing and compliance reconciliations.',
-      benefits: 'Group Medical Insurance, Gratuity, Performance Bonus',
-      priority: 'Low',
-      targetJoiningDate: '2026-11-20',
-      jobStatus: 'Paused',
-      createdBy: 'Meera Nambiar (02-Oct-2026 10:00 AM)',
-      updatedBy: 'Meera Nambiar (06-Oct-2026 01:15 PM)',
-    },
-  ]);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalJobs, setTotalJobs] = useState(0);
 
   // Views: 'list' | 'add' | 'edit'
   const [currentView, setCurrentView] = useState('list');
@@ -220,14 +62,14 @@ export const JobsModule = () => {
     id: '',
     jobId: '',
     jobTitle: '',
-    department: 'Engineering & Technology',
+    department: '',
     hiringManager: '',
     recruiter: '',
-    vacancies: 1,
-    jobCategory: 'Software Engineering / IT',
+    vacancies: '',
+    jobCategory: '',
     employmentType: 'Full-time',
-    minExperience: 2,
-    maxExperience: 5,
+    minExperience: '',
+    maxExperience: '',
     requiredSkills: '',
     preferredSkills: '',
     qualification: '',
@@ -251,41 +93,89 @@ export const JobsModule = () => {
   // Toast State
   const [toast, setToast] = useState(null); // { message: string, type: 'success' | 'delete' | 'info' | 'warning' }
 
+  // Delete Confirmation Modal State
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    job: null,
+    isLoading: false,
+  });
+
+  // Status Update Modal State
+  const [statusModal, setStatusModal] = useState({
+    isOpen: false,
+    job: null,
+    isLoading: false,
+  });
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
   };
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 5;
 
-  // Filter Jobs
-  const filteredJobs = jobs.filter((job) => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch =
-      job.jobId.toLowerCase().includes(term) ||
-      job.jobTitle.toLowerCase().includes(term) ||
-      job.department.toLowerCase().includes(term) ||
-      job.hiringManager.toLowerCase().includes(term) ||
-      job.recruiter.toLowerCase().includes(term) ||
-      job.location.toLowerCase().includes(term) ||
-      job.requiredSkills.toLowerCase().includes(term);
+  // Fetch Jobs from Backend API with Search, Filter & Pagination
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+      };
+      if (searchTerm && searchTerm.trim()) {
+        params.search = searchTerm.trim();
+      }
+      if (statusFilter && statusFilter !== 'All' && statusFilter !== 'All Status') {
+        params.status = statusFilter;
+      }
+      const response = await api.get('/jobs', { params });
+      if (response.data?.success) {
+        const data = response.data.data;
+        const jobList = (data.jobs || []).map((j) => ({
+          ...j,
+          id: j._id || j.id,
+        }));
+        setJobs(jobList);
+        setTotalPages(data.pagination?.totalPages || 1);
+        setTotalJobs(data.pagination?.total || 0);
+      }
+    } catch (err) {
+      console.error('fetchJobs error:', err);
+      const serverMsg =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to fetch jobs';
+      showToast(serverMsg, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const matchesStatus =
-      statusFilter === 'All' ? true : job.jobStatus === statusFilter;
+  useEffect(() => {
+    if (currentView === 'list') {
+      const timer = setTimeout(() => {
+        fetchJobs();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, statusFilter, currentPage, currentView]);
 
-    return matchesSearch && matchesStatus;
-  });
-
-  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage) || 1;
-  const paginatedJobs = filteredJobs.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const filteredJobs = jobs;
+  const paginatedJobs = jobs;
 
   // Open Add
-  const handleOpenAdd = () => {
-    const nextNum = jobs.length + 1;
+  const handleOpenAdd = async () => {
+    let nextJobId = `JOB-${new Date().getFullYear()}-001`;
+    try {
+      const idRes = await api.get('/jobs/next-id');
+      if (idRes.data?.success && idRes.data?.data?.jobId) {
+        nextJobId = idRes.data.data.jobId;
+      }
+    } catch (e) {
+      console.error('Error fetching next-id:', e);
+    }
+
     const nowStr = new Date().toLocaleString('en-GB', {
       day: '2-digit',
       month: 'short',
@@ -294,35 +184,12 @@ export const JobsModule = () => {
       minute: '2-digit',
       hour12: true,
     });
+
     setFormData({
       ...initialFormState,
-      id: `REC-JOB-${Date.now()}`,
-      jobId: `JOB-2026-${String(nextNum).padStart(3, '0')}`,
-      jobTitle: '',
-      department: 'Engineering & Technology',
-      hiringManager: 'Sundar Raman',
-      recruiter: 'Dhakshan S',
-      vacancies: 2,
-      jobCategory: 'Software Engineering / IT',
-      employmentType: 'Full-time',
-      minExperience: 3,
-      maxExperience: 7,
-      requiredSkills: 'React, TypeScript, Node.js',
-      preferredSkills: 'Next.js, Cloud Architecture',
-      qualification: 'B.E / B.Tech / MCA or equivalent',
-      minSalary: '₹16,00,000',
-      maxSalary: '₹26,00,000',
-      salaryVisibility: 'Visible to Candidates',
-      location: 'Chennai HQ Campus',
-      workMode: 'Hybrid',
-      noticePeriod: '30 Days',
-      jobDescription: 'Design, develop and scale enterprise web portals and APIs.',
-      benefits: 'Health Insurance, Annual Bonus, Flexible Hours',
-      priority: 'Medium',
-      targetJoiningDate: '2026-11-20',
-      jobStatus: 'Active',
-      createdBy: `Admin User (${nowStr})`,
-      updatedBy: `Admin User (${nowStr})`,
+      jobId: nextJobId,
+      createdBy: `Admin (${nowStr})`,
+      updatedBy: `Admin (${nowStr})`,
     });
     setJobErrors({});
     setCurrentView('add');
@@ -345,8 +212,8 @@ export const JobsModule = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Save Job
-  const handleSaveJob = (e) => {
+  // Save Job (Real Backend API Call)
+  const handleSaveJob = async (e) => {
     e.preventDefault();
 
     const errors = {};
@@ -379,49 +246,126 @@ export const JobsModule = () => {
 
     setJobErrors({});
 
-    const nowStr = new Date().toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
-
-    if (currentView === 'add') {
-      const newJob = {
-        ...formData,
-        id: `REC-JOB-${Date.now()}`,
-        createdBy: `Admin User (${nowStr})`,
-        updatedBy: `Admin User (${nowStr})`,
-      };
-      setJobs([newJob, ...jobs]);
-      showToast(`Job "${newJob.jobTitle}" created successfully.`, 'success');
-    } else if (currentView === 'edit') {
-      const updatedJob = {
-        ...formData,
-        updatedBy: `Admin User (${nowStr})`,
-      };
-      setJobs(jobs.map((j) => (j.id === formData.id ? updatedJob : j)));
-      showToast(`Job "${formData.jobTitle}" updated successfully.`, 'success');
+    try {
+      if (currentView === 'add') {
+        const response = await api.post('/jobs', formData);
+        if (response.data?.success) {
+          showToast(response.data.message || `Job "${formData.jobTitle}" created successfully.`, 'success');
+          handleBackToList();
+          fetchJobs();
+        }
+      } else if (currentView === 'edit') {
+        const targetId = formData._id || formData.id;
+        const response = await api.put(`/jobs/${targetId}`, formData);
+        if (response.data?.success) {
+          showToast(response.data.message || `Job "${formData.jobTitle}" updated successfully.`, 'success');
+          handleBackToList();
+          fetchJobs();
+        }
+      }
+    } catch (err) {
+      console.error('handleSaveJob error:', err);
+      const serverMsg =
+        err.response?.data?.message ||
+        (typeof err.response?.data?.errors === 'string'
+          ? err.response.data.errors
+          : err.response?.data?.errors
+          ? Object.values(err.response.data.errors)[0]
+          : null) ||
+        err.response?.data?.error ||
+        err.message ||
+        'Failed to save job';
+      showToast(serverMsg, 'error');
     }
-
-    handleBackToList();
   };
 
-  // Quick Status Change
-  const handleQuickStatusChange = (jobId, nextStatus) => {
-    setJobs(
-      jobs.map((j) => (j.id === jobId ? { ...j, jobStatus: nextStatus } : j))
-    );
-    showToast(`Job status updated to "${nextStatus}".`, 'success');
+  // Open Status Update Modal
+  const handleOpenStatusModal = (job) => {
+    setStatusModal({
+      isOpen: true,
+      job,
+      isLoading: false,
+    });
   };
 
-  // Delete Job
+  // Confirm and Execute Status Update via API
+  const handleConfirmStatusUpdate = async (nextStatus) => {
+    if (!statusModal.job) return;
+    const job = statusModal.job;
+    const jobId = job._id || job.id;
+    setStatusModal((prev) => ({ ...prev, isLoading: true }));
+    try {
+      const response = await api.patch(`/jobs/${jobId}/status`, {
+        status: nextStatus,
+        jobStatus: nextStatus,
+      });
+      if (response.data?.success) {
+        setJobs((prev) =>
+          prev.map((j) => (j.id === jobId || j._id === jobId ? { ...j, jobStatus: nextStatus } : j))
+        );
+        showToast(response.data.message || `Job status updated to "${nextStatus}".`, 'success');
+        setStatusModal({ isOpen: false, job: null, isLoading: false });
+      } else {
+        showToast(response.data?.message || 'Failed to update job status', 'error');
+        setStatusModal((prev) => ({ ...prev, isLoading: false }));
+      }
+    } catch (err) {
+      console.error('Status change error:', err);
+      const serverMsg = err.response?.data?.message || 'Failed to update job status';
+      showToast(serverMsg, 'error');
+      setStatusModal((prev) => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  // Quick Status Change (Real Backend API Call fallback)
+  const handleQuickStatusChange = async (jobId, nextStatus) => {
+    try {
+      const response = await api.patch(`/jobs/${jobId}/status`, {
+        status: nextStatus,
+        jobStatus: nextStatus,
+      });
+      if (response.data?.success) {
+        setJobs((prev) =>
+          prev.map((j) => (j.id === jobId || j._id === jobId ? { ...j, jobStatus: nextStatus } : j))
+        );
+        showToast(response.data.message || `Job status updated to "${nextStatus}".`, 'success');
+      }
+    } catch (err) {
+      console.error('Status change error:', err);
+      const serverMsg = err.response?.data?.message || 'Failed to update job status';
+      showToast(serverMsg, 'error');
+    }
+  };
+
+  // Delete Job - Open Confirmation Modal
   const handleDeleteJob = (job) => {
-    if (window.confirm(`Are you sure you want to delete job "${job.jobTitle} (${job.jobId})"?`)) {
-      setJobs(jobs.filter((j) => j.id !== job.id));
-      showToast(`Job "${job.jobTitle}" deleted successfully.`, 'delete');
+    setDeleteConfirm({
+      isOpen: true,
+      job,
+      isLoading: false,
+    });
+  };
+
+  // Confirm and Execute Delete via Backend API Call
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.job) return;
+    const job = deleteConfirm.job;
+    setDeleteConfirm((prev) => ({ ...prev, isLoading: true }));
+    try {
+      const targetId = job._id || job.id;
+      const response = await api.delete(`/jobs/${targetId}`);
+      if (response.data?.success) {
+        showToast(response.data.message || `Job "${job.jobTitle}" deleted successfully.`, 'delete');
+        fetchJobs();
+      } else {
+        showToast(response.data?.message || 'Failed to delete job', 'error');
+      }
+    } catch (err) {
+      console.error('Delete job error:', err);
+      const serverMsg = err.response?.data?.message || 'Failed to delete job';
+      showToast(serverMsg, 'error');
+    } finally {
+      setDeleteConfirm({ isOpen: false, job: null, isLoading: false });
     }
   };
 
@@ -470,6 +414,41 @@ export const JobsModule = () => {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* Custom Modern Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirm.isOpen}
+        title="Confirm Delete"
+        message={
+          deleteConfirm.job
+            ? `Are you sure you want to delete job "${deleteConfirm.job.jobTitle} (${deleteConfirm.job.jobId})"? This action cannot be undone.`
+            : 'Are you sure you want to delete this job? This action cannot be undone.'
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={deleteConfirm.isLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, job: null, isLoading: false })}
+      />
+
+      {/* Modern Update Job Status Modal */}
+      <UpdateStatusModal
+        isOpen={statusModal.isOpen}
+        title="Update Job Status"
+        subtitle={
+          statusModal.job
+            ? `Change the status for ${statusModal.job.jobTitle || 'this job'}.`
+            : 'Change the job status.'
+        }
+        label="Job Status"
+        currentStatus={statusModal.job?.jobStatus || 'Active'}
+        options={JOB_STATUS_OPTIONS}
+        confirmText="Update Status"
+        cancelText="Cancel"
+        isLoading={statusModal.isLoading}
+        onConfirm={handleConfirmStatusUpdate}
+        onCancel={() => setStatusModal({ isOpen: false, job: null, isLoading: false })}
+      />
 
       {/* =========================================================================
           MODULE HEADER
@@ -665,7 +644,19 @@ export const JobsModule = () => {
 
                           {/* Job Status */}
                           <td>
-                            <span className={`job-status-pill ${getStatusClass(job.jobStatus)}`}>
+                            <span
+                              className={`job-status-pill clickable ${getStatusClass(job.jobStatus)}`}
+                              onClick={() => handleOpenStatusModal(job)}
+                              title="Click to update status"
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handleOpenStatusModal(job);
+                                }
+                              }}
+                            >
                               <span className="status-dot"></span>
                               {job.jobStatus}
                             </span>
@@ -682,29 +673,6 @@ export const JobsModule = () => {
                               >
                                 <Edit2 size={15} />
                               </button>
-
-                              {/* Quick Status Selector */}
-                              <select
-                                value={job.jobStatus}
-                                onChange={(e) => handleQuickStatusChange(job.id, e.target.value)}
-                                className="form-control-select"
-                                style={{
-                                  padding: '0.2rem 0.4rem',
-                                  fontSize: '0.75rem',
-                                  width: 'auto',
-                                  height: '30px',
-                                  borderRadius: '6px',
-                                }}
-                                title="Change Status"
-                              >
-                                <option value="Active">Active</option>
-                                <option value="Pending Approval">Pending</option>
-                                <option value="Draft">Draft</option>
-                                <option value="Paused">Paused</option>
-                                <option value="Closed">Closed</option>
-                                <option value="Filled">Filled</option>
-                                <option value="Expired">Expired</option>
-                              </select>
 
                               <button
                                 type="button"
@@ -727,9 +695,9 @@ export const JobsModule = () => {
             {/* Pagination Footer */}
             <div className="jobs-table-footer">
               <div>
-                Showing {filteredJobs.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
-                {Math.min(currentPage * itemsPerPage, filteredJobs.length)} of{' '}
-                {filteredJobs.length} Entries
+                Showing {jobs.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                    {Math.min(currentPage * itemsPerPage, totalJobs || jobs.length)} of{' '}
+                    {totalJobs || jobs.length} Entries
               </div>
 
               <div className="jobs-pagination-controls">
@@ -843,6 +811,7 @@ export const JobsModule = () => {
                     }}
                     className={`form-control-select ${jobErrors.department ? 'has-error' : ''}`}
                   >
+                    <option value="">Select Department</option>
                     <option value="Engineering & Technology">Engineering & Technology</option>
                     <option value="Human Resources & Talent">Human Resources & Talent</option>
                     <option value="Product & UX Design">Product & UX Design</option>
@@ -1015,7 +984,10 @@ export const JobsModule = () => {
                       min="0"
                       value={formData.minExperience}
                       onChange={(e) =>
-                        setFormData({ ...formData, minExperience: parseInt(e.target.value) || 0 })
+                        setFormData({
+                          ...formData,
+                          minExperience: e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0,
+                        })
                       }
                       placeholder="Min"
                       className="form-control-input"
@@ -1026,7 +998,10 @@ export const JobsModule = () => {
                       min="0"
                       value={formData.maxExperience}
                       onChange={(e) =>
-                        setFormData({ ...formData, maxExperience: parseInt(e.target.value) || 0 })
+                        setFormData({
+                          ...formData,
+                          maxExperience: e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0,
+                        })
                       }
                       placeholder="Max"
                       className="form-control-input"

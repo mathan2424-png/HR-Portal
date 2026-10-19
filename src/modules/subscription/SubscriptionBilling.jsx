@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Download,
   CreditCard,
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '../../components/common/Badge/Badge';
 import { Toast } from '../../components/common/Toast/Toast';
+import { SubscriptionApi } from '../../Api/SubscriptionApi';
 import './SubscriptionBilling.css';
 
 export const SubscriptionBilling = () => {
@@ -43,168 +44,8 @@ export const SubscriptionBilling = () => {
   // • Payment History: Past payment records.
   // • Invoices: Invoice number, date, amount and download option.
 
-  const [subscriptions, setSubscriptions] = useState([
-    {
-      id: 'SUB-101',
-      currentPlan: 'Enterprise Pro (Annual)',
-      tier: 'Enterprise tier • 10 Recruiter Seats',
-      status: 'Active',
-      startDate: '01-Nov-2025',
-      endDate: '31-Oct-2026',
-      renewalDate: '01-Nov-2026',
-      autoRenewal: true,
-      usage: {
-        percentUsed: 60,
-        mainLimit: '8 Jobs Left',
-        jobsUsed: 12,
-        jobsTotal: 20,
-        jobsRemaining: 8,
-        resumesUsed: 340,
-        resumesTotal: 500,
-        resumesRemaining: 160,
-        screeningsUsed: 166,
-        screeningsTotal: 250,
-        screeningsRemaining: 84,
-        seatsUsed: 7,
-        seatsTotal: 10,
-        seatsRemaining: 3,
-        alertsUsed: 215,
-        alertsTotal: 500,
-        alertsRemaining: 285,
-      },
-      addons: ['+100 Resume Views', '+50 AI Screenings'],
-      paymentHistory: {
-        amount: '₹4,80,000',
-        date: '01-Nov-2025',
-        status: 'Paid',
-      },
-      invoice: {
-        invoiceNo: 'INV-2025-001',
-        date: '01-Nov-2025',
-        amount: '₹4,80,000',
-      },
-    },
-    {
-      id: 'SUB-102',
-      currentPlan: 'Growth Team Tier (Annual)',
-      tier: 'Growth tier • 5 Recruiter Seats',
-      status: 'Active',
-      startDate: '15-Jan-2026',
-      endDate: '14-Jan-2027',
-      renewalDate: '15-Jan-2027',
-      autoRenewal: true,
-      usage: {
-        percentUsed: 45,
-        mainLimit: '8 Jobs Left',
-        jobsUsed: 7,
-        jobsTotal: 15,
-        jobsRemaining: 8,
-        resumesUsed: 140,
-        resumesTotal: 300,
-        resumesRemaining: 160,
-        screeningsUsed: 60,
-        screeningsTotal: 150,
-        screeningsRemaining: 90,
-        seatsUsed: 4,
-        seatsTotal: 5,
-        seatsRemaining: 1,
-        alertsUsed: 110,
-        alertsTotal: 250,
-        alertsRemaining: 140,
-      },
-      addons: ['+50 AI Screenings'],
-      paymentHistory: {
-        amount: '₹2,40,000',
-        date: '15-Jan-2026',
-        status: 'Paid',
-      },
-      invoice: {
-        invoiceNo: 'INV-2026-004',
-        date: '15-Jan-2026',
-        amount: '₹2,40,000',
-      },
-    },
-    {
-      id: 'SUB-103',
-      currentPlan: 'Starter Recruiter Pack',
-      tier: 'Starter tier • 2 Recruiter Seats',
-      status: 'Expired',
-      startDate: '01-Oct-2024',
-      endDate: '30-Sep-2025',
-      renewalDate: '01-Oct-2025',
-      autoRenewal: false,
-      usage: {
-        percentUsed: 100,
-        mainLimit: '0 Jobs Left',
-        jobsUsed: 5,
-        jobsTotal: 5,
-        jobsRemaining: 0,
-        resumesUsed: 100,
-        resumesTotal: 100,
-        resumesRemaining: 0,
-        screeningsUsed: 50,
-        screeningsTotal: 50,
-        screeningsRemaining: 0,
-        seatsUsed: 2,
-        seatsTotal: 2,
-        seatsRemaining: 0,
-        alertsUsed: 50,
-        alertsTotal: 50,
-        alertsRemaining: 0,
-      },
-      addons: [],
-      paymentHistory: {
-        amount: '₹95,000',
-        date: '01-Oct-2024',
-        status: 'Paid',
-      },
-      invoice: {
-        invoiceNo: 'INV-2024-089',
-        date: '01-Oct-2024',
-        amount: '₹95,000',
-      },
-    },
-    {
-      id: 'SUB-104',
-      currentPlan: 'Custom Talent Add-on Pack',
-      tier: 'Add-on Credits Booster',
-      status: 'Active',
-      startDate: '05-Dec-2025',
-      endDate: '04-Dec-2026',
-      renewalDate: '05-Dec-2026',
-      autoRenewal: false,
-      usage: {
-        percentUsed: 30,
-        mainLimit: '14 Jobs Left',
-        jobsUsed: 6,
-        jobsTotal: 20,
-        jobsRemaining: 14,
-        resumesUsed: 180,
-        resumesTotal: 600,
-        resumesRemaining: 420,
-        screeningsUsed: 90,
-        screeningsTotal: 300,
-        screeningsRemaining: 210,
-        seatsUsed: 5,
-        seatsTotal: 10,
-        seatsRemaining: 5,
-        alertsUsed: 95,
-        alertsTotal: 400,
-        alertsRemaining: 305,
-      },
-      addons: ['+200 Resumes Pack', '+100 Screening Pack'],
-      paymentHistory: {
-        amount: '₹65,000',
-        date: '05-Dec-2025',
-        status: 'Paid',
-      },
-      invoice: {
-        invoiceNo: 'INV-2025-055',
-        date: '05-Dec-2025',
-        amount: '₹65,000',
-      },
-    },
-  ]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Toast State: { message: string, type: 'success' | 'delete' | 'info' | 'warning' }
   const [toast, setToast] = useState(null);
@@ -212,7 +53,7 @@ export const SubscriptionBilling = () => {
   // In-Page View Management (Matching Company Details Pattern - No Popups!)
   // currentView: 'list' | 'upgrade' | 'renew' | 'view'
   const [currentView, setCurrentView] = useState('list');
-  const [selectedSubscription, setSelectedSubscription] = useState(subscriptions[0]);
+  const [selectedSubscription, setSelectedSubscription] = useState(null);
   const [selectedUpgradeTier, setSelectedUpgradeTier] = useState('Enterprise Elite (Annual)');
 
   // Search & Filter State
@@ -239,10 +80,26 @@ export const SubscriptionBilling = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleOpenView = (sub) => {
+  // Open View Details - Fetches full record by ID from backend API
+  const handleOpenView = async (sub) => {
+    const targetId = sub?.subscriptionId || sub?._id || sub?.id;
     setSelectedSubscription(sub);
     setCurrentView('view');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (targetId) {
+      try {
+        const res = await SubscriptionApi.getSubscriptionById(targetId);
+        if (res && res.success && res.data) {
+          setSelectedSubscription({
+            ...res.data,
+            id: res.data.subscriptionId || res.data._id || targetId,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch subscription details by ID:', err);
+      }
+    }
   };
 
   const handleBackToList = () => {
@@ -250,8 +107,35 @@ export const SubscriptionBilling = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Fetch subscriptions from backend API
+  const fetchSubscriptions = async () => {
+    try {
+      const res = await SubscriptionApi.getSubscriptions({
+        search: searchTerm,
+        status: statusFilter,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
+      if (res && res.success && res.data?.subscriptions?.length > 0) {
+        setSubscriptions(
+          res.data.subscriptions.map((s) => ({
+            ...s,
+            id: s.subscriptionId || s._id || s.id,
+          }))
+        );
+      }
+    } catch (err) {
+      console.error('Failed to load subscriptions from API:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubscriptions();
+  }, [searchTerm, statusFilter, currentPage]);
+
   // Toggle Auto-Renewal for a record
-  const handleToggleAutoRenewal = (subId) => {
+  const handleToggleAutoRenewal = async (subId) => {
+    // Optimistic UI update
     setSubscriptions((prev) =>
       prev.map((sub) => {
         if (sub.id === subId) {
@@ -267,6 +151,12 @@ export const SubscriptionBilling = () => {
         return sub;
       })
     );
+
+    try {
+      await SubscriptionApi.toggleAutoRenewal(subId);
+    } catch (err) {
+      console.error('toggleAutoRenewal error:', err);
+    }
   };
 
   // Download Invoice PDF
@@ -277,11 +167,26 @@ export const SubscriptionBilling = () => {
     );
   };
 
-  // Confirm Upgrade
-  const handleConfirmUpgrade = (tierName) => {
-    setSubscriptions((prev) =>
-      prev.map((s) => (s.id === selectedSubscription?.id ? { ...s, currentPlan: tierName } : s))
-    );
+  // Confirm Upgrade via Backend API
+  const handleConfirmUpgrade = async (tierName) => {
+    try {
+      const targetId = selectedSubscription?.subscriptionId || selectedSubscription?._id || selectedSubscription?.id;
+      const res = await SubscriptionApi.upgradePlan({
+        subscriptionId: targetId,
+        tierName,
+      });
+      if (res && res.success && res.data) {
+        setSubscriptions((prev) =>
+          prev.map((s) =>
+            s.id === targetId || s.subscriptionId === targetId
+              ? { ...res.data, id: res.data.subscriptionId || res.data._id || s.id }
+              : s
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Failed to upgrade subscription:', err);
+    }
     handleBackToList();
     triggerToast(
       `Subscription plan upgraded to ${tierName} successfully!`,
@@ -289,8 +194,25 @@ export const SubscriptionBilling = () => {
     );
   };
 
-  // Confirm Renewal
-  const handleConfirmRenewal = () => {
+  // Confirm Renewal via Backend API
+  const handleConfirmRenewal = async () => {
+    try {
+      const targetId = selectedSubscription?.subscriptionId || selectedSubscription?._id || selectedSubscription?.id;
+      const res = await SubscriptionApi.renewPlan({
+        subscriptionId: targetId,
+      });
+      if (res && res.success && res.data) {
+        setSubscriptions((prev) =>
+          prev.map((s) =>
+            s.id === targetId || s.subscriptionId === targetId
+              ? { ...res.data, id: res.data.subscriptionId || res.data._id || s.id }
+              : s
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Failed to renew subscription:', err);
+    }
     handleBackToList();
     triggerToast(
       `Subscription renewed successfully until 31-Oct-2027!`,

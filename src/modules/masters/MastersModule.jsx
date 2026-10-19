@@ -1,32 +1,20 @@
 import { api } from '../../Api/Api';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Search,
-  CheckCircle2,
-  RotateCcw,
   Edit2,
   Trash2,
   X,
-  Check,
   ChevronLeft,
   ChevronRight,
   Filter,
   ArrowLeft,
 } from 'lucide-react';
 import { Toast } from '../../components/common/Toast/Toast';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { FieldError } from '../../components/common/FieldError/FieldError';
-import {
-  validateName,
-  validateRequired,
-  validateNumber,
-  validatePhone,
-  sanitizeNameInput,
-  sanitizeNumberInput,
-  sanitizePhoneInput,
-  sanitizeDecimalInput,
-} from '../../utils/validation';
 import './MastersModule.css';
 
 const DEFAULT_CATEGORIES = {
@@ -34,143 +22,47 @@ const DEFAULT_CATEGORIES = {
     id: 'job-categories',
     label: 'Job Categories',
     singular: 'Job Category',
-    items: [
-      { id: 'JC-01', title: 'Software Engineering', startDate: '2026-01-15', status: 'Active' },
-      { id: 'JC-02', title: 'Data Science & AI', startDate: '2026-02-01', status: 'Active' },
-      { id: 'JC-03', title: 'Product Management', startDate: '2026-02-10', status: 'Active' },
-      { id: 'JC-04', title: 'Human Resources', startDate: '2026-01-05', status: 'Active' },
-      { id: 'JC-05', title: 'Sales & BD', startDate: '2026-03-01', status: 'Active' },
-      { id: 'JC-06', title: 'Marketing & Growth', startDate: '2026-01-20', status: 'Active' },
-      { id: 'JC-07', title: 'Healthcare', startDate: '2026-02-15', status: 'Active' },
-      { id: 'JC-08', title: 'Finance & Accounting', startDate: '2026-01-10', status: 'Active' },
-      { id: 'JC-09', title: 'Customer Success', startDate: '2026-03-12', status: 'Active' },
-      { id: 'JC-10', title: 'Design & UX', startDate: '2026-02-18', status: 'Active' },
-    ],
   },
   'skills': {
     id: 'skills',
     label: 'Skills & Proficiencies',
     singular: 'Skill',
-    items: [
-      { id: 'SK-01', title: 'React.js', startDate: '2026-01-10', status: 'Active' },
-      { id: 'SK-02', title: 'Node.js', startDate: '2026-01-12', status: 'Active' },
-      { id: 'SK-03', title: 'Python', startDate: '2026-01-15', status: 'Active' },
-      { id: 'SK-04', title: 'Java', startDate: '2026-01-08', status: 'Active' },
-      { id: 'SK-05', title: 'SQL & Database', startDate: '2026-01-05', status: 'Active' },
-      { id: 'SK-06', title: 'Cloud / AWS', startDate: '2026-01-20', status: 'Active' },
-      { id: 'SK-07', title: 'UI/UX Design', startDate: '2026-02-01', status: 'Active' },
-      { id: 'SK-08', title: 'DevOps & CI/CD', startDate: '2026-02-05', status: 'Active' },
-      { id: 'SK-09', title: 'Machine Learning', startDate: '2026-02-12', status: 'Active' },
-      { id: 'SK-10', title: 'Agile / Scrum', startDate: '2026-01-02', status: 'Active' },
-      { id: 'SK-11', title: 'Product Strategy', startDate: '2026-02-15', status: 'Active' },
-      { id: 'SK-12', title: 'Project Management', startDate: '2026-01-18', status: 'Active' },
-      { id: 'SK-13', title: 'Digital Marketing', startDate: '2026-02-22', status: 'Active' },
-    ],
   },
   'industries': {
     id: 'industries',
     label: 'Industries',
     singular: 'Industry',
-    items: [
-      { id: 'IND-01', title: 'Information Technology', startDate: '2026-01-01', status: 'Active' },
-      { id: 'IND-02', title: 'Financial Services / Fintech', startDate: '2026-01-15', status: 'Active' },
-      { id: 'IND-03', title: 'Healthcare & Life Sciences', startDate: '2026-02-01', status: 'Active' },
-      { id: 'IND-04', title: 'E-Commerce & Retail', startDate: '2026-02-10', status: 'Active' },
-      { id: 'IND-05', title: 'Manufacturing', startDate: '2026-01-20', status: 'Active' },
-      { id: 'IND-06', title: 'Education / EdTech', startDate: '2026-02-20', status: 'Active' },
-      { id: 'IND-07', title: 'Telecommunications', startDate: '2026-03-01', status: 'Active' },
-      { id: 'IND-08', title: 'Real Estate & Construction', startDate: '2026-03-05', status: 'Active' },
-      { id: 'IND-09', title: 'Logistics & Supply Chain', startDate: '2026-03-10', status: 'Active' },
-    ],
   },
   'locations': {
     id: 'locations',
     label: 'Primary Job Locations',
     singular: 'Location',
-    items: [
-      { id: 'LOC-01', title: 'Chennai', status: 'Active' },
-      { id: 'LOC-02', title: 'Coimbatore', status: 'Active' },
-      { id: 'LOC-03', title: 'Madurai', status: 'Active' },
-      { id: 'LOC-04', title: 'Tiruchirappalli', status: 'Active' },
-      { id: 'LOC-05', title: 'Salem', status: 'Active' },
-      { id: 'LOC-06', title: 'Tirunelveli', status: 'Active' },
-      { id: 'LOC-07', title: 'Bengaluru', status: 'Active' },
-      { id: 'LOC-08', title: 'Hyderabad', status: 'Active' },
-    ],
   },
   'employment-types': {
     id: 'employment-types',
     label: 'Employment Types',
     singular: 'Employment Type',
-    items: [
-      { id: 'ET-01', title: 'Full Time', status: 'Active' },
-      { id: 'ET-02', title: 'Part Time', status: 'Active' },
-      { id: 'ET-03', title: 'Contract', status: 'Active' },
-      { id: 'ET-04', title: 'Internship', status: 'Active' },
-      { id: 'ET-05', title: 'Freelance', status: 'Active' },
-    ],
   },
   'work-modes': {
     id: 'work-modes',
     label: 'Work Modes',
     singular: 'Work Mode',
-    items: [
-      { id: 'WM-01', title: 'On-Site', status: 'Active' },
-      { id: 'WM-02', title: 'Hybrid', status: 'Active' },
-      { id: 'WM-03', title: 'Remote', status: 'Active' },
-      { id: 'WM-04', title: 'Flexible', status: 'Active' },
-    ],
   },
   'qualifications': {
     id: 'qualifications',
     label: 'Academic Qualifications',
     singular: 'Qualification',
-    items: [
-      { id: 'AQ-01', title: 'B.E / B.Tech', startDate: '2026-01-01', status: 'Active' },
-      { id: 'AQ-02', title: 'M.E / M.Tech', startDate: '2026-01-01', status: 'Active' },
-      { id: 'AQ-03', title: 'BCA / MCA', startDate: '2026-01-10', status: 'Active' },
-      { id: 'AQ-04', title: 'B.Sc / M.Sc', startDate: '2026-01-10', status: 'Active' },
-      { id: 'AQ-05', title: 'B.Com / M.Com', startDate: '2026-01-15', status: 'Active' },
-      { id: 'AQ-06', title: 'MBA / PGDM', startDate: '2026-01-15', status: 'Active' },
-    ],
   },
 };
 
-const normalizeData = (raw) => {
-  if (!raw) return DEFAULT_CATEGORIES;
-  const result = {};
-  for (const key of Object.keys(DEFAULT_CATEGORIES)) {
-    const defaultCat = DEFAULT_CATEGORIES[key];
-    const rawCat = raw[key] || defaultCat;
-    if (rawCat.items && Array.isArray(rawCat.items)) {
-      result[key] = {
-        ...defaultCat,
-        ...rawCat,
-        items: rawCat.items.map((item, idx) => ({
-          id: item.id || `${key.substring(0, 2).toUpperCase()}-${idx + 1}`,
-          title: typeof item === 'string' ? item : item.title || 'Untitled',
-          startDate:
-            item.startDate ||
-            (defaultCat.items && defaultCat.items[idx]?.startDate) ||
-            '2026-01-01',
-          status: item.status || 'Active',
-        })),
-      };
-    } else if (rawCat.tags && Array.isArray(rawCat.tags)) {
-      result[key] = {
-        ...defaultCat,
-        items: rawCat.tags.map((t, idx) => ({
-          id: `${key.substring(0, 2).toUpperCase()}-${idx + 1}`,
-          title: typeof t === 'string' ? t : t.title || 'Untitled',
-          startDate: '2026-01-01',
-          status: 'Active',
-        })),
-      };
-    } else {
-      result[key] = defaultCat;
-    }
-  }
-  return result;
+const TAB_ENDPOINTS = {
+  'job-categories': '/job-categories',
+  'skills': '/skills',
+  'industries': '/industries',
+  'locations': '/job-locations',
+  'employment-types': '/employment-types',
+  'work-modes': '/work-modes',
+  'qualifications': '/academic-qualifications',
 };
 
 const formatDisplayDate = (d) => {
@@ -198,40 +90,37 @@ const formatDisplayDate = (d) => {
         year: 'numeric',
       });
     }
-  } catch { }
+  } catch {}
   return d;
 };
 
-
-const TAB_ENDPOINTS = {
-  'job-categories': '/job-categories',
-  'skills': '/skills',
-  'industries': '/industries',
-  'locations': '/job-locations',
-  'employment-types': '/employment-types',
-  'work-modes': '/work-modes',
-  'qualifications': '/academic-qualifications',
-};
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('hr_portal_token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+const formatItem = (it) => ({
+  id: it._id || it.id,
+  _id: it._id || it.id,
+  title: it.name || it.title || 'Untitled',
+  name: it.name || it.title || 'Untitled',
+  status: it.status || (it.isActive === false ? 'Inactive' : 'Active'),
+  startDate: it.startDate || (it.createdAt ? it.createdAt.slice(0, 10) : '2026-01-01'),
+  createdAt: it.createdAt,
+});
 
 const extractItems = (data) => {
   if (!data) return [];
-  if (Array.isArray(data)) return data;
-  const arrayField = Object.values(data).find((v) => Array.isArray(v));
-  if (arrayField) {
-    return arrayField.map((it) => ({
-      id: it._id || it.id,
-      title: it.name || it.title || 'Untitled',
-      status: it.status || (it.isActive === false ? 'Inactive' : 'Active'),
-      startDate: it.startDate || (it.createdAt ? it.createdAt.slice(0, 10) : '2026-01-01'),
-    }));
+  if (Array.isArray(data)) return data.map(formatItem);
+  const arrayField =
+    data.records ||
+    data.items ||
+    data.categories ||
+    data.skills ||
+    data.industries ||
+    data.locations ||
+    data.employmentTypes ||
+    data.workModes ||
+    data.qualifications ||
+    Object.values(data).find((v) => Array.isArray(v));
+
+  if (Array.isArray(arrayField)) {
+    return arrayField.map(formatItem);
   }
   return [];
 };
@@ -243,45 +132,27 @@ export const MastersModule = () => {
     tabParam && DEFAULT_CATEGORIES[tabParam] ? tabParam : 'job-categories';
 
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [categoryData, setCategoryData] = useState(() => {
-    const saved = localStorage.getItem('hr_admin_master_taxonomy_v3');
-    if (saved) {
-      try {
-        return normalizeData(JSON.parse(saved));
-      } catch {
-        return DEFAULT_CATEGORIES;
-      }
-    }
-    // Check old storage keys for graceful migration
-    const oldSavedV2 = localStorage.getItem('hr_admin_master_taxonomy_v2');
-    if (oldSavedV2) {
-      try {
-        return normalizeData(JSON.parse(oldSavedV2));
-      } catch {
-        return DEFAULT_CATEGORIES;
-      }
-    }
-    const oldSaved = localStorage.getItem('hr_admin_master_taxonomy');
-    if (oldSaved) {
-      try {
-        return normalizeData(JSON.parse(oldSaved));
-      } catch {
-        return DEFAULT_CATEGORIES;
-      }
-    }
-    return DEFAULT_CATEGORIES;
-  });
+  const [items, setItems] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [toast, setToast] = useState(null); // { message: string, type: 'success' | 'delete' | 'warning' | 'info' }
+  const [toast, setToast] = useState(null);
 
-  // Pagination
+  // Delete Confirmation Modal State
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    item: null,
+    isLoading: false,
+  });
+
+  // Pagination (Matching Company Details Pattern - 10 per page)
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   // In-Page View State (Matching Company Details Pattern - No Popups!)
-  // currentView: 'list' | 'form'
   const [currentView, setCurrentView] = useState('list');
   const [editingItem, setEditingItem] = useState(null);
   const [formErrors, setFormErrors] = useState({});
@@ -291,8 +162,14 @@ export const MastersModule = () => {
     status: 'Active',
   });
 
+  const activeCategory =
+    DEFAULT_CATEGORIES[activeTab] || DEFAULT_CATEGORIES['job-categories'];
 
-  // Sync with URL query parameter when it changes
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
+
+  // Sync with URL query parameter
   useEffect(() => {
     if (tabParam && DEFAULT_CATEGORIES[tabParam] && tabParam !== activeTab) {
       setActiveTab(tabParam);
@@ -304,50 +181,60 @@ export const MastersModule = () => {
     }
   }, [tabParam, activeTab]);
 
-  // Fetch real master records from backend API using centralized api client
-  useEffect(() => {
-    const fetchMasterData = async () => {
-      const endpoint = TAB_ENDPOINTS[activeTab];
-      if (!endpoint) return;
+  // Live Server-Side Fetch with Search, Filter & Pagination (debounced 300ms)
+  const fetchMasterData = async (
+    page = currentPage,
+    search = searchTerm,
+    status = statusFilter,
+    tab = activeTab
+  ) => {
+    const endpoint = TAB_ENDPOINTS[tab];
+    if (!endpoint) return;
 
-      try {
-        const response = await api.get(endpoint, { params: { all: true } });
-        const result = response.data;
-        if (result.success && result.data) {
-          const items = extractItems(result.data);
-          if (items.length > 0) {
-            setCategoryData((prev) => ({
-              ...prev,
-              [activeTab]: {
-                ...prev[activeTab],
-                items,
-              },
-            }));
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching master data:', err);
+    try {
+      setIsLoading(true);
+      const cleanParams = {
+        page,
+        limit: itemsPerPage,
+      };
+      if (search && search.trim()) {
+        cleanParams.search = search.trim();
       }
-    };
+      if (status && status !== 'ALL' && status !== 'All') {
+        cleanParams.status = status;
+      }
 
-    fetchMasterData();
-  }, [activeTab]);
-
-
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem(
-      'hr_admin_master_taxonomy_v3',
-      JSON.stringify(categoryData)
-    );
-  }, [categoryData]);
-
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
+      const response = await api.get(endpoint, { params: cleanParams });
+      const result = response.data;
+      if (result && result.success) {
+        const list = extractItems(result.data);
+        setItems(list);
+        setTotalPages(result.data?.pagination?.totalPages || 1);
+        setTotalRecords(
+          typeof result.data?.pagination?.total === 'number'
+            ? result.data.pagination.total
+            : typeof result.data?.total === 'number'
+            ? result.data.total
+            : list.length
+        );
+      }
+    } catch (err) {
+      console.error('Error fetching master data:', err);
+      const serverMsg =
+        err.response?.data?.message || 'Failed to fetch records from backend';
+      showToast(serverMsg, 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const activeCategory =
-    categoryData[activeTab] || categoryData['job-categories'];
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchMasterData(currentPage, searchTerm, statusFilter, activeTab);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [activeTab, currentPage, searchTerm, statusFilter]);
 
   const handleTabChange = (key) => {
     setActiveTab(key);
@@ -392,7 +279,7 @@ export const MastersModule = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Save Item (Add or Edit)
+  // Save Item (Add or Edit) via Real Backend API
   const handleSaveModal = async (e) => {
     e.preventDefault();
     const errors = {};
@@ -408,7 +295,6 @@ export const MastersModule = () => {
     }
 
     setFormErrors({});
-
     const endpoint = TAB_ENDPOINTS[activeTab];
     if (!endpoint) return;
 
@@ -416,134 +302,92 @@ export const MastersModule = () => {
       if (editingItem) {
         // Real Backend PUT API Call
         const response = await api.put(`${endpoint}/${editingItem.id}`, {
-            title: trimmedTitle,
-            name: trimmedTitle,
-            status: modalForm.status,
-            isActive: modalForm.status === 'Active',
-          });
+          title: trimmedTitle,
+          name: trimmedTitle,
+          status: modalForm.status,
+          isActive: modalForm.status === 'Active',
+        });
         const result = response.data;
-        if (!res.ok || !result.success) {
+        if (!result || !result.success) {
           showToast(result.message || 'Failed to update', 'error');
           return;
         }
-
-        const updated = activeCategory.items.map((it) =>
-          it.id === editingItem.id
-            ? {
-              ...it,
-              title: trimmedTitle,
-              status: modalForm.status,
-            }
-            : it
-        );
-        setCategoryData((prev) => ({
-          ...prev,
-          [activeTab]: {
-            ...prev[activeTab],
-            items: updated,
-          },
-        }));
         showToast(result.message || `${activeCategory.singular} updated successfully!`, 'success');
       } else {
         // Real Backend POST API Call
         const response = await api.post(endpoint, {
-            title: trimmedTitle,
-            name: trimmedTitle,
-            status: modalForm.status,
-            isActive: modalForm.status === 'Active',
-          });
+          title: trimmedTitle,
+          name: trimmedTitle,
+          status: modalForm.status,
+          isActive: modalForm.status === 'Active',
+        });
         const result = response.data;
-        if (!res.ok || !result.success) {
+        if (!result || !result.success) {
           showToast(result.message || 'Failed to create', 'error');
           return;
         }
-
-        const createdData = result.data || {};
-        const newItem = {
-          id: createdData.id || createdData._id || `ITEM-${Date.now()}`,
-          title: createdData.title || createdData.name || trimmedTitle,
-          status: modalForm.status,
-          startDate: createdData.startDate || new Date().toISOString().split('T')[0],
-        };
-
-        setCategoryData((prev) => ({
-          ...prev,
-          [activeTab]: {
-            ...prev[activeTab],
-            items: [newItem, ...activeCategory.items],
-          },
-        }));
         showToast(result.message || `${activeCategory.singular} created successfully!`, 'success');
       }
 
       handleBackToList();
+      fetchMasterData(currentPage, searchTerm, statusFilter, activeTab);
     } catch (err) {
       console.error('API Error:', err);
-      showToast('Backend server connection error', 'error');
+      const serverMsg =
+        err.response?.data?.message ||
+        (typeof err.response?.data?.errors === 'string'
+          ? err.response.data.errors
+          : err.response?.data?.errors
+          ? Object.values(err.response.data.errors)[0]
+          : null) ||
+        err.response?.data?.error ||
+        err.message ||
+        'Backend server connection error';
+      showToast(serverMsg, 'error');
     }
   };
 
-  // Delete Item
-  const handleDelete = async (item) => {
-    if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
-      const endpoint = TAB_ENDPOINTS[activeTab];
-      try {
-        const response = await api.delete(`${endpoint}/${item.id}`);
-        const result = response.data;
-        if (!res.ok || !result.success) {
-          showToast(result.message || 'Failed to delete', 'error');
-          return;
-        }
-
-        const updated = activeCategory.items.filter((it) => it.id !== item.id);
-        setCategoryData((prev) => ({
-          ...prev,
-          [activeTab]: {
-            ...prev[activeTab],
-            items: updated,
-          },
-        }));
-        showToast(result.message || `${activeCategory.singular} "${item.title}" deleted successfully!`, 'delete');
-      } catch (err) {
-        console.error('Delete error:', err);
-        showToast('Backend server connection error', 'error');
-      }
-    }
-  };
-
-  // Reset to Defaults
-  const handleResetDefaults = () => {
-    if (
-      window.confirm(
-        `Reset all categories to standard system defaults?`
-      )
-    ) {
-      setCategoryData(DEFAULT_CATEGORIES);
-      localStorage.removeItem('hr_admin_master_taxonomy_v2');
-      localStorage.removeItem('hr_admin_master_taxonomy');
-      showToast('Reset to system default Module!', 'info');
-      setCurrentPage(1);
-    }
-  };
-
-  // Filtered Items
-  const filteredItems = useMemo(() => {
-    return activeCategory.items.filter((item) => {
-      const matchesSearch = item.title
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase().trim());
-      const matchesStatus =
-        statusFilter === 'ALL' || item.status === statusFilter;
-      return matchesSearch && matchesStatus;
+  // Open Delete Confirmation Modal
+  const handleDelete = (item) => {
+    setDeleteConfirm({
+      isOpen: true,
+      item,
+      isLoading: false,
     });
-  }, [activeCategory.items, searchTerm, statusFilter]);
+  };
 
-  // Paginated Items
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage) || 1;
-  const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredItems.slice(start, start + itemsPerPage);
-  }, [filteredItems, currentPage, itemsPerPage]);
+  // Confirm and Execute Delete via Real Backend DELETE API Call
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.item) return;
+    const item = deleteConfirm.item;
+    setDeleteConfirm((prev) => ({ ...prev, isLoading: true }));
+    const endpoint = TAB_ENDPOINTS[activeTab];
+    try {
+      const response = await api.delete(`${endpoint}/${item.id}`);
+      const result = response.data;
+      if (!result || !result.success) {
+        showToast(result.message || 'Failed to delete', 'error');
+        return;
+      }
+      showToast(result.message || `${activeCategory.singular} "${item.title}" deleted successfully!`, 'delete');
+      fetchMasterData(currentPage, searchTerm, statusFilter, activeTab);
+    } catch (err) {
+      console.error('Delete error:', err);
+      const serverMsg =
+        err.response?.data?.message ||
+        (typeof err.response?.data?.errors === 'string'
+          ? err.response.data.errors
+          : err.response?.data?.errors
+          ? Object.values(err.response.data.errors)[0]
+          : null) ||
+        err.response?.data?.error ||
+        err.message ||
+        'Backend server connection error';
+      showToast(serverMsg, 'error');
+    } finally {
+      setDeleteConfirm({ isOpen: false, item: null, isLoading: false });
+    }
+  };
 
   return (
     <div className="masters-page-container animate-fade-in">
@@ -557,7 +401,23 @@ export const MastersModule = () => {
         />
       )}
 
-      {/* 1. Page Header (Matching Company Details Pattern) */}
+      {/* Custom Modern Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={deleteConfirm.isOpen}
+        title="Confirm Delete"
+        message={
+          deleteConfirm.item
+            ? `Are you sure you want to delete ${activeCategory.singular.toLowerCase()} "${deleteConfirm.item.title}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this item? This action cannot be undone.'
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={deleteConfirm.isLoading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, item: null, isLoading: false })}
+      />
+
+      {/* 1. Page Header */}
       <div className="masters-page-header">
         <h1 className="masters-page-title">
           {currentView === 'list'
@@ -569,16 +429,6 @@ export const MastersModule = () => {
 
         {currentView === 'list' ? (
           <div className="masters-header-actions">
-            <button
-              type="button"
-              className="btn-reset-defaults"
-              onClick={handleResetDefaults}
-              title="Reset to system default records"
-            >
-              <RotateCcw size={14} />
-              <span>Reset Defaults</span>
-            </button>
-
             <button
               type="button"
               className="btn-add-master"
@@ -623,7 +473,10 @@ export const MastersModule = () => {
                   <button
                     type="button"
                     className="masters-search-clear"
-                    onClick={() => setSearchTerm('')}
+                    onClick={() => {
+                      setSearchTerm('');
+                      setCurrentPage(1);
+                    }}
                   >
                     <X size={14} />
                   </button>
@@ -649,7 +502,7 @@ export const MastersModule = () => {
               </div>
             </div>
 
-            {/* 3. Modern Data Table: Strictly S.NO | TITLE | START DATE | STATUS | ACTION */}
+            {/* 3. Modern Data Table: Strictly S.NO | TITLE | CREATED DATE | STATUS | ACTION */}
             <div className="masters-table-container">
               <table className="masters-table">
                 <thead>
@@ -662,8 +515,14 @@ export const MastersModule = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedItems.length > 0 ? (
-                    paginatedItems.map((item, index) => {
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={5} className="masters-empty-cell">
+                        Loading {activeCategory.label.toLowerCase()}...
+                      </td>
+                    </tr>
+                  ) : items.length > 0 ? (
+                    items.map((item, index) => {
                       const serialNumber =
                         (currentPage - 1) * itemsPerPage + index + 1;
                       return (
@@ -694,8 +553,9 @@ export const MastersModule = () => {
                           {/* 4. STATUS */}
                           <td style={{ textAlign: 'center' }}>
                             <span
-                              className={`master-status-badge ${item.status === 'Active' ? 'active' : 'inactive'
-                                }`}
+                              className={`master-status-badge ${
+                                item.status === 'Active' ? 'active' : 'inactive'
+                              }`}
                             >
                               <span className="master-status-dot" />
                               <span>{item.status}</span>
@@ -740,12 +600,12 @@ export const MastersModule = () => {
             </div>
 
             {/* Pagination Footer */}
-            {filteredItems.length > itemsPerPage && (
+            {totalRecords > itemsPerPage && (
               <div className="masters-pagination-row">
                 <span className="masters-pagination-info">
                   Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-                  {Math.min(currentPage * itemsPerPage, filteredItems.length)} of{' '}
-                  {filteredItems.length} records
+                  {Math.min(currentPage * itemsPerPage, totalRecords)} of{' '}
+                  {totalRecords} records
                 </span>
 
                 <div className="masters-pagination-controls">
@@ -765,8 +625,9 @@ export const MastersModule = () => {
                         <button
                           key={page}
                           type="button"
-                          className={`btn-page-num ${currentPage === page ? 'active' : ''
-                            }`}
+                          className={`btn-page-num ${
+                            currentPage === page ? 'active' : ''
+                          }`}
                           onClick={() => setCurrentPage(page)}
                         >
                           {page}
@@ -792,7 +653,7 @@ export const MastersModule = () => {
           </>
         ) : (
           /* =========================================================================
-             VIEW 2: IN-PAGE EDIT / ADD FORM (Table is hidden, No Popups!)
+             VIEW 2: IN-PAGE EDIT / ADD FORM
              ========================================================================= */
           <form onSubmit={handleSaveModal} className="inpage-company-form animate-fade-in" noValidate>
             <div className="inpage-section-box">
@@ -820,7 +681,9 @@ export const MastersModule = () => {
                 </div>
 
                 <div className="form-field-group">
-                  <label className="modal-field-label">Status</label>
+                  <label className="modal-field-label">
+                    Status <span className="field-required">*</span>
+                  </label>
                   <select
                     className="modal-field-select"
                     value={modalForm.status}
@@ -835,17 +698,16 @@ export const MastersModule = () => {
               </div>
             </div>
 
-            <div className="inpage-form-actions">
+            <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-modal-cancel"
+                className="btn-cancel"
                 onClick={handleBackToList}
               >
                 Cancel
               </button>
-              <button type="submit" className="btn-modal-submit">
-                <Check size={16} />
-                <span>{editingItem ? `Update ${activeCategory.singular}` : `Save ${activeCategory.singular}`}</span>
+              <button type="submit" className="btn-save">
+                {editingItem ? 'Update' : 'Save'} {activeCategory.singular}
               </button>
             </div>
           </form>
@@ -854,3 +716,5 @@ export const MastersModule = () => {
     </div>
   );
 };
+
+export default MastersModule;

@@ -167,8 +167,7 @@
 .companies-table-container {
   width: 100%;
   border-radius: 8px;
-  overflow-x: auto;
-  overflow-y: hidden !important;
+  overflow: visible;
   border: 1px solid var(--border-color);
 }
 
@@ -313,6 +312,10 @@
   transition: all var(--transition-fast);
 }
 
+.location-cell-wrapper:hover {
+  z-index: 1000;
+}
+
 .location-cell-wrapper:hover .location-pill {
   background-color: #eff6ff;
   color: var(--primary);
@@ -332,12 +335,14 @@
   white-space: normal;
   width: max-content;
   max-width: 270px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.25), 0 4px 6px -4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
   transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
-  z-index: 100;
+  z-index: 9999;
+  min-width: 200px;
+  word-break: break-word;
 }
 
 .location-cell-wrapper:hover .location-tooltip {
@@ -1155,7 +1160,7 @@
   background: #ffffff;
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   margin-bottom: 1.5rem;
 }
@@ -1222,7 +1227,7 @@
 }
 
 .main-company-table-container {
-  overflow-y: hidden !important;
+  overflow: visible !important;
   max-height: none !important;
   height: auto !important;
   border: none !important;

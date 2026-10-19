@@ -614,7 +614,7 @@ export const CompanyProfile = () => {
               </div>
             </div>
 
-            <div className="companies-table-container main-company-table-container" style={{ overflowY: 'hidden', overflowX: 'auto', maxHeight: 'none' }}>
+            <div className="companies-table-container main-company-table-container" style={{ overflow: 'visible', maxHeight: 'none' }}>
               <table className="companies-table">
                 <thead>
                   <tr>
@@ -688,7 +688,7 @@ export const CompanyProfile = () => {
 
                               <div className="location-tooltip">
                                 <div className="tooltip-title">{company.companyName}</div>
-                                <div className="tooltip-address">{company.registeredAddress}</div>
+                                <div className="tooltip-address">{company.registeredAddress || company.address || 'Address on file'}</div>
                                 <div className="tooltip-meta">
                                   <span>{company.city}, {company.state}</span>
                                   {company.pincode && <span className="tooltip-pin">PIN: {company.pincode}</span>}

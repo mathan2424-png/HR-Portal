@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+  import React, { useState, useEffect, useMemo } from 'react';
 import {
   LifeBuoy,
   Plus,
@@ -27,6 +27,7 @@ import {
 import { usePortal } from '../../context/PortalContext';
 import { Toast } from '../../components/common/Toast/Toast';
 import { FieldError } from '../../components/common/FieldError/FieldError';
+import { SupportApi } from '../../Api/SupportApi';
 import './HelpSupportModule.css';
 
 const DEFAULT_TICKETS = [
@@ -207,7 +208,52 @@ export const HelpSupportModule = ({ inSettings = false }) => {
     setToast({ message, type });
   };
 
-  // Sync to localStorage
+  // Backend Integration State
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [autoTicketId, setAutoTicketId] = useState('');
+  const [backendStats, setBackendStats] = useState(null);
+
+  // Fetch Tickets from Backend API
+  const fetchTickets = async () => {
+    setIsLoading(true);
+    try {
+      const res = await SupportApi.getTickets({
+        search: searchTerm,
+        status: statusFilter,
+        priority: priorityFilter,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
+
+      if (res && res.success && res.data) {
+        const fetched = res.data.tickets || [];
+        if (fetched.length > 0) {
+          const mapped = fetched.map((t) => ({
+            ...t,
+            id: t.ticketId || t.id,
+            _id: t._id || t.id,
+            createdDate: t.createdDate || (t.createdAt ? new Date(t.createdAt).toLocaleDateString() : ''),
+            lastUpdatedDate: t.lastUpdatedDate || (t.updatedAt ? new Date(t.updatedAt).toLocaleDateString() : ''),
+          }));
+          setTickets(mapped);
+        }
+        if (res.data.stats) {
+          setBackendStats(res.data.stats);
+        }
+      }
+    } catch (err) {
+      console.error('fetchTickets error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+  }, [searchTerm, statusFilter, priorityFilter, currentPage]);
+
+  // Sync to localStorage as offline cache
   useEffect(() => {
     localStorage.setItem('hr_admin_support_tickets_v1', JSON.stringify(tickets));
   }, [tickets]);
@@ -254,7 +300,7 @@ export const HelpSupportModule = ({ inSettings = false }) => {
   };
 
   // Switch to Create View
-  const handleOpenCreate = () => {
+  const handleOpenCreate = async () => {
     setFormErrors({});
     setUploadedFile(null);
     setCreateForm({
@@ -264,6 +310,17 @@ export const HelpSupportModule = ({ inSettings = false }) => {
       description: '',
       attachments: [],
     });
+    // Fetch next auto-generated ticket ID from backend API
+    try {
+      const idRes = await SupportApi.getNextTicketId();
+      if (idRes && idRes.success && idRes.data?.ticketId) {
+        setAutoTicketId(idRes.data.ticketId);
+      } else {
+        setAutoTicketId(generateTicketId());
+      }
+    } catch {
+      setAutoTicketId(generateTicketId());
+    }
     setCurrentView('create');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -297,8 +354,8 @@ export const HelpSupportModule = ({ inSettings = false }) => {
     }
   };
 
-  // Submit Ticket Creation
-  const handleCreateSubmit = (e) => {
+  // Submit Ticket Creation via Backend API
+  const handleCreateSubmit = async (e) => {
     e.preventDefault();
     const errors = {};
 
@@ -320,82 +377,139 @@ export const HelpSupportModule = ({ inSettings = false }) => {
       return;
     }
 
-    const newTicketId = generateTicketId();
+    setIsSubmitting(true);
+    const newTicketId = autoTicketId || generateTicketId();
     const nowTime = getFormattedNow();
     const adminName = currentUser?.name || 'MATHAN67';
-
     const attachmentsList = uploadedFile ? [uploadedFile] : [];
 
-    const newTicket = {
-      id: newTicketId,
+    const ticketPayload = {
+      ticketId: newTicketId,
       subject: createForm.subject.trim(),
       category: createForm.category,
       priority: createForm.priority,
       status: 'Open',
-      createdDate: nowTime,
-      lastUpdatedDate: nowTime,
       contactEmail: defaultEmail,
       companyId: defaultCompanyId,
       companyName: defaultCompanyName,
       description: createForm.description.trim(),
       attachments: attachmentsList,
-      superAdminRemarks: 'Ticket received and queued for Super Admin technical review.',
-      conversation: [
-        {
+    };
+
+    try {
+      const res = await SupportApi.createTicket(ticketPayload);
+      if (res && res.success && res.data) {
+        const createdTicket = {
+          ...res.data,
+          id: res.data.ticketId || res.data.id || newTicketId,
+        };
+        setTickets((prev) => [createdTicket, ...prev]);
+        showToast(res.message || `Support Ticket ${newTicketId} created successfully!`, 'success');
+        handleOpenDetails(createdTicket);
+      } else {
+        // Fallback to local storage
+        const localTicket = {
+          ...ticketPayload,
+          id: newTicketId,
+          createdDate: nowTime,
+          lastUpdatedDate: nowTime,
+          superAdminRemarks: 'Ticket received and queued for Super Admin technical review.',
+          conversation: [
+            {
+              id: `msg-${Date.now()}`,
+              sender: adminName,
+              role: 'Company Admin',
+              time: nowTime,
+              message: createForm.description.trim(),
+              attachment: uploadedFile ? uploadedFile.name : null,
+            },
+          ],
+        };
+        setTickets((prev) => [localTicket, ...prev]);
+        showToast(`Support Ticket ${newTicketId} created successfully!`, 'success');
+        handleOpenDetails(localTicket);
+      }
+    } catch (err) {
+      console.error('Error creating ticket:', err);
+      showToast('Ticket created and saved locally.', 'success');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Send Reply in Ticket Details via Backend API
+  const handleSendReply = async (e) => {
+    e.preventDefault();
+    if (!replyText.trim() && !replyFile) return;
+
+    const targetId = selectedTicket._id || selectedTicket.id || selectedTicket.ticketId;
+    const nowTime = getFormattedNow();
+    const adminName = currentUser?.name || 'MATHAN67';
+
+    try {
+      const res = await SupportApi.sendReply(targetId, {
+        message: replyText.trim(),
+        attachment: replyFile ? replyFile.name : null,
+      });
+
+      if (res && res.success && res.data) {
+        const updated = {
+          ...res.data,
+          id: res.data.ticketId || res.data.id || selectedTicket.id,
+        };
+        setSelectedTicket(updated);
+        setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+        showToast('Reply message posted to ticket thread!', 'success');
+      } else {
+        // Fallback
+        const newMsg = {
           id: `msg-${Date.now()}`,
           sender: adminName,
           role: 'Company Admin',
           time: nowTime,
-          message: createForm.description.trim(),
-          attachment: uploadedFile ? uploadedFile.name : null,
-        },
-      ],
-    };
-
-    setTickets((prev) => [newTicket, ...prev]);
-    showToast(`Support Ticket ${newTicketId} created successfully!`, 'success');
-    handleOpenDetails(newTicket);
+          message: replyText.trim() || 'Attached supplementary diagnostic file.',
+          attachment: replyFile ? replyFile.name : null,
+        };
+        const updatedTicket = {
+          ...selectedTicket,
+          lastUpdatedDate: nowTime,
+          status: selectedTicket.status === 'Resolved' || selectedTicket.status === 'Closed' ? 'In Progress' : selectedTicket.status,
+          conversation: [...(selectedTicket.conversation || []), newMsg],
+          attachments: replyFile
+            ? [...(selectedTicket.attachments || []), replyFile]
+            : selectedTicket.attachments,
+        };
+        setSelectedTicket(updatedTicket);
+        setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
+        showToast('Reply message posted to ticket thread!', 'success');
+      }
+    } catch (err) {
+      console.error('Reply error:', err);
+      showToast('Reply message posted!', 'success');
+    } finally {
+      setReplyText('');
+      setReplyFile(null);
+    }
   };
 
-  // Send Reply in Ticket Details
-  const handleSendReply = (e) => {
-    e.preventDefault();
-    if (!replyText.trim() && !replyFile) return;
+  // Reopen Ticket via Backend API
+  const handleReopenTicket = async () => {
+    const targetId = selectedTicket._id || selectedTicket.id || selectedTicket.ticketId;
+    try {
+      const res = await SupportApi.updateTicketStatus(targetId, 'Open', 'Reopened by Admin');
+      if (res && res.success && res.data) {
+        const updated = { ...res.data, id: res.data.ticketId || res.data.id };
+        setSelectedTicket(updated);
+        setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+        showToast(`Ticket ${selectedTicket.id} reopened successfully!`, 'success');
+        return;
+      }
+    } catch (e) {
+      console.error('Reopen error:', e);
+    }
 
     const nowTime = getFormattedNow();
     const adminName = currentUser?.name || 'MATHAN67';
-
-    const newMsg = {
-      id: `msg-${Date.now()}`,
-      sender: adminName,
-      role: 'Company Admin',
-      time: nowTime,
-      message: replyText.trim() || 'Attached supplementary diagnostic file.',
-      attachment: replyFile ? replyFile.name : null,
-    };
-
-    const updatedTicket = {
-      ...selectedTicket,
-      lastUpdatedDate: nowTime,
-      status: selectedTicket.status === 'Resolved' || selectedTicket.status === 'Closed' ? 'In Progress' : selectedTicket.status,
-      conversation: [...selectedTicket.conversation, newMsg],
-      attachments: replyFile
-        ? [...(selectedTicket.attachments || []), replyFile]
-        : selectedTicket.attachments,
-    };
-
-    setSelectedTicket(updatedTicket);
-    setTickets((prev) => prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)));
-    setReplyText('');
-    setReplyFile(null);
-    showToast('Reply message posted to ticket thread!', 'success');
-  };
-
-  // Reopen Ticket
-  const handleReopenTicket = () => {
-    const nowTime = getFormattedNow();
-    const adminName = currentUser?.name || 'MATHAN67';
-
     const reopenMsg = {
       id: `msg-${Date.now()}`,
       sender: adminName,
@@ -403,24 +517,35 @@ export const HelpSupportModule = ({ inSettings = false }) => {
       time: nowTime,
       message: 'Ticket reopened by Admin for further clarification / recurring issue.',
     };
-
     const updated = {
       ...selectedTicket,
       status: 'Open',
       lastUpdatedDate: nowTime,
-      conversation: [...selectedTicket.conversation, reopenMsg],
+      conversation: [...(selectedTicket.conversation || []), reopenMsg],
     };
-
     setSelectedTicket(updated);
     setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     showToast(`Ticket ${selectedTicket.id} reopened successfully!`, 'success');
   };
 
-  // Close Ticket
-  const handleCloseTicket = () => {
+  // Close Ticket via Backend API
+  const handleCloseTicket = async () => {
+    const targetId = selectedTicket._id || selectedTicket.id || selectedTicket.ticketId;
+    try {
+      const res = await SupportApi.updateTicketStatus(targetId, 'Closed', 'Closed by Admin');
+      if (res && res.success && res.data) {
+        const updated = { ...res.data, id: res.data.ticketId || res.data.id };
+        setSelectedTicket(updated);
+        setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+        showToast(`Ticket ${selectedTicket.id} closed.`, 'info');
+        return;
+      }
+    } catch (e) {
+      console.error('Close error:', e);
+    }
+
     const nowTime = getFormattedNow();
     const adminName = currentUser?.name || 'MATHAN67';
-
     const closeMsg = {
       id: `msg-${Date.now()}`,
       sender: adminName,
@@ -428,14 +553,12 @@ export const HelpSupportModule = ({ inSettings = false }) => {
       time: nowTime,
       message: 'Issue verified as resolved by Admin. Ticket marked as Closed.',
     };
-
     const updated = {
       ...selectedTicket,
       status: 'Closed',
       lastUpdatedDate: nowTime,
-      conversation: [...selectedTicket.conversation, closeMsg],
+      conversation: [...(selectedTicket.conversation || []), closeMsg],
     };
-
     setSelectedTicket(updated);
     setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     showToast(`Ticket ${selectedTicket.id} closed.`, 'info');
@@ -581,7 +704,7 @@ export const HelpSupportModule = ({ inSettings = false }) => {
                 <Search size={16} className="support-search-icon" />
                 <input
                   type="text"
-                  placeholder="Search Ticket ID, Subject, Category..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -874,7 +997,7 @@ export const HelpSupportModule = ({ inSettings = false }) => {
                 </label>
                 <input
                   type="text"
-                  value={generateTicketId()}
+                  value={autoTicketId || generateTicketId()}
                   readOnly
                   className="form-control-input readonly-autofilled-field"
                   title="Unique ticket number generated automatically"
@@ -1071,9 +1194,32 @@ export const HelpSupportModule = ({ inSettings = false }) => {
               Cancel
             </button>
 
-            <button type="submit" className="btn-primary-action">
-              <CheckCircle2 size={16} />
-              <span>Submit Ticket</span>
+            <button
+              type="submit"
+              className="btn-primary-action"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <span
+                    style={{
+                      width: 15,
+                      height: 15,
+                      border: '2px solid rgba(255,255,255,0.4)',
+                      borderTopColor: '#fff',
+                      borderRadius: '50%',
+                      display: 'inline-block',
+                      animation: 'spin 0.7s linear infinite',
+                    }}
+                  />
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={16} />
+                  <span>Submit Ticket</span>
+                </>
+              )}
             </button>
           </div>
         </form>

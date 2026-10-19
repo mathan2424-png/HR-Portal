@@ -507,6 +507,22 @@
   background-color: currentColor;
 }
 
+.job-status-pill.clickable {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.job-status-pill.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  filter: brightness(0.95);
+}
+
+.job-status-pill.clickable:active {
+  transform: translateY(0);
+}
+
 /* Row Action Buttons */
 .job-row-actions {
   display: flex;
