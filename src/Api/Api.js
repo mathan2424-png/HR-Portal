@@ -1,5 +1,4 @@
 import axios from "axios";
-
 // Environment detection: supports Vite (import.meta.env) & Create-React-App/Node (process.env)
 const APP_ENV =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_APP_ENV) ||
