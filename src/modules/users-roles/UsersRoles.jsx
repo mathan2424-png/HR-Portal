@@ -314,8 +314,7 @@ const parseRolePermissions = (roleObj) => {
 
   const getRoleCode = (role) => {
     if (!role) return 'ROLE';
-    if (role.code) return role.code;
-    if (role.id && !String(role.id).startsWith('ROLE-')) return role.id;
+    if (role.code && !/^[0-9a-fA-F]{24}$/.test(role.code)) return role.code;
     const name = role.name || role.roleName || '';
     return name.toUpperCase().trim().replace(/[^A-Z0-9]+/g, '_') || 'ROLE';
   };
@@ -885,7 +884,6 @@ const parseRolePermissions = (roleObj) => {
                 const isSelected =
                   activeCardRoleFilter &&
                   activeCardRoleFilter.toLowerCase() === role.name.toLowerCase();
-                const roleCode = getRoleCode(role);
                 const userCount = getRoleUserCount(role);
                 const isMenuOpen = openMenuRoleId === cardKey;
 
@@ -959,11 +957,6 @@ const parseRolePermissions = (roleObj) => {
                           </div>
                         )}
                       </div>
-                    </div>
-
-                    {/* Second Row: Role code */}
-                    <div className="role-card-code-sub" title={roleCode}>
-                      Role code: <span className="role-code-val">{roleCode}</span>
                     </div>
 
                     {/* Divider */}
@@ -1609,12 +1602,9 @@ const parseRolePermissions = (roleObj) => {
                   {viewingPermsRole.name} Permissions
                 </h3>
                 <p className="role-perms-modal-sub">
-                  Role code:{' '}
-                  <span className="role-code-val">
-                    {getRoleCode(viewingPermsRole)}
-                  </span>{' '}
-                  • {getRoleUserCount(viewingPermsRole)}{' '}
-                  {getRoleUserCount(viewingPermsRole) === 1 ? 'User' : 'Users'}
+                  {getRoleUserCount(viewingPermsRole)}{' '}
+                  {getRoleUserCount(viewingPermsRole) === 1 ? 'User assigned' : 'Users assigned'}
+                  {viewingPermsRole.description ? ` • ${viewingPermsRole.description}` : ''}
                 </p>
               </div>
               <button

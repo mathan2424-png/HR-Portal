@@ -28,7 +28,29 @@ import { usePortal } from '../../context/PortalContext';
 import { Toast } from '../../components/common/Toast/Toast';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import { SupportApi } from '../../Api/SupportApi';
+import CompanyApi from '../../Api/CompanyApi';
 import './HelpSupportModule.css';
+
+// Clean Date & Time Formatter (e.g. "20 Oct 2026, 12:25 pm" - strips GMT and timezone clutter)
+const formatDisplayDate = (dateVal) => {
+  if (!dateVal) return '—';
+  const d = new Date(dateVal);
+  if (!isNaN(d.getTime())) {
+    const day = String(d.getDate()).padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12 || 12;
+    return `${day} ${month} ${year}, ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+  }
+  return String(dateVal)
+    .replace(/GMT[+-]\d{4}.*$/, '')
+    .replace(/\(.*?\)/g, '')
+    .trim();
+};
 
 const DEFAULT_TICKETS = [
   {
@@ -233,8 +255,8 @@ export const HelpSupportModule = ({ inSettings = false }) => {
             ...t,
             id: t.ticketId || t.id,
             _id: t._id || t.id,
-            createdDate: t.createdDate || (t.createdAt ? new Date(t.createdAt).toLocaleDateString() : ''),
-            lastUpdatedDate: t.lastUpdatedDate || (t.updatedAt ? new Date(t.updatedAt).toLocaleDateString() : ''),
+            createdDate: formatDisplayDate(t.createdDate || t.createdAt),
+            lastUpdatedDate: formatDisplayDate(t.lastUpdatedDate || t.updatedAt || t.createdDate || t.createdAt),
           }));
           setTickets(mapped);
         }
@@ -259,9 +281,60 @@ export const HelpSupportModule = ({ inSettings = false }) => {
   }, [tickets]);
 
   // Form State for "Create Ticket"
-  const defaultEmail = currentUser?.email || 'mathan67@hrms.com';
-  const defaultCompanyName = 'Marutham Technologies Pvt. Ltd.';
-  const defaultCompanyId = 'CMP-1001';
+  const defaultEmail = currentUser?.email || 'admin@hrms.com';
+
+  // Dynamic Company Details State (from session or fetched from Company API)
+  const [activeCompany, setActiveCompany] = useState(() => {
+    return {
+      companyId:
+        currentUser?.companyId ||
+        currentUser?.company?.companyId ||
+        currentUser?.branch?.companyId ||
+        currentUser?.tenantId ||
+        '',
+      companyName:
+        currentUser?.companyName ||
+        currentUser?.company?.companyName ||
+        currentUser?.company?.name ||
+        '',
+    };
+  });
+
+  // Fetch registered company details from backend if not present in currentUser
+  useEffect(() => {
+    let isMounted = true;
+    if (!activeCompany.companyId || !activeCompany.companyName) {
+      CompanyApi.getCompanies({ limit: 1 })
+        .then((res) => {
+          if (isMounted && res?.success && res.data?.companies?.[0]) {
+            const comp = res.data.companies[0];
+            setActiveCompany((prev) => ({
+              companyId: prev.companyId || comp.companyId || comp.tenantId || comp._id || 'CMP-1001',
+              companyName: prev.companyName || comp.companyName || comp.name || 'Marutham Technologies Pvt. Ltd.',
+            }));
+          }
+        })
+        .catch((err) => {
+          console.warn('Company details fetch error for HelpSupport:', err);
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser]);
+
+  const effectiveCompanyId =
+    activeCompany.companyId ||
+    currentUser?.companyId ||
+    currentUser?.company?.companyId ||
+    'CMP-1001';
+
+  const effectiveCompanyName =
+    activeCompany.companyName ||
+    currentUser?.companyName ||
+    currentUser?.company?.companyName ||
+    currentUser?.company?.name ||
+    'Marutham Technologies Pvt. Ltd.';
 
   const [createForm, setCreateForm] = useState({
     subject: '',
@@ -277,30 +350,30 @@ export const HelpSupportModule = ({ inSettings = false }) => {
   const [replyText, setReplyText] = useState('');
   const [replyFile, setReplyFile] = useState(null);
 
-  // Generate unique Ticket ID
+  // Generate unique Ticket ID based on existing tickets
   const generateTicketId = () => {
-    const count = tickets.length + 1;
     const year = new Date().getFullYear();
-    const idNum = 1045 + count;
-    return `TKT-${year}-${idNum}`;
+    let maxNum = 1045;
+    if (Array.isArray(tickets)) {
+      tickets.forEach((t) => {
+        const val = t.ticketId || t.id || '';
+        const match = val.match(/TKT-\d+-(\d+)/);
+        if (match && match[1]) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      });
+    }
+    return `TKT-${year}-${maxNum + 1}`;
   };
 
   // Format current date-time for display
   const getFormattedNow = () => {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[now.getMonth()];
-    const year = now.getFullYear();
-    let hours = now.getHours();
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    return `${day}-${month}-${year} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+    return formatDisplayDate(new Date());
   };
 
-  // Switch to Create View
-  const handleOpenCreate = async () => {
+  // Switch to Create View INSTANTLY without blocking UI
+  const handleOpenCreate = () => {
     setFormErrors({});
     setUploadedFile(null);
     setCreateForm({
@@ -310,19 +383,25 @@ export const HelpSupportModule = ({ inSettings = false }) => {
       description: '',
       attachments: [],
     });
-    // Fetch next auto-generated ticket ID from backend API
-    try {
-      const idRes = await SupportApi.getNextTicketId();
-      if (idRes && idRes.success && idRes.data?.ticketId) {
-        setAutoTicketId(idRes.data.ticketId);
-      } else {
-        setAutoTicketId(generateTicketId());
-      }
-    } catch {
-      setAutoTicketId(generateTicketId());
-    }
+
+    // Immediately generate fallback ticket ID so input is populated instantly
+    const fallbackId = generateTicketId();
+    setAutoTicketId(fallbackId);
+
+    // Open view immediately with ZERO latency (instant response)
     setCurrentView('create');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Fetch next auto-generated ticket ID from backend API in background
+    SupportApi.getNextTicketId()
+      .then((idRes) => {
+        if (idRes && idRes.success && idRes.data?.ticketId) {
+          setAutoTicketId(idRes.data.ticketId);
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend ticket ID fetch error (using fallback):', err);
+      });
   };
 
   // Switch to Details View
@@ -390,8 +469,8 @@ export const HelpSupportModule = ({ inSettings = false }) => {
       priority: createForm.priority,
       status: 'Open',
       contactEmail: defaultEmail,
-      companyId: defaultCompanyId,
-      companyName: defaultCompanyName,
+      companyId: effectiveCompanyId,
+      companyName: effectiveCompanyName,
       description: createForm.description.trim(),
       attachments: attachmentsList,
     };
@@ -402,6 +481,8 @@ export const HelpSupportModule = ({ inSettings = false }) => {
         const createdTicket = {
           ...res.data,
           id: res.data.ticketId || res.data.id || newTicketId,
+          createdDate: formatDisplayDate(res.data.createdDate || res.data.createdAt || nowTime),
+          lastUpdatedDate: formatDisplayDate(res.data.lastUpdatedDate || res.data.updatedAt || nowTime),
         };
         setTickets((prev) => [createdTicket, ...prev]);
         showToast(res.message || `Support Ticket ${newTicketId} created successfully!`, 'success');
@@ -498,7 +579,12 @@ export const HelpSupportModule = ({ inSettings = false }) => {
     try {
       const res = await SupportApi.updateTicketStatus(targetId, 'Open', 'Reopened by Admin');
       if (res && res.success && res.data) {
-        const updated = { ...res.data, id: res.data.ticketId || res.data.id };
+        const updated = {
+          ...res.data,
+          id: res.data.ticketId || res.data.id,
+          createdDate: formatDisplayDate(res.data.createdDate || res.data.createdAt),
+          lastUpdatedDate: formatDisplayDate(res.data.lastUpdatedDate || res.data.updatedAt || new Date()),
+        };
         setSelectedTicket(updated);
         setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
         showToast(`Ticket ${selectedTicket.id} reopened successfully!`, 'success');
@@ -534,7 +620,12 @@ export const HelpSupportModule = ({ inSettings = false }) => {
     try {
       const res = await SupportApi.updateTicketStatus(targetId, 'Closed', 'Closed by Admin');
       if (res && res.success && res.data) {
-        const updated = { ...res.data, id: res.data.ticketId || res.data.id };
+        const updated = {
+          ...res.data,
+          id: res.data.ticketId || res.data.id,
+          createdDate: formatDisplayDate(res.data.createdDate || res.data.createdAt),
+          lastUpdatedDate: formatDisplayDate(res.data.lastUpdatedDate || res.data.updatedAt || new Date()),
+        };
         setSelectedTicket(updated);
         setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
         showToast(`Ticket ${selectedTicket.id} closed.`, 'info');
@@ -837,14 +928,14 @@ export const HelpSupportModule = ({ inSettings = false }) => {
                           {/* 7. Created Date */}
                           <td>
                             <span style={{ fontSize: '0.82rem', color: '#475569' }}>
-                              {t.createdDate}
+                              {formatDisplayDate(t.createdDate)}
                             </span>
                           </td>
 
                           {/* 8. Last Updated Date */}
                           <td>
                             <span style={{ fontSize: '0.82rem', color: '#475569' }}>
-                              {t.lastUpdatedDate}
+                              {formatDisplayDate(t.lastUpdatedDate)}
                             </span>
                           </td>
 
@@ -1025,10 +1116,14 @@ export const HelpSupportModule = ({ inSettings = false }) => {
                 </label>
                 <input
                   type="text"
-                  value={`${defaultCompanyId} — ${defaultCompanyName}`}
+                  value={
+                    effectiveCompanyId && effectiveCompanyName
+                      ? `${effectiveCompanyId} — ${effectiveCompanyName}`
+                      : effectiveCompanyName || effectiveCompanyId || '—'
+                  }
                   readOnly
                   className="form-control-input readonly-autofilled-field"
-                  title="Registered Company ID"
+                  title="Registered Company ID & Name"
                 />
               </div>
 
@@ -1288,14 +1383,14 @@ export const HelpSupportModule = ({ inSettings = false }) => {
             <div className="metadata-col">
               <span className="metadata-label">Created Date</span>
               <span className="metadata-value" style={{ fontSize: '0.82rem' }}>
-                {selectedTicket.createdDate}
+                {formatDisplayDate(selectedTicket.createdDate)}
               </span>
             </div>
 
             <div className="metadata-col">
               <span className="metadata-label">Last Updated</span>
               <span className="metadata-value" style={{ fontSize: '0.82rem' }}>
-                {selectedTicket.lastUpdatedDate}
+                {formatDisplayDate(selectedTicket.lastUpdatedDate)}
               </span>
             </div>
           </div>
@@ -1393,7 +1488,7 @@ export const HelpSupportModule = ({ inSettings = false }) => {
                             {msg.role}
                           </span>
                         </div>
-                        <span className="message-time">{msg.time}</span>
+                        <span className="message-time">{formatDisplayDate(msg.time)}</span>
                       </div>
 
                       <p className="message-text">{msg.message}</p>

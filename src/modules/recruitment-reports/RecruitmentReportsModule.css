@@ -675,7 +675,7 @@
 .btn-view-details:hover {
   background: #2563eb;
   border-color: #2563eb;
-  color: #ffffff;
+  color: #000000;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
