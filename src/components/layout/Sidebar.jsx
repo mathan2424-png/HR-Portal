@@ -15,10 +15,8 @@ import {
   FileCheck,
   BarChart3,
   Settings,
-  ScrollText,
   LifeBuoy,
   ChevronDown,
-  LogOut,
 } from 'lucide-react';
 import logoImg from '../../assets/logo.png';
 import { usePortal } from '../../context/PortalContext';
@@ -63,13 +61,21 @@ const navItems = [
       { path: '/reports?tab=interviews', label: 'Interviews & Hiring Report', tab: 'interviews' },
     ],
   },
-  { path: '/settings', label: 'Settings & Security', icon: Settings },
   { path: '/help-support', label: 'Help & Support', icon: LifeBuoy },
-  { path: '/audit-log', label: 'Company Audit Log', icon: ScrollText },
+  {
+    path: '/settings',
+    label: 'Settings & Security',
+    icon: Settings,
+    hasDropdown: true,
+    children: [
+      { path: '/settings', label: 'Login History', tab: 'history' },
+      { path: '/audit-log', label: 'Company Audit Log' },
+    ],
+  },
 ];
 
 export const Sidebar = () => {
-  const { sidebarCollapsed, setSidebarCollapsed, logout, currentUser } = usePortal();
+  const { sidebarCollapsed, setSidebarCollapsed, currentUser } = usePortal();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -77,9 +83,17 @@ export const Sidebar = () => {
     location.pathname.startsWith('/masters') || location.pathname.startsWith('/taxonomy');
   const isReportsActive =
     location.pathname.startsWith('/reports') || location.pathname.startsWith('/recruitment-reports');
+  const isSettingsActive =
+    location.pathname.startsWith('/settings') ||
+    location.pathname.startsWith('/company-settings') ||
+    location.pathname.startsWith('/security') ||
+    location.pathname.startsWith('/audit-log') ||
+    location.pathname.startsWith('/audit');
 
   const [mastersOpen, setMastersOpen] = useState(isMastersActive);
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
+  const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
+
   const isBranchAdmin = Boolean(
     currentUser?.isBranchAdmin ||
     currentUser?.branchId ||
@@ -95,7 +109,6 @@ export const Sidebar = () => {
     }
     return true;
   });
-
 
   // Auto-expand if user navigates to any sub-route
   useEffect(() => {
@@ -114,20 +127,40 @@ export const Sidebar = () => {
     }
   }, [isReportsActive]);
 
+  useEffect(() => {
+    if (isSettingsActive) {
+      setSettingsOpen(true);
+    } else {
+      setSettingsOpen(false);
+    }
+  }, [isSettingsActive]);
+
   const handleDropdownToggle = (item, e) => {
     e.preventDefault();
-    const isMasters = item.path === '/masters';
-    const isOpen = isMasters ? mastersOpen : reportsOpen;
-    const setOpen = isMasters ? setMastersOpen : setReportsOpen;
-    const isActive = isMasters ? isMastersActive : isReportsActive;
+    let isOpen, setOpen, isActive;
+    if (item.path === '/masters') {
+      isOpen = mastersOpen;
+      setOpen = setMastersOpen;
+      isActive = isMastersActive;
+    } else if (item.path === '/reports') {
+      isOpen = reportsOpen;
+      setOpen = setReportsOpen;
+      isActive = isReportsActive;
+    } else if (item.path === '/settings') {
+      isOpen = settingsOpen;
+      setOpen = setSettingsOpen;
+      isActive = isSettingsActive;
+    }
 
     if (sidebarCollapsed) {
       setSidebarCollapsed(false);
-      setOpen(true);
+      if (setOpen) setOpen(true);
       navigate(item.path);
       return;
     }
-    setOpen((prev) => !prev);
+    if (setOpen) {
+      setOpen((prev) => !prev);
+    }
     if (!isActive) {
       navigate(item.path);
     }
@@ -136,6 +169,7 @@ export const Sidebar = () => {
   const handleOutsideNavClick = () => {
     setMastersOpen(false);
     setReportsOpen(false);
+    setSettingsOpen(false);
   };
 
   return (
@@ -152,8 +186,19 @@ export const Sidebar = () => {
 
           if (item.hasDropdown) {
             const isMasters = item.path === '/masters';
-            const isItemActive = isMasters ? isMastersActive : isReportsActive;
-            const isOpen = isMasters ? mastersOpen : reportsOpen;
+            const isReports = item.path === '/reports';
+            const isSettings = item.path === '/settings';
+
+            const isItemActive = isMasters
+              ? isMastersActive
+              : isReports
+              ? isReportsActive
+              : isSettingsActive;
+            const isOpen = isMasters
+              ? mastersOpen
+              : isReports
+              ? reportsOpen
+              : settingsOpen;
 
             return (
               <div key={item.path} className="nav-dropdown-group">
@@ -185,11 +230,28 @@ export const Sidebar = () => {
                     {item.children.map((subItem) => {
                       const searchParams = new URLSearchParams(location.search);
                       const currentTab = searchParams.get('tab');
-                      const isSubActive =
-                        isItemActive &&
-                        (currentTab
-                          ? subItem.tab === currentTab
-                          : subItem.tab === 'overview' || subItem.path === item.path);
+                      let isSubActive = false;
+
+                      if (isSettings) {
+                        if (subItem.path.startsWith('/audit-log')) {
+                          isSubActive =
+                            location.pathname.startsWith('/audit-log') ||
+                            location.pathname.startsWith('/audit');
+                        } else {
+                          isSubActive =
+                            (location.pathname.startsWith('/settings') ||
+                              location.pathname.startsWith('/security') ||
+                              location.pathname.startsWith('/company-settings')) &&
+                            !location.pathname.startsWith('/audit-log') &&
+                            !location.pathname.startsWith('/audit');
+                        }
+                      } else {
+                        isSubActive =
+                          isItemActive &&
+                          (currentTab
+                            ? subItem.tab === currentTab
+                            : subItem.tab === 'overview' || subItem.path === item.path);
+                      }
 
                       return (
                         <Link
@@ -230,8 +292,6 @@ export const Sidebar = () => {
           );
         })}
       </nav>
-
-      
     </aside>
   );
 };

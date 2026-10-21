@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Filter,
   ArrowLeft,
+  Save,
 } from 'lucide-react';
 import { Toast } from '../../components/common/Toast/Toast';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
@@ -156,6 +157,7 @@ export const MastersModule = () => {
   const [currentView, setCurrentView] = useState('list');
   const [editingItem, setEditingItem] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
   const [modalForm, setModalForm] = useState({
     title: '',
     startDate: new Date().toISOString().split('T')[0],
@@ -298,6 +300,7 @@ export const MastersModule = () => {
     const endpoint = TAB_ENDPOINTS[activeTab];
     if (!endpoint) return;
 
+    setIsSaving(true);
     try {
       if (editingItem) {
         // Real Backend PUT API Call
@@ -344,6 +347,8 @@ export const MastersModule = () => {
         err.message ||
         'Backend server connection error';
       showToast(serverMsg, 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -701,13 +706,25 @@ export const MastersModule = () => {
             <div className="inpage-form-footer">
               <button
                 type="button"
-                className="btn-cancel"
+                className="btn-cancel-action"
                 onClick={handleBackToList}
+                disabled={isSaving}
               >
                 Cancel
               </button>
-              <button type="submit" className="btn-save">
-                {editingItem ? 'Update' : 'Save'} {activeCategory.singular}
+              <button
+                type="submit"
+                className="btn-save-header-action"
+                disabled={isSaving}
+              >
+                <Save size={16} />
+                <span>
+                  {isSaving
+                    ? (editingItem ? 'Updating...' : 'Saving...')
+                    : editingItem
+                    ? `Update ${activeCategory.singular}`
+                    : `Save ${activeCategory.singular}`}
+                </span>
               </button>
             </div>
           </form>

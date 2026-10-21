@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Plus,
@@ -10,6 +10,7 @@ import {
   Save,
   CheckCircle2,
   Download,
+  Loader2,
 } from 'lucide-react';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import {
@@ -17,83 +18,14 @@ import {
   validateRequired,
   sanitizeNameInput,
 } from '../../utils/validation';
+import { CompanyAuditApi } from '../../Api/Company Audit Api';
 import './AuditLogModule.css';
 
 export const AuditLogModule = () => {
-  // STRICTLY and ONLY the 7 user-requested fields:
-  // 1. Audit ID: Unique audit record.
-  // 2. User: Company user who performed the action.
-  // 3. Module: Affected module.
-  // 4. Action: Create, edit, publish, delete, approve, etc.
-  // 5. Record: Affected job/candidate/interview/etc.
-  // 6. Date & Time: Action timestamp.
-  // 7. Reason: Reason for important actions.
-
-  const [auditLogs, setAuditLogs] = useState([
-    {
-      id: 'AUD-2026-001',
-      user: 'Rajeshwaran K (Company Admin)',
-      module: 'Jobs',
-      action: 'Publish',
-      record: 'Senior Frontend Engineer (JOB-2026-001)',
-      dateTime: '12-Oct-2026 05:30 PM',
-      reason: 'Job requirement approved by VP Engineering following Q4 hiring budget release.',
-    },
-    {
-      id: 'AUD-2026-002',
-      user: 'Abinaya R (Senior HR Manager)',
-      module: 'Offers & Hiring',
-      action: 'Approve',
-      record: 'Staff Software Engineer Offer (OFR-2026-001 - Nathiya  Sharma)',
-      dateTime: '12-Oct-2026 04:45 PM',
-      reason: 'Candidate cleared technical and managerial rounds with highest evaluation ratings.',
-    },
-    {
-      id: 'AUD-2026-003',
-      user: 'Sundar Raman (Eng Lead)',
-      module: 'Interviews',
-      action: 'Edit',
-      record: 'DevOps System Design Round (INT-2026-003 - Karthik V)',
-      dateTime: '12-Oct-2026 02:20 PM',
-      reason: 'Rescheduled interview slot upon candidate formal request due to travel conflict.',
-    },
-    {
-      id: 'AUD-2026-004',
-      user: 'Senthamizh Selvan (Finance Admin)',
-      module: 'Subscription',
-      action: 'Create',
-      record: 'Invoice Payment (INV-2026-104 - ₹49,999 Enterprise Plan)',
-      dateTime: '11-Oct-2026 11:15 AM',
-      reason: 'Monthly plan auto-renewal processed and credit pool refilled for matching alerts.',
-    },
-    {
-      id: 'AUD-2026-005',
-      user: 'Karthik Raja (Design Head)',
-      module: 'Screening',
-      action: 'Create',
-      record: 'Design Systems & Figma Assessment (SCRN-002)',
-      dateTime: '10-Oct-2026 03:40 PM',
-      reason: 'New mandatory multi-choice screening criteria added for Lead Product Designer role.',
-    },
-    {
-      id: 'AUD-2026-006',
-      user: 'Rajeshwaran K (Company Admin)',
-      module: 'Users & Roles',
-      action: 'Delete',
-      record: 'Inactive Contractor Account (USR-108 - Guest Reviewer)',
-      dateTime: '09-Oct-2026 06:10 PM',
-      reason: 'Recruitment assignment expired; access permissions revoked per security policy.',
-    },
-    {
-      id: 'AUD-2026-007',
-      user: 'Abinaya R (Senior HR Manager)',
-      module: 'Candidate Responses',
-      action: 'Edit',
-      record: 'Candidate Response Stage (CAN-1048 - Sneha Patel)',
-      dateTime: '08-Oct-2026 01:25 PM',
-      reason: 'Candidate withdrawn; application archived under competing counter-offer.',
-    },
-  ]);
+  // Audit Logs State
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [totalEntries, setTotalEntries] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   // Views: 'list' | 'form'
   const [currentView, setCurrentView] = useState('list');
@@ -104,6 +36,27 @@ export const AuditLogModule = () => {
   const [moduleFilter, setModuleFilter] = useState('All');
   const [actionFilter, setActionFilter] = useState('All');
   const [toastMessage, setToastMessage] = useState('');
+
+  // Dropdown options
+  const [availableModules, setAvailableModules] = useState([
+    'Jobs',
+    'Candidate Responses',
+    'Screening',
+    'Interviews',
+    'Offers & Hiring',
+    'Users & Roles',
+    'Departments & Branches',
+    'Subscription',
+    'Company Settings',
+  ]);
+  const [availableActions, setAvailableActions] = useState([
+    'Create',
+    'Edit',
+    'Publish',
+    'Approve',
+    'Delete',
+    'Archive',
+  ]);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,19 +83,93 @@ export const AuditLogModule = () => {
     }, 3500);
   };
 
-  const handleOpenAdd = () => {
-    const nextNum = auditLogs.length + 1;
-    const generatedId = `AUD-2026-${String(nextNum).padStart(3, '0')}`;
+  // Fetch filter metadata on mount
+  useEffect(() => {
+    const loadFilters = async () => {
+      try {
+        const res = await CompanyAuditApi.getFilterOptions();
+        if (res?.success && res.data) {
+          if (res.data.modules?.length) setAvailableModules(res.data.modules);
+          if (res.data.actions?.length) setAvailableActions(res.data.actions);
+        }
+      } catch (err) {
+        console.error('Failed to load audit filters:', err);
+      }
+    };
+    loadFilters();
+  }, []);
+
+  // Fetch audit logs from backend API
+  const fetchAuditLogs = async () => {
+    setLoading(true);
+    try {
+      const res = await CompanyAuditApi.getAuditLogs({
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchQuery,
+        module: moduleFilter === 'All' ? '' : moduleFilter,
+        action: actionFilter === 'All' ? '' : actionFilter,
+      });
+
+      if (res?.success) {
+        const list = res.data || res.auditLogs || [];
+        const normalized = list.map((item) => ({
+          _id: item._id,
+          id: item.auditId || item.id,
+          user: item.user || item.userName || 'System User',
+          module: item.module,
+          action: item.action,
+          record: item.affectedRecord || item.record,
+          dateTime: item.actionDate || item.date || item.dateTime,
+          reason: item.reason,
+        }));
+        setAuditLogs(normalized);
+        setTotalEntries(res.total || res.pagination?.total || normalized.length);
+      } else {
+        setAuditLogs([]);
+        setTotalEntries(0);
+      }
+    } catch (err) {
+      console.error('Error fetching audit logs:', err);
+      showToast('Error loading audit logs from server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAuditLogs();
+  }, [currentPage, searchQuery, moduleFilter, actionFilter]);
+
+  const handleOpenAdd = async () => {
     setErrors({});
+    let generatedId = 'AUD-2026-001';
+
+    try {
+      const res = await CompanyAuditApi.getNextAuditId();
+      if (res?.success && res.data?.auditId) {
+        generatedId = res.data.auditId;
+      }
+    } catch (err) {
+      console.error('Failed to generate next audit ID:', err);
+    }
+
+    const now = new Date();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    let hours = now.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const nowStr = `${String(now.getDate()).padStart(2, '0')}-${months[now.getMonth()]}-${now.getFullYear()} ${String(hours).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} ${ampm}`;
+
     setFormData({
       ...initialFormState,
       id: generatedId,
-      user: 'Rajeshwaran K',
-      module: 'Jobs & Requirements',
-      action: 'Created',
-      record: 'JOB-2026-009 (Lead Engineer)',
-      reason: 'New recruitment requirement approved by management',
-      dateTime: '12-Oct-2026 05:45 PM',
+      user: '',
+      module: availableModules[0] || 'Jobs',
+      action: 'Create',
+      record: '',
+      reason: '',
+      dateTime: nowStr,
     });
     setEditingId(null);
     setCurrentView('form');
@@ -175,11 +202,13 @@ export const AuditLogModule = () => {
     }
   };
 
-  const handleSaveAudit = (e) => {
+  const handleSaveAudit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
-    if (formData.user) {
+    if (!formData.user || !formData.user.trim()) {
+      newErrors.user = 'Company user is required.';
+    } else {
       const userErr = validateName(formData.user, 'Company user', true);
       if (userErr) newErrors.user = userErr;
     }
@@ -201,18 +230,30 @@ export const AuditLogModule = () => {
 
     setErrors({});
 
-    if (editingId) {
-      setAuditLogs((prev) =>
-        prev.map((item) => (item.id === editingId ? { ...formData } : item))
-      );
-      showToast(`Audit log "${formData.id}" updated successfully!`);
-    } else {
-      setAuditLogs((prev) => [formData, ...prev]);
-      showToast(`Audit record "${formData.id}" logged successfully!`);
-    }
+    try {
+      const payload = {
+        auditId: formData.id,
+        user: formData.user,
+        module: formData.module,
+        action: formData.action,
+        affectedRecord: formData.record,
+        actionDate: formData.dateTime,
+        reason: formData.reason,
+      };
 
-    setCurrentView('list');
-    setEditingId(null);
+      const res = await CompanyAuditApi.createAuditLog(payload);
+      if (res?.success) {
+        showToast(`Audit record "${formData.id}" saved successfully!`);
+        setCurrentView('list');
+        setEditingId(null);
+        fetchAuditLogs();
+      } else {
+        showToast(res?.message || 'Failed to save audit record.');
+      }
+    } catch (err) {
+      console.error('Failed to save audit record:', err);
+      showToast('Error occurred while communicating with server.');
+    }
   };
 
   const handleDelete = (id, user) => {
@@ -222,38 +263,36 @@ export const AuditLogModule = () => {
     }
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     showToast('Exporting Company Audit Log in CSV format...');
+    try {
+      const blob = await CompanyAuditApi.exportCsv({
+        search: searchQuery,
+        module: moduleFilter === 'All' ? '' : moduleFilter,
+        action: actionFilter === 'All' ? '' : actionFilter,
+      });
+
+      if (blob) {
+        const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv;charset=utf-8;' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `company-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Export CSV error:', err);
+      showToast('Failed to export CSV file.');
+    }
   };
 
-  // Filter & Search Logic
-  const filteredAuditLogs = auditLogs.filter((item) => {
-    const matchesSearch =
-      item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.module.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.record.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.reason.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesModule =
-      moduleFilter === 'All' || item.module === moduleFilter;
-
-    const matchesAction =
-      actionFilter === 'All' || item.action === actionFilter;
-
-    return matchesSearch && matchesModule && matchesAction;
-  });
-
   // Pagination Logic
-  const totalPages = Math.ceil(filteredAuditLogs.length / itemsPerPage) || 1;
-  const paginatedAuditLogs = filteredAuditLogs.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const totalPages = Math.ceil(totalEntries / itemsPerPage) || 1;
 
   const getActionClass = (action) => {
-    switch (action.toLowerCase()) {
+    switch ((action || '').toLowerCase()) {
       case 'create':
         return 'create';
       case 'edit':
@@ -358,13 +397,9 @@ export const AuditLogModule = () => {
                   className="audit-filter-select"
                 >
                   <option value="All">All Modules</option>
-                  <option value="Jobs">Jobs</option>
-                  <option value="Candidate Responses">Candidate Responses</option>
-                  <option value="Screening">Screening</option>
-                  <option value="Interviews">Interviews</option>
-                  <option value="Offers & Hiring">Offers & Hiring</option>
-                  <option value="Users & Roles">Users & Roles</option>
-                  <option value="Subscription">Subscription</option>
+                  {availableModules.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
                 </select>
 
                 <select
@@ -376,11 +411,9 @@ export const AuditLogModule = () => {
                   className="audit-filter-select"
                 >
                   <option value="All">All Actions</option>
-                  <option value="Create">Create</option>
-                  <option value="Edit">Edit</option>
-                  <option value="Publish">Publish</option>
-                  <option value="Approve">Approve</option>
-                  <option value="Delete">Delete</option>
+                  {availableActions.map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -402,11 +435,20 @@ export const AuditLogModule = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedAuditLogs.length > 0 ? (
-                    paginatedAuditLogs.map((item, index) => {
+                  {loading ? (
+                    <tr>
+                      <td colSpan="9" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#64748b' }}>
+                          <Loader2 size={20} className="animate-spin" />
+                          <span>Loading audit logs...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : auditLogs.length > 0 ? (
+                    auditLogs.map((item, index) => {
                       const serialNumber = (currentPage - 1) * itemsPerPage + index + 1;
                       return (
-                        <tr key={item.id}>
+                        <tr key={item.id || index}>
                           {/* S.NO */}
                           <td style={{ fontWeight: 700, color: '#64748b' }}>
                             {serialNumber}
@@ -447,7 +489,7 @@ export const AuditLogModule = () => {
                           {/* Reason */}
                           <td>
                             <div className="aud-reason-cell" title={item.reason}>
-                              {item.reason}
+                              {item.reason || '—'}
                             </div>
                           </td>
 
@@ -491,9 +533,9 @@ export const AuditLogModule = () => {
             {/* Table Footer Pagination */}
             <div className="audit-table-footer">
               <div>
-                Showing {filteredAuditLogs.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
-                {Math.min(currentPage * itemsPerPage, filteredAuditLogs.length)} of{' '}
-                {filteredAuditLogs.length} audit entries
+                Showing {totalEntries > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to{' '}
+                {Math.min(currentPage * itemsPerPage, totalEntries)} of{' '}
+                {totalEntries} audit entries
               </div>
 
               <div className="audit-pagination-controls">
@@ -571,15 +613,9 @@ export const AuditLogModule = () => {
                     value={formData.module}
                     onChange={(e) => handleInputChange('module', e.target.value)}
                   >
-                    <option value="Jobs">Jobs</option>
-                    <option value="Candidate Responses">Candidate Responses</option>
-                    <option value="Screening">Screening</option>
-                    <option value="Interviews">Interviews</option>
-                    <option value="Offers & Hiring">Offers & Hiring</option>
-                    <option value="Users & Roles">Users & Roles</option>
-                    <option value="Departments & Branches">Departments & Branches</option>
-                    <option value="Subscription">Subscription</option>
-                    <option value="Company Settings">Company Settings</option>
+                    {availableModules.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -591,12 +627,9 @@ export const AuditLogModule = () => {
                     value={formData.action}
                     onChange={(e) => handleInputChange('action', e.target.value)}
                   >
-                    <option value="Create">Create</option>
-                    <option value="Edit">Edit</option>
-                    <option value="Publish">Publish</option>
-                    <option value="Approve">Approve</option>
-                    <option value="Delete">Delete</option>
-                    <option value="Archive">Archive</option>
+                    {availableActions.map((a) => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
                   </select>
                 </div>
               </div>
