@@ -502,7 +502,7 @@
 
 .btn-audit-page:hover:not(:disabled) {
   border-color: var(--primary);
-  color: var(--primary);
+  color: #000000;
 }
 
 .btn-audit-page.active {

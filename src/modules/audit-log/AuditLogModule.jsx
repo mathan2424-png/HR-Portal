@@ -431,7 +431,7 @@ export const AuditLogModule = () => {
                     <th>AFFECTED RECORD</th>
                     <th>DATE & TIME</th>
                     <th>REASON</th>
-                    <th style={{ textAlign: 'center' }}>ACTIONS</th>
+                    {/* <th style={{ textAlign: 'center' }}>ACTIONS</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -494,26 +494,7 @@ export const AuditLogModule = () => {
                           </td>
 
                           {/* Actions */}
-                          <td style={{ textAlign: 'center' }}>
-                            <div className="aud-row-actions">
-                              <button
-                                type="button"
-                                className="action-icon-btn edit"
-                                title="Edit Audit Record"
-                                onClick={() => handleOpenEdit(item)}
-                              >
-                                <Edit2 size={15} />
-                              </button>
-                              <button
-                                type="button"
-                                className="action-icon-btn delete"
-                                title="Delete Audit Record"
-                                onClick={() => handleDelete(item.id, item.user)}
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </div>
-                          </td>
+                          {/*  */}
                         </tr>
                       );
                     })

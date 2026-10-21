@@ -705,7 +705,7 @@ export const HelpSupportModule = ({ inSettings = false }) => {
       <div className="support-header">
         <div className="support-header-left">
           <h1 className="support-title">
-            <LifeBuoy size={26} color="var(--primary)" />
+
             <span>
               {currentView === 'list'
                 ? 'Help & Support'
@@ -745,47 +745,7 @@ export const HelpSupportModule = ({ inSettings = false }) => {
       {currentView === 'list' && (
         <>
           {/* Summary Metric Cards */}
-          <div className="support-metrics-grid">
-            <div className="support-metric-card">
-              <div className="support-metric-info">
-                <span className="support-metric-label">Total Tickets</span>
-                <span className="support-metric-value">{stats.total}</span>
-              </div>
-              <div className="support-metric-icon blue">
-                <FileText size={22} />
-              </div>
-            </div>
-
-            <div className="support-metric-card">
-              <div className="support-metric-info">
-                <span className="support-metric-label">Open Tickets</span>
-                <span className="support-metric-value">{stats.openCount}</span>
-              </div>
-              <div className="support-metric-icon amber">
-                <AlertCircle size={22} />
-              </div>
-            </div>
-
-            <div className="support-metric-card">
-              <div className="support-metric-info">
-                <span className="support-metric-label">In Progress</span>
-                <span className="support-metric-value">{stats.inProgressCount}</span>
-              </div>
-              <div className="support-metric-icon purple">
-                <Clock size={22} />
-              </div>
-            </div>
-
-            <div className="support-metric-card">
-              <div className="support-metric-info">
-                <span className="support-metric-label">Resolved / Closed</span>
-                <span className="support-metric-value">{stats.resolvedCount}</span>
-              </div>
-              <div className="support-metric-icon green">
-                <CheckCircle2 size={22} />
-              </div>
-            </div>
-          </div>
+          {/*  */}
 
           {/* Main White Card Container */}
           <div className="support-main-card">

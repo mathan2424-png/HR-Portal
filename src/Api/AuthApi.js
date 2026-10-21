@@ -25,7 +25,7 @@ export const AuthApi = {
         ok: false,
         status: res?.status || 500,
         success: false,
-        message: res?.data?.message || 'Login failed. Please check credentials or network connection.',
+        message: res?.data?.message || 'Username and password are not correct',
         ...res?.data,
       };
     }

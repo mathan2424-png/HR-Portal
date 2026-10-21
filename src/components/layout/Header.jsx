@@ -238,13 +238,16 @@ export const Header = () => {
           {menuOpen && (
             <div className="header-user-dropdown">
               <div className="header-user-info-box">
-                <div className="header-user-dropdown-name">
+                <div className="header-user-dropdown-name" title={currentUser?.name || 'Administrator'}>
                   {currentUser?.name || 'Administrator'}
                 </div>
-                <div className="header-user-dropdown-email">
+                <div className="header-user-dropdown-email" title={currentUser?.email || 'admin@hrms.com'}>
                   {currentUser?.email || 'admin@hrms.com'}
                 </div>
-                <div style={{ marginTop: '5px', fontSize: '0.76rem', color: 'var(--primary)', fontWeight: 700 }}>
+                <div
+                  className="header-user-dropdown-role"
+                  title={`Role: ${currentUser?.role || 'Administrator'}${currentUser?.branchName || currentUser?.branch?.branchName ? ` • ${currentUser.branchName || currentUser.branch?.branchName}` : ''}`}
+                >
                   Role: {currentUser?.role || 'Administrator'}
                   {(currentUser?.branchName || currentUser?.branch?.branchName) && (
                     <span> • {currentUser.branchName || currentUser.branch?.branchName}</span>

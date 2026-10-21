@@ -63,7 +63,6 @@ export const LoginPage = () => {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [usernameFocused, setUsernameFocused] = useState(false);
@@ -94,7 +93,14 @@ export const LoginPage = () => {
       const result = await AuthApi.login(username, password);
 
       if (!result.success) {
-        showToast(result.message || 'Invalid credentials', 'error');
+        const isCredentialError =
+          !result.message ||
+          /invalid\s*credential/i.test(result.message) ||
+          result.message.toLowerCase().includes('credential');
+        const errorMessage = isCredentialError
+          ? 'Username and password are not correct'
+          : result.message;
+        showToast(errorMessage, 'error');
         setIsLoading(false);
         return;
       }
@@ -190,7 +196,7 @@ export const LoginPage = () => {
           <form onSubmit={handleSubmit} className="login-form" noValidate>
             {/* Field 1: User Name */}
             <div className="login-field-group">
-              <label className="login-field-label">User Name</label>
+              <label className="login-field-label">UserName</label>
               <div
                 className={`login-input-container ${usernameFocused ? 'focused' : ''
                   } ${errors.username ? 'has-error' : ''}`}
@@ -268,19 +274,6 @@ export const LoginPage = () => {
               <FieldError error={errors.password} />
             </div>
 
-            {/* Remember Me Option */}
-            <div className="login-options-row">
-              <label className="login-remember-label">
-                <input
-                  type="checkbox"
-                  className="login-checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <span className="login-checkbox-custom"></span>
-                <span className="login-remember-text">Remember this device</span>
-              </label>
-            </div>
 
             {/* Sign In Submit Button */}
             <button

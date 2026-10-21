@@ -81,13 +81,16 @@
   position: absolute;
   top: calc(100% + 0.6rem);
   right: 0;
-  width: 220px;
+  min-width: 260px;
+  max-width: 340px;
+  width: max-content;
   background: #ffffff;
   border-radius: 14px;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
   padding: 0.75rem;
   z-index: 1000;
   animation: dropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
 @keyframes dropdownFade {
@@ -104,18 +107,35 @@
 .header-user-info-box {
   padding: 0.35rem 0.5rem 0.65rem;
   border-bottom: 1px solid #f1f5f9;
+  min-width: 0;
 }
 
 .header-user-dropdown-name {
   font-size: 0.85rem;
   font-weight: 700;
   color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .header-user-dropdown-email {
   font-size: 0.75rem;
   color: #64748b;
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-user-dropdown-role {
+  margin-top: 5px;
+  font-size: 0.76rem;
+  color: var(--primary);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .header-dropdown-logout-btn {

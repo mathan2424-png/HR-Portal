@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CompanyApi from '../../Api/CompanyApi';
+import { SubscriptionApi } from '../../Api/SubscriptionApi';
 import {
   Search,
   Plus,
@@ -26,6 +28,7 @@ import {
 import defaultLogo from '../../assets/logo.png';
 import { Toast } from '../../components/common/Toast/Toast';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
+import { BranchLimitModal } from '../../components/common/BranchLimitModal';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import {
   validateEmail,
@@ -39,7 +42,114 @@ import {
 } from '../../utils/validation';
 import './CompanyProfile.css';
 
+// ─────────────────────────────────────────────────────────────
+// SUBSCRIPTION TIER BRANCH LIMIT RESOLVER
+// ─────────────────────────────────────────────────────────────
+export const getPlanBranchLimit = (planName, subscriptionObj = null, companyObj = null) => {
+  // 1. Explicit boolean flags from subscription or company
+  if (
+    subscriptionObj?.plan?.isUnlimitedBranches ||
+    subscriptionObj?.isUnlimitedBranches ||
+    subscriptionObj?.isUnlimited ||
+    companyObj?.isUnlimitedBranches
+  ) {
+    return {
+      maxBranches: Infinity,
+      isUnlimited: true,
+      planName: planName || subscriptionObj?.currentPlan || 'Enterprise Global Ultimate',
+    };
+  }
+
+  // 2. Explicit numeric branch limit on plan object or subscription record
+  if (typeof subscriptionObj?.plan?.maxBranches === 'number' && subscriptionObj.plan.maxBranches > 0) {
+    return {
+      maxBranches: subscriptionObj.plan.maxBranches,
+      isUnlimited: false,
+      planName: subscriptionObj.plan.name || planName || subscriptionObj?.currentPlan || 'Active Plan',
+    };
+  }
+  if (typeof subscriptionObj?.maxBranches === 'number' && subscriptionObj.maxBranches > 0) {
+    return {
+      maxBranches: subscriptionObj.maxBranches,
+      isUnlimited: false,
+      planName: planName || subscriptionObj?.currentPlan || 'Active Plan',
+    };
+  }
+  if (typeof companyObj?.maxBranches === 'number' && companyObj.maxBranches > 0) {
+    return {
+      maxBranches: companyObj.maxBranches,
+      isUnlimited: false,
+      planName: planName || companyObj.subscriptionPlan || 'Active Plan',
+    };
+  }
+
+  // 3. Resolve by Subscription Tier (The actual active plan tier in DB, e.g. "Basic tier • 5 Recruiter Seats")
+  const tierStr = String(
+    subscriptionObj?.tier ||
+    subscriptionObj?.plan?.planType ||
+    subscriptionObj?.planType ||
+    ''
+  ).trim().toLowerCase();
+
+  if (tierStr) {
+    if (tierStr.includes('basic') || tierStr.includes('free') || tierStr.includes('trial')) {
+      return { maxBranches: 1, isUnlimited: false, planName: 'Basic Plan (Basic tier)' };
+    }
+    if (tierStr.includes('starter')) {
+      return { maxBranches: 2, isUnlimited: false, planName: 'Starter Plan' };
+    }
+    if (tierStr.includes('standard')) {
+      return { maxBranches: 3, isUnlimited: false, planName: 'Standard Plan' };
+    }
+    if (tierStr.includes('pro')) {
+      return { maxBranches: 5, isUnlimited: false, planName: 'Enterprise Pro (Annual)' };
+    }
+    if (tierStr.includes('elite')) {
+      return { maxBranches: 15, isUnlimited: false, planName: 'Enterprise Elite (Annual)' };
+    }
+    if (tierStr.includes('ultimate') || tierStr.includes('unlimited')) {
+      return { maxBranches: Infinity, isUnlimited: true, planName: 'Enterprise Global Ultimate' };
+    }
+  }
+
+  // 4. Resolve by planName / currentPlan / marketing title
+  const raw = String(
+    planName ||
+      subscriptionObj?.currentPlan ||
+      subscriptionObj?.name ||
+      companyObj?.subscriptionPlan ||
+      companyObj?.plan ||
+      'Basic'
+  )
+    .trim()
+    .toLowerCase();
+
+  if (raw.includes('ultimate') || raw.includes('unlimited')) {
+    return { maxBranches: Infinity, isUnlimited: true, planName: 'Enterprise Global Ultimate' };
+  }
+  if (raw.includes('elite')) {
+    return { maxBranches: 15, isUnlimited: false, planName: 'Enterprise Elite (Annual)' };
+  }
+  if (raw.includes('pro')) {
+    return { maxBranches: 5, isUnlimited: false, planName: 'Enterprise Pro (Annual)' };
+  }
+  if (raw.includes('standard')) {
+    return { maxBranches: 3, isUnlimited: false, planName: 'Standard Plan' };
+  }
+  if (raw.includes('starter')) {
+    return { maxBranches: 2, isUnlimited: false, planName: 'Starter Plan' };
+  }
+  if (raw.includes('basic') || raw.includes('free') || raw.includes('trial')) {
+    return { maxBranches: 1, isUnlimited: false, planName: raw.includes('trial') ? 'Free Trial' : 'Basic Plan' };
+  }
+
+  // Fallback default: Basic (1 branch)
+  return { maxBranches: 1, isUnlimited: false, planName: 'Basic Plan' };
+};
+
 export const CompanyProfile = () => {
+  const navigate = useNavigate();
+
   // State for companies and branches
   const [companies, setCompanies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,6 +159,16 @@ export const CompanyProfile = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState(false);
+
+  // Active subscription details & Branch limit warning modal state
+  const [activeSubscription, setActiveSubscription] = useState(null);
+  const [branchLimitWarning, setBranchLimitWarning] = useState({
+    isOpen: false,
+    planName: '',
+    currentCount: 0,
+    maxBranches: 0,
+    companyName: '',
+  });
 
   // Active view: 'list' | 'add-branch' | 'edit-branch' | 'view-branch' | 'edit-company' | 'view-company'
   const [currentView, setCurrentView] = useState('list');
@@ -156,6 +276,26 @@ export const CompanyProfile = () => {
     }
   };
 
+  // Fetch active company subscription details
+  useEffect(() => {
+    const loadSub = async () => {
+      try {
+        const res = await SubscriptionApi.getCurrentSubscription();
+        if (res && res.success && res.data) {
+          setActiveSubscription(res.data);
+        } else {
+          const listRes = await SubscriptionApi.getSubscriptions({ limit: 1 });
+          if (listRes && listRes.success && listRes.data?.subscriptions?.length > 0) {
+            setActiveSubscription(listRes.data.subscriptions[0]);
+          }
+        }
+      } catch (err) {
+        console.warn('Subscription fetch:', err);
+      }
+    };
+    loadSub();
+  }, []);
+
   useEffect(() => {
     if (!isPageMounted.current) {
       isPageMounted.current = true;
@@ -229,12 +369,64 @@ export const CompanyProfile = () => {
   // ─────────────────────────────────────────────────────────────
   // 3. ACTION HANDLERS
   // ─────────────────────────────────────────────────────────────
-  const handleOpenAddBranch = (parent = null) => {
+  const handleOpenAddBranch = async (parent = null) => {
     const mainComp = parent || companies.find((c) => c.isMainCompany) || companies[0] || null;
     if (!mainComp) {
       showToast('Please register a main company before adding branch locations.', 'error');
       return;
     }
+
+    // Ensure active subscription details are fully loaded for pre-flight check
+    let subObj = activeSubscription;
+    if (!subObj) {
+      try {
+        const subRes = await SubscriptionApi.getCurrentSubscription();
+        if (subRes && subRes.success && subRes.data) {
+          subObj = subRes.data;
+          setActiveSubscription(subObj);
+        } else {
+          const listRes = await SubscriptionApi.getSubscriptions({ limit: 1 });
+          if (listRes && listRes.success && listRes.data?.subscriptions?.length > 0) {
+            subObj = listRes.data.subscriptions[0];
+            setActiveSubscription(subObj);
+          }
+        }
+      } catch (err) {
+        console.warn('Subscription pre-flight load error:', err);
+      }
+    }
+
+    // ── SENIOR DEV PRE-FLIGHT CHECK: Verify Branch Limit Before Entering Form ────────
+    const activeBranches = Array.isArray(mainComp.branches)
+      ? mainComp.branches.filter((b) => !b.isDelete && b.status !== 'Closed')
+      : allBranchesList.filter((b) => !b.isDelete && b.status !== 'Closed');
+
+    const currentCount =
+      activeBranches.length ||
+      (Array.isArray(mainComp.branches) ? mainComp.branches.length : (allBranchesList.length || mainComp.branchCount || 0));
+
+    const { maxBranches, isUnlimited, planName } = getPlanBranchLimit(
+      subObj?.currentPlan || mainComp.subscriptionPlan,
+      subObj,
+      mainComp
+    );
+
+    if (!isUnlimited && typeof maxBranches === 'number' && currentCount >= maxBranches) {
+      // Branch limit is reached! Prevent entering form and display warning message immediately
+      setBranchLimitWarning({
+        isOpen: true,
+        planName,
+        currentCount,
+        maxBranches,
+        companyName: mainComp.companyName || 'Main Company',
+      });
+      showToast(
+        `Branch limit reached (${currentCount}/${maxBranches} branches used) under ${planName}. Please upgrade your subscription plan.`,
+        'warning'
+      );
+      return;
+    }
+
     setSelectedCompany(mainComp);
     setSelectedBranch(null);
     setShowPassword(false);
@@ -422,6 +614,37 @@ export const CompanyProfile = () => {
           showToast(res?.message || 'Failed to update branch.', 'error');
         }
       } else {
+        // Defensive Pre-Flight Check: Verify branch limit before creating branch
+        const targetParent = selectedCompany || companies.find((c) => c.companyId === parentId) || companies[0];
+        const activeBranches = Array.isArray(targetParent?.branches)
+          ? targetParent.branches.filter((b) => !b.isDelete && b.status !== 'Closed')
+          : allBranchesList.filter((b) => !b.isDelete && b.status !== 'Closed');
+        const currentCount =
+          activeBranches.length ||
+          (Array.isArray(targetParent?.branches) ? targetParent.branches.length : (allBranchesList.length || targetParent?.branchCount || 0));
+
+        const { maxBranches, isUnlimited, planName } = getPlanBranchLimit(
+          activeSubscription?.currentPlan || targetParent?.subscriptionPlan,
+          activeSubscription,
+          targetParent
+        );
+
+        if (!isUnlimited && typeof maxBranches === 'number' && currentCount >= maxBranches) {
+          setBranchLimitWarning({
+            isOpen: true,
+            planName,
+            currentCount,
+            maxBranches,
+            companyName: targetParent?.companyName || 'Main Company',
+          });
+          showToast(
+            `Branch limit reached (${currentCount}/${maxBranches} branches used) under ${planName}. Please upgrade your subscription plan.`,
+            'warning'
+          );
+          setIsSaving(false);
+          return;
+        }
+
         // Create Branch with Administrator Credentials
         const res = await CompanyApi.createBranch(parentId, branchFormData);
         if (res && (res.success || res._id || res.data)) {
@@ -433,6 +656,21 @@ export const CompanyProfile = () => {
           setCurrentView('list');
         } else {
           showToast(res?.message || 'Failed to create branch.', 'error');
+          if (
+            res?.message &&
+            (res.message.toLowerCase().includes('branch limit') ||
+              res.message.toLowerCase().includes('limit reached') ||
+              res.message.toLowerCase().includes('maximum allowed') ||
+              res.message.toLowerCase().includes('allows a maximum'))
+          ) {
+            setBranchLimitWarning({
+              isOpen: true,
+              planName,
+              currentCount,
+              maxBranches,
+              companyName: targetParent?.companyName || 'Main Company',
+            });
+          }
           if (res?.message && res.message.toLowerCase().includes('already taken')) {
             setBranchFormErrors((prev) => ({ ...prev, adminUsername: 'Username is already taken.' }));
           }
@@ -541,6 +779,20 @@ export const CompanyProfile = () => {
         onCancel={() => setDeleteConfirm({ isOpen: false, branch: null, parentCompany: null, isLoading: false })}
       />
 
+      {/* Modern Plan-Aware Branch Limit Warning Modal */}
+      <BranchLimitModal
+        isOpen={branchLimitWarning.isOpen}
+        planName={branchLimitWarning.planName}
+        currentCount={branchLimitWarning.currentCount}
+        maxBranches={branchLimitWarning.maxBranches}
+        companyName={branchLimitWarning.companyName}
+        onClose={() => setBranchLimitWarning((prev) => ({ ...prev, isOpen: false }))}
+        onUpgrade={() => {
+          setBranchLimitWarning((prev) => ({ ...prev, isOpen: false }));
+          navigate('/subscription');
+        }}
+      />
+
       {/* ══════════════════════════════════════════════════════════
           VIEW 1: DUAL TABLES (Company List & Branch List)
           ══════════════════════════════════════════════════════════ */}
@@ -607,10 +859,10 @@ export const CompanyProfile = () => {
             <div className="module-section-header">
               <div className="module-section-title-wrap">
                 <h2 className="module-section-title">
-                  <Building2 size={18} style={{ color: 'var(--primary)' }} />
+
                   <span>Main Company</span>
                 </h2>
-                
+
               </div>
             </div>
 
@@ -758,7 +1010,6 @@ export const CompanyProfile = () => {
             <div className="module-section-header">
               <div className="module-section-title-wrap">
                 <h2 className="module-section-title">
-                  <GitBranch size={18} style={{ color: 'var(--primary)' }} />
                   <span>Branch List</span>
                 </h2>
                 <span className="module-section-badge">
@@ -886,33 +1137,26 @@ export const CompanyProfile = () => {
           ══════════════════════════════════════════════════════════ */}
       {(currentView === 'add-branch' || currentView === 'edit-branch' || currentView === 'view-branch') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <button
-              type="button"
-              className="btn-back-to-list"
-              onClick={() => setCurrentView('list')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
-            >
-              <ArrowLeft size={16} />
-              <span>Back to Company & Branch Management</span>
-            </button>
-          </div>
-
           <div className="companies-header-row">
             <div>
               <h1 className="companies-main-title">
                 {currentView === 'view-branch'
                   ? 'Sub-Branch Profile (Read-Only)'
                   : currentView === 'edit-branch'
-                  ? 'Edit Sub-Branch'
-                  : 'Add New Sub-Branch'}
+                    ? 'Edit Sub-Branch'
+                    : 'Add New Sub-Branch'}
               </h1>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: 'var(--text-muted)' }}>
-                {currentView === 'add-branch'
-                  ? 'Manage sub-branch parameters under registered parent organization.'
-                  : 'Manage sub-branch parameters under registered parent organization.'}
-              </p>
             </div>
+
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={() => setCurrentView('list')}
+              title="Back to Company & Branch Management"
+            >
+              <ArrowLeft size={16} strokeWidth={2.2} />
+              <span>Back to Company & Branch Management</span>
+            </button>
           </div>
 
           <form onSubmit={handleSaveBranch} className="inpage-company-form">
@@ -1307,29 +1551,23 @@ export const CompanyProfile = () => {
           ══════════════════════════════════════════════════════════ */}
       {(currentView === 'edit-company' || currentView === 'view-company') && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <button
-              type="button"
-              className="btn-back-to-list"
-              onClick={() => setCurrentView('list')}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
-            >
-              <ArrowLeft size={16} />
-              <span>Back to Company & Branch Management</span>
-            </button>
-          </div>
-
           <div className="companies-header-row">
             <div>
               <h1 className="companies-main-title">
                 {currentView === 'view-company' ? 'Company Details (Read-Only)' : 'Edit Company Details'}
               </h1>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.86rem', color: 'var(--text-muted)' }}>
-                {currentView === 'view-company'
-                  ? 'Organization profile registered and verified by Super Admin.'
-                  : 'Authorized Admin management. Super Admin-controlled GST verification data is protected.'}
-              </p>
+              
             </div>
+
+            <button
+              type="button"
+              className="btn-back-to-list"
+              onClick={() => setCurrentView('list')}
+              title="Back to Company & Branch Management"
+            >
+              <ArrowLeft size={16} strokeWidth={2.2} />
+              <span>Back to Company & Branch Management</span>
+            </button>
           </div>
 
           <form onSubmit={handleSaveCompany} className="inpage-company-form">
