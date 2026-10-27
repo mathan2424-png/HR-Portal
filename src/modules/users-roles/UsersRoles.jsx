@@ -20,9 +20,11 @@ import {
   Check,
   MoreHorizontal,
   UserPlus,
+  KeyRound,
 } from 'lucide-react';
 import { Toast } from '../../components/common/Toast/Toast';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
+import { ChangePasswordModal } from '../../components/common/ChangePasswordModal/ChangePasswordModal';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import {
   validateEmail,
@@ -377,8 +379,43 @@ const parseRolePermissions = (roleObj) => {
     isLoading: false,
   });
 
+  // Change Password Modal State
+  const [changePasswordModal, setChangePasswordModal] = useState({
+    isOpen: false,
+    user: null,
+    isLoading: false,
+  });
+
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
+  };
+
+  const handleOpenChangeUserPassword = (user) => {
+    setChangePasswordModal({
+      isOpen: true,
+      user,
+      isLoading: false,
+    });
+  };
+
+  const handleSaveUserPassword = async ({ newPassword }) => {
+    if (!changePasswordModal.user) return;
+    setChangePasswordModal((prev) => ({ ...prev, isLoading: true }));
+    try {
+      const userId = changePasswordModal.user._id || changePasswordModal.user.userId;
+      const res = await UsersRolesApi.updateUser(userId, { password: newPassword });
+      if (res && (res.success || res.status === 'success' || res.data)) {
+        showToast(`Password updated successfully for ${changePasswordModal.user.employeeName || 'user'}.`, 'success');
+        setChangePasswordModal({ isOpen: false, user: null, isLoading: false });
+      } else {
+        showToast(res?.message || 'Failed to update user password.', 'error');
+        setChangePasswordModal((prev) => ({ ...prev, isLoading: false }));
+      }
+    } catch (err) {
+      console.error('Password change error:', err);
+      showToast('An unexpected error occurred while updating password.', 'error');
+      setChangePasswordModal((prev) => ({ ...prev, isLoading: false }));
+    }
   };
 
   // Open In-Page "Add Role" View (Hides table, shows Add Role form)
@@ -758,6 +795,16 @@ const parseRolePermissions = (roleObj) => {
         }
       />
 
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={changePasswordModal.isOpen}
+        targetTitle={changePasswordModal.user?.employeeName || changePasswordModal.user?.userId}
+        targetType="User Account"
+        isLoading={changePasswordModal.isLoading}
+        onClose={() => setChangePasswordModal((prev) => ({ ...prev, isOpen: false, isLoading: false }))}
+        onSubmit={handleSaveUserPassword}
+      />
+
       {/* Header */}
       <div className="users-page-header">
         <div className="users-header-left">
@@ -1038,7 +1085,7 @@ const parseRolePermissions = (roleObj) => {
                     <th>MOBILE</th>
                     <th>ASSIGNED ROLE</th>
                     <th>STATUS</th>
-                    <th style={{ textAlign: 'center' }}>ACTION</th>
+                    <th style={{ textAlign: 'center', width: '150px' }}>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1107,6 +1154,14 @@ const parseRolePermissions = (roleObj) => {
                                 onClick={() => handleOpenEditUser(user)}
                               >
                                 <Edit2 size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                className="action-btn-circle password"
+                                title="Change Password"
+                                onClick={() => handleOpenChangeUserPassword(user)}
+                              >
+                                <KeyRound size={15} />
                               </button>
                               <button
                                 type="button"

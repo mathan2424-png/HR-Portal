@@ -21,12 +21,26 @@ import { CompanySettingsModule } from '../modules/settings/CompanySettingsModule
 import { AuditLogModule } from '../modules/audit-log/AuditLogModule';
 import { MastersModule } from '../modules/masters/MastersModule';
 import { HelpSupportModule } from '../modules/support/HelpSupportModule';
+import { PlanSelectionPage } from '../modules/plan-selection/PlanSelectionPage';
 
 const ProtectedLayout = () => {
-  const { isAuthenticated } = usePortal();
+  const { isAuthenticated, currentUser } = usePortal();
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
+  // If newly registered company has no active plan assigned, enforce plan selection
+  const isSuperAdmin = Boolean(currentUser?.role?.toLowerCase().includes('super'));
+  const isBranchAdmin = Boolean(
+    currentUser?.isBranchAdmin ||
+    currentUser?.branchId ||
+    currentUser?.role?.toLowerCase().includes('branch')
+  );
+
+  if (!isSuperAdmin && !isBranchAdmin && currentUser?.hasActivePlan === false) {
+    return <Navigate to="/choose-plan" replace />;
+  }
+
   return <Layout />;
 };
 
@@ -51,6 +65,11 @@ export const AppRoutes = () => {
       {/* Standalone Authentication Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signin" element={<LoginPage />} />
+
+      {/* Modern Plan Selection Page for newly registered companies */}
+      <Route path="/choose-plan" element={<PlanSelectionPage />} />
+      <Route path="/select-plan" element={<PlanSelectionPage />} />
+      <Route path="/pricing" element={<PlanSelectionPage />} />
 
       {/* Protected Portal Layout */}
       <Route path="/" element={<ProtectedLayout />}>

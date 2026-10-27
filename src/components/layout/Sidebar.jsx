@@ -19,6 +19,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import logoImg from '../../assets/logo.png';
+import compactLogoImg from '../../assets/image.png';
 import { usePortal } from '../../context/PortalContext';
 import './Sidebar.css';
 
@@ -175,9 +176,18 @@ export const Sidebar = () => {
   return (
     <aside className={`portal-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
-        <div className="sidebar-brand">
-          <img src={logoImg} alt="HR Portal Logo" className="brand-logo-img" />
-        </div>
+        <Link
+          to="/"
+          className="sidebar-brand"
+          title={sidebarCollapsed ? "Expand Sidebar • HR Portal" : "HR Portal"}
+          onClick={sidebarCollapsed ? (e) => { e.preventDefault(); setSidebarCollapsed(false); } : undefined}
+        >
+          <img
+            src={sidebarCollapsed ? compactLogoImg : logoImg}
+            alt="HR Portal Logo"
+            className={`brand-logo-img ${sidebarCollapsed ? 'compact' : 'full'}`}
+          />
+        </Link>
       </div>
 
       <nav className="sidebar-nav">

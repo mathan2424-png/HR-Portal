@@ -1,0 +1,529 @@
+/* ═══════════════════════════════════════════════════════════════════
+   PLAN SELECTION / PRICING PAGE STYLING
+   Modern, elegant SaaS pricing design with layered bottom wave accents
+   ═══════════════════════════════════════════════════════════════════ */
+
+.pricing-page-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  background: radial-gradient(circle at 50% 20%, #fbfbff 0%, #f1f4fb 100%);
+  color: #1e293b;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  padding: 1.5rem 2rem 4rem 2rem;
+  box-sizing: border-box;
+}
+
+/* ── Top Navigation Bar ────────────────────────────────────────── */
+.pricing-header-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto 1.5rem auto;
+  padding: 0.5rem 0;
+  z-index: 10;
+}
+
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 0.4rem 0.95rem;
+  border-radius: 9999px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: #475569;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+}
+
+.btn-pricing-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pricing-logout:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+  transform: translateY(-1px);
+}
+
+/* ── Floating Geometric Confetti ───────────────────────────────── */
+.confetti-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.confetti-item {
+  position: absolute;
+  opacity: 0.85;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.04));
+  animation: floatConfetti 6s ease-in-out infinite alternate;
+}
+
+.c-pink-sq {
+  width: 12px;
+  height: 12px;
+  background: #ff708e;
+  border-radius: 2px;
+  transform: rotate(25deg);
+}
+
+.c-purple-poly {
+  width: 14px;
+  height: 14px;
+  background: #8b5cf6;
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+  transform: rotate(-15deg);
+  animation-duration: 7s;
+}
+
+.c-cyan-diam {
+  width: 12px;
+  height: 12px;
+  background: #06b6d4;
+  transform: rotate(45deg);
+  animation-duration: 8s;
+}
+
+.c-blue-dot {
+  width: 9px;
+  height: 9px;
+  background: #3b82f6;
+  border-radius: 2px;
+  transform: rotate(18deg);
+}
+
+.c-pink-dot {
+  width: 8px;
+  height: 8px;
+  background: #f43f5e;
+  border-radius: 50%;
+}
+
+.c-purple-dot {
+  width: 8px;
+  height: 8px;
+  background: #a855f7;
+  border-radius: 50%;
+}
+
+.c-cyan-sq {
+  width: 10px;
+  height: 10px;
+  background: #0ea5e9;
+  border-radius: 2px;
+  transform: rotate(32deg);
+}
+
+@keyframes floatConfetti {
+  0% { transform: translateY(0px) rotate(0deg); }
+  100% { transform: translateY(-12px) rotate(15deg); }
+}
+
+/* ── Hero Header ───────────────────────────────────────────────── */
+.pricing-hero-section {
+  text-align: center;
+  max-width: 680px;
+  margin: 0.5rem auto 3rem auto;
+  position: relative;
+  z-index: 2;
+}
+
+.pricing-main-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.85rem 0;
+  line-height: 1.2;
+}
+
+.pricing-subtitle {
+  font-size: 1.02rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* ── Cards Container & Grid ────────────────────────────────────── */
+.pricing-cards-container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 3;
+}
+
+.pricing-loader-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 380px;
+  gap: 1rem;
+  color: #64748b;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.75rem;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Individual Card ───────────────────────────────────────────── */
+.pricing-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.07), 0 0 1px 1px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  padding: 1.75rem 1.75rem 0 1.75rem;
+}
+
+.pricing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.12), 0 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Center / Elevated Pro Card */
+.pricing-card.is-elevated {
+  transform: scale(1.05);
+  z-index: 5;
+  box-shadow: 0 32px 70px -15px rgba(109, 40, 217, 0.22), 0 0 1px 1px rgba(124, 58, 237, 0.15);
+}
+
+.pricing-card.is-elevated:hover {
+  transform: scale(1.06) translateY(-6px);
+}
+
+/* ── Card Line-Art Artwork ─────────────────────────────────────── */
+.card-artwork-box {
+  width: 100%;
+  height: 95px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.card-line-art {
+  width: 130px;
+  height: 90px;
+  transition: transform 0.3s ease;
+}
+
+.pricing-card:hover .card-line-art {
+  transform: scale(1.06);
+}
+
+/* ── Plan Header & Accent Line ─────────────────────────────────── */
+.card-plan-header {
+  text-align: left;
+  margin-bottom: 1.25rem;
+}
+
+.plan-name-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #475569;
+  margin: 0 0 0.35rem 0;
+}
+
+.plan-accent-bar {
+  display: block;
+  width: 32px;
+  height: 3.5px;
+  border-radius: 9999px;
+}
+
+.theme-basic .plan-accent-bar {
+  background: #ff708e;
+}
+
+.theme-pro .plan-accent-bar {
+  background: #7c3aed;
+}
+
+.theme-enterprise .plan-accent-bar {
+  background: #06b6d4;
+}
+
+/* ── Price Section ─────────────────────────────────────────────── */
+.card-price-section {
+  text-align: left;
+  margin-bottom: 1.75rem;
+}
+
+.price-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  line-height: 1;
+}
+
+.price-currency {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.price-amount {
+  font-size: 2.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.04em;
+}
+
+.price-cycle {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-top: 0.35rem;
+}
+
+/* ── Features List ─────────────────────────────────────────────── */
+.card-features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-height: 160px;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.88rem;
+  color: #475569;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.feature-check-icon {
+  color: #22c55e;
+  flex-shrink: 0;
+  stroke-width: 2.6;
+}
+
+.feature-plus-icon {
+  font-weight: 700;
+  color: #22c55e;
+  font-size: 1rem;
+  margin-left: 2px;
+  margin-right: 2px;
+  line-height: 1;
+}
+
+.feature-text {
+  flex: 1;
+}
+
+/* ── Bottom Layered Wave & Pill Button ─────────────────────────── */
+.card-wave-bottom {
+  position: relative;
+  width: calc(100% + 3.5rem);
+  margin-left: -1.75rem;
+  margin-right: -1.75rem;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  margin-top: auto;
+}
+
+.wave-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.btn-choose-plan {
+  position: relative;
+  z-index: 6;
+  background: #ffffff;
+  color: #64748b;
+  border: none;
+  padding: 0.68rem 2.2rem;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-basic .btn-choose-plan {
+  color: #e11d48;
+}
+
+.theme-pro .btn-choose-plan {
+  color: #6d28d9;
+}
+
+.theme-enterprise .btn-choose-plan {
+  color: #0f766e;
+}
+
+.btn-choose-plan:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18), 0 3px 8px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+}
+
+.btn-choose-plan:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-choose-plan:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.btn-choose-plan.is-loading {
+  background: #f8fafc;
+  color: #475569;
+}
+
+/* ── Toast Alert ───────────────────────────────────────────────── */
+.pricing-toast {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0.85rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15), 0 0 1px 1px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  animation: slideToastIn 0.35s ease-out;
+}
+
+.pricing-toast.success {
+  border-left: 4px solid #10b981;
+  color: #065f46;
+}
+
+.pricing-toast.error {
+  border-left: 4px solid #ef4444;
+  color: #991b1b;
+}
+
+.toast-icon {
+  color: #10b981;
+}
+
+@keyframes slideToastIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ── Footer ────────────────────────────────────────────────────── */
+.pricing-footer {
+  text-align: center;
+  margin-top: 3.5rem;
+  font-size: 0.86rem;
+  color: #94a3b8;
+  z-index: 2;
+}
+
+.support-link {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 0.3rem;
+  transition: color 0.2s ease;
+}
+
+.support-link:hover {
+  color: #3730a3;
+  text-decoration: underline;
+}
+
+/* ── Responsive Queries ────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .pricing-grid {
+    grid-template-columns: 1fr;
+    max-width: 440px;
+    margin: 0 auto;
+    gap: 2.5rem;
+  }
+
+  .pricing-card.is-elevated {
+    transform: none;
+  }
+
+  .pricing-card.is-elevated:hover {
+    transform: translateY(-6px);
+  }
+
+  .pricing-main-title {
+    font-size: 2rem;
+  }
+}

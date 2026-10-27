@@ -115,8 +115,22 @@ export const LoginPage = () => {
       }
 
       showToast(result.message || 'Login successful!', 'success');
+
+      // Check if newly created company has no active plan assigned yet
+      const user = result.data.user;
+      const isSuperAdmin = Boolean(
+        user?.role?.toLowerCase?.().includes('super') ||
+        user?.role?.roleName?.toLowerCase?.().includes('super')
+      );
+      const isBranchAdmin = Boolean(user?.isBranchAdmin || user?.branchId);
+      const needsPlanSetup = !isSuperAdmin && !isBranchAdmin && user?.hasActivePlan === false;
+
       setTimeout(() => {
-        navigate('/');
+        if (needsPlanSetup) {
+          navigate('/choose-plan');
+        } else {
+          navigate('/');
+        }
       }, 600);
     } catch (err) {
       console.error('Login error:', err);
@@ -196,7 +210,7 @@ export const LoginPage = () => {
           <form onSubmit={handleSubmit} className="login-form" noValidate>
             {/* Field 1: User Name */}
             <div className="login-field-group">
-              <label className="login-field-label">UserName</label>
+              <label className="login-field-label">Username</label>
               <div
                 className={`login-input-container ${usernameFocused ? 'focused' : ''
                   } ${errors.username ? 'has-error' : ''}`}
@@ -207,7 +221,7 @@ export const LoginPage = () => {
                 <input
                   type="text"
                   className="login-input"
-                  placeholder="Enter User Name"
+                  placeholder="Enter Username"
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value);
@@ -292,20 +306,6 @@ export const LoginPage = () => {
             </button>
           </form>
 
-          {/* Thin Divider Line */}
-          <div className="login-divider-line" />
-
-          {/* Card Footer Help & Support */}
-          <div className="login-card-footer">
-            <span>Need help?</span>
-            <button
-              type="button"
-              className="login-support-link"
-              onClick={handleContactSupport}
-            >
-              Contact Support
-            </button>
-          </div>
         </div>
       </main>
     </div>

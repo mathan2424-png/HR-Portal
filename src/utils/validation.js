@@ -42,6 +42,9 @@ export const validateName = (value, label = 'Name', isRequired = true) => {
   if (/\d/.test(trimmed)) {
     return `${label} must contain letters only (numbers are not allowed)`;
   }
+  if (/[^a-zA-Z\s.]/.test(trimmed)) {
+    return `${label} must contain letters only (special characters are not allowed)`;
+  }
   return null;
 };
 
@@ -105,7 +108,7 @@ export const validateRequired = (value, label = 'This field') => {
 // Restricts name input to string characters only (prevents entering numbers)
 export const sanitizeNameInput = (value) => {
   if (!value) return '';
-  return value.replace(/[0-9]/g, '');
+  return value.replace(/[^a-zA-Z\s.]/g, '');
 };
 
 // Restricts input to digits only

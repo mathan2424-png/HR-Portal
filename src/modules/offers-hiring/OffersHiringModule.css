@@ -689,7 +689,7 @@
 .table-actions-cluster,
 .offer-actions-flex {
   display: inline-grid;
-  grid-template-columns: repeat(2, 30px);
+  grid-template-columns: repeat(3, 30px);
   gap: 0.45rem;
   align-items: center;
   justify-content: center;

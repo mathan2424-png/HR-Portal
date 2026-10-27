@@ -970,9 +970,7 @@ export const CandidateMatching = () => {
         {/* 4 Job-Wise KPI Metric Cards */}
         <div className="job-kpi-quad-grid">
           <div className="job-kpi-card">
-            <div className="kpi-icon-wrap blue">
-              <Users size={16} />
-            </div>
+            
             <div className="kpi-info">
               <span className="kpi-num">{selectedJob.totalMatchedCount}</span>
               <span className="kpi-title">Eligible Candidates</span>
@@ -980,9 +978,7 @@ export const CandidateMatching = () => {
           </div>
 
           <div className="job-kpi-card">
-            <div className="kpi-icon-wrap green">
-              <Award size={16} />
-            </div>
+            
             <div className="kpi-info">
               <span className="kpi-num">{selectedJob.highScore}%</span>
               <span className="kpi-title">Highest Match Score</span>
@@ -990,9 +986,7 @@ export const CandidateMatching = () => {
           </div>
 
           <div className="job-kpi-card">
-            <div className="kpi-icon-wrap purple">
-              <Sparkles size={16} />
-            </div>
+            
             <div className="kpi-info">
               <span className="kpi-num">{selectedJob.avgScore}%</span>
               <span className="kpi-title">Average Match Score</span>
@@ -1000,9 +994,7 @@ export const CandidateMatching = () => {
           </div>
 
           <div className="job-kpi-card">
-            <div className="kpi-icon-wrap amber">
-              <Send size={16} />
-            </div>
+            
             <div className="kpi-info">
               <span className="kpi-num">{selectedJob.totalMatchedCount}</span>
               <span className="kpi-title">Alert Credits Required</span>

@@ -872,6 +872,12 @@
   background: #fef2f2;
 }
 
+.action-btn-circle.password:hover {
+  border-color: #93c5fd;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
 /* Table Footer Pagination */
 .users-table-footer {
   display: flex;

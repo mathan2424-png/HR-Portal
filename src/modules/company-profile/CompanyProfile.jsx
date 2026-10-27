@@ -29,6 +29,7 @@ import defaultLogo from '../../assets/logo.png';
 import { Toast } from '../../components/common/Toast/Toast';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { BranchLimitModal } from '../../components/common/BranchLimitModal';
+import { ChangePasswordModal } from '../../components/common/ChangePasswordModal/ChangePasswordModal';
 import { FieldError } from '../../components/common/FieldError/FieldError';
 import {
   validateEmail,
@@ -60,12 +61,19 @@ export const getPlanBranchLimit = (planName, subscriptionObj = null, companyObj 
     };
   }
 
-  // 2. Explicit numeric branch limit on plan object or subscription record
+  // 2. Explicit numeric branch limit on plan object or subscription record or usage record
   if (typeof subscriptionObj?.plan?.maxBranches === 'number' && subscriptionObj.plan.maxBranches > 0) {
     return {
       maxBranches: subscriptionObj.plan.maxBranches,
       isUnlimited: false,
       planName: subscriptionObj.plan.name || planName || subscriptionObj?.currentPlan || 'Active Plan',
+    };
+  }
+  if (typeof subscriptionObj?.usage?.branchesLimit === 'number' && subscriptionObj.usage.branchesLimit > 0) {
+    return {
+      maxBranches: subscriptionObj.usage.branchesLimit,
+      isUnlimited: false,
+      planName: planName || subscriptionObj?.currentPlan || 'Active Plan',
     };
   }
   if (typeof subscriptionObj?.maxBranches === 'number' && subscriptionObj.maxBranches > 0) {
@@ -83,7 +91,44 @@ export const getPlanBranchLimit = (planName, subscriptionObj = null, companyObj 
     };
   }
 
-  // 3. Resolve by Subscription Tier (The actual active plan tier in DB, e.g. "Basic tier • 5 Recruiter Seats")
+  // 3. Resolve by planName / currentPlan / marketing title FIRST (The actual active plan selected by user)
+  const rawPlan = String(
+    planName ||
+      subscriptionObj?.currentPlan ||
+      subscriptionObj?.planName ||
+      subscriptionObj?.name ||
+      companyObj?.subscriptionPlan ||
+      companyObj?.plan ||
+      ''
+  )
+    .trim()
+    .toLowerCase();
+
+  if (rawPlan) {
+    if (rawPlan.includes('ultimate') || rawPlan.includes('unlimited')) {
+      return { maxBranches: Infinity, isUnlimited: true, planName: 'Enterprise Global Ultimate' };
+    }
+    if (rawPlan.includes('elite')) {
+      return { maxBranches: 15, isUnlimited: false, planName: 'Enterprise Elite (Annual)' };
+    }
+    if (rawPlan.includes('pro')) {
+      return { maxBranches: 5, isUnlimited: false, planName: 'Enterprise Pro (Annual)' };
+    }
+    if (rawPlan.includes('premium')) {
+      return { maxBranches: 20, isUnlimited: false, planName: 'Premium Plan' };
+    }
+    if (rawPlan.includes('standard')) {
+      return { maxBranches: 5, isUnlimited: false, planName: 'Standard Plan' };
+    }
+    if (rawPlan.includes('starter')) {
+      return { maxBranches: 3, isUnlimited: false, planName: 'Starter Plan' };
+    }
+    if (rawPlan.includes('basic') || rawPlan.includes('free') || rawPlan.includes('trial')) {
+      return { maxBranches: 3, isUnlimited: false, planName: rawPlan.includes('trial') ? 'Free Trial' : 'Basic Plan' };
+    }
+  }
+
+  // 4. Resolve by Subscription Tier
   const tierStr = String(
     subscriptionObj?.tier ||
     subscriptionObj?.plan?.planType ||
@@ -92,59 +137,31 @@ export const getPlanBranchLimit = (planName, subscriptionObj = null, companyObj 
   ).trim().toLowerCase();
 
   if (tierStr) {
-    if (tierStr.includes('basic') || tierStr.includes('free') || tierStr.includes('trial')) {
-      return { maxBranches: 1, isUnlimited: false, planName: 'Basic Plan (Basic tier)' };
-    }
-    if (tierStr.includes('starter')) {
-      return { maxBranches: 2, isUnlimited: false, planName: 'Starter Plan' };
-    }
-    if (tierStr.includes('standard')) {
-      return { maxBranches: 3, isUnlimited: false, planName: 'Standard Plan' };
-    }
-    if (tierStr.includes('pro')) {
-      return { maxBranches: 5, isUnlimited: false, planName: 'Enterprise Pro (Annual)' };
+    if (tierStr.includes('ultimate') || tierStr.includes('unlimited')) {
+      return { maxBranches: Infinity, isUnlimited: true, planName: 'Enterprise Global Ultimate' };
     }
     if (tierStr.includes('elite')) {
       return { maxBranches: 15, isUnlimited: false, planName: 'Enterprise Elite (Annual)' };
     }
-    if (tierStr.includes('ultimate') || tierStr.includes('unlimited')) {
-      return { maxBranches: Infinity, isUnlimited: true, planName: 'Enterprise Global Ultimate' };
+    if (tierStr.includes('pro')) {
+      return { maxBranches: 5, isUnlimited: false, planName: 'Enterprise Pro (Annual)' };
+    }
+    if (tierStr.includes('premium')) {
+      return { maxBranches: 20, isUnlimited: false, planName: 'Premium Plan' };
+    }
+    if (tierStr.includes('standard')) {
+      return { maxBranches: 5, isUnlimited: false, planName: 'Standard Plan' };
+    }
+    if (tierStr.includes('starter')) {
+      return { maxBranches: 3, isUnlimited: false, planName: 'Starter Plan' };
+    }
+    if (tierStr.includes('basic') || tierStr.includes('free') || tierStr.includes('trial')) {
+      return { maxBranches: 3, isUnlimited: false, planName: 'Basic Plan (Basic tier)' };
     }
   }
 
-  // 4. Resolve by planName / currentPlan / marketing title
-  const raw = String(
-    planName ||
-      subscriptionObj?.currentPlan ||
-      subscriptionObj?.name ||
-      companyObj?.subscriptionPlan ||
-      companyObj?.plan ||
-      'Basic'
-  )
-    .trim()
-    .toLowerCase();
-
-  if (raw.includes('ultimate') || raw.includes('unlimited')) {
-    return { maxBranches: Infinity, isUnlimited: true, planName: 'Enterprise Global Ultimate' };
-  }
-  if (raw.includes('elite')) {
-    return { maxBranches: 15, isUnlimited: false, planName: 'Enterprise Elite (Annual)' };
-  }
-  if (raw.includes('pro')) {
-    return { maxBranches: 5, isUnlimited: false, planName: 'Enterprise Pro (Annual)' };
-  }
-  if (raw.includes('standard')) {
-    return { maxBranches: 3, isUnlimited: false, planName: 'Standard Plan' };
-  }
-  if (raw.includes('starter')) {
-    return { maxBranches: 2, isUnlimited: false, planName: 'Starter Plan' };
-  }
-  if (raw.includes('basic') || raw.includes('free') || raw.includes('trial')) {
-    return { maxBranches: 1, isUnlimited: false, planName: raw.includes('trial') ? 'Free Trial' : 'Basic Plan' };
-  }
-
-  // Fallback default: Basic (1 branch)
-  return { maxBranches: 1, isUnlimited: false, planName: 'Basic Plan' };
+  // Fallback default: If any higher tier in rawPlan, don't default to Basic
+  return { maxBranches: Infinity, isUnlimited: true, planName: 'Enterprise Plan' };
 };
 
 export const CompanyProfile = () => {
@@ -179,6 +196,12 @@ export const CompanyProfile = () => {
     parentCompany: null,
     isLoading: false,
   });
+  const [changePasswordModal, setChangePasswordModal] = useState({
+    isOpen: false,
+    target: null,
+    title: '',
+    isLoading: false,
+  });
   const [isSaving, setIsSaving] = useState(false);
   const isPageMounted = useRef(false);
 
@@ -188,6 +211,7 @@ export const CompanyProfile = () => {
 
   // Password visibility toggle in form
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Form templates
   const defaultBranchForm = {
@@ -297,19 +321,8 @@ export const CompanyProfile = () => {
   }, []);
 
   useEffect(() => {
-    if (!isPageMounted.current) {
-      isPageMounted.current = true;
-      loadCompanies(1, searchTerm, selectedStatus);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      loadCompanies(1, searchTerm, selectedStatus);
-      setCurrentPage(1);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm, selectedStatus]);
+    loadCompanies();
+  }, []);
 
   // ─────────────────────────────────────────────────────────────
   // 2. FILTERING & FLATTENING BRANCHES
@@ -318,12 +331,28 @@ export const CompanyProfile = () => {
   const filteredCompanies = useMemo(() => {
     const q = searchTerm.toLowerCase();
     return companies.filter((comp) => {
+      const branchMatches = (comp.branches || []).some(
+        (b) =>
+          b.branchName?.toLowerCase().includes(q) ||
+          b.branchCode?.toLowerCase().includes(q) ||
+          b.city?.toLowerCase().includes(q) ||
+          b.state?.toLowerCase().includes(q) ||
+          b.contactPerson?.toLowerCase().includes(q) ||
+          b.email?.toLowerCase().includes(q) ||
+          b.mobile?.toLowerCase().includes(q) ||
+          b.address?.toLowerCase().includes(q)
+      );
+
       const matchesSearch =
         !searchTerm ||
         comp.companyName?.toLowerCase().includes(q) ||
         comp.companyId?.toLowerCase().includes(q) ||
         comp.city?.toLowerCase().includes(q) ||
-        comp.contactPerson?.toLowerCase().includes(q);
+        comp.contactPerson?.toLowerCase().includes(q) ||
+        comp.gstNumber?.toLowerCase().includes(q) ||
+        comp.email?.toLowerCase().includes(q) ||
+        comp.mobile?.toLowerCase().includes(q) ||
+        branchMatches;
 
       const matchesStatus =
         selectedStatus === 'ALL' ||
@@ -347,7 +376,12 @@ export const CompanyProfile = () => {
           b.branchCode?.toLowerCase().includes(q) ||
           b.city?.toLowerCase().includes(q) ||
           b.contactPerson?.toLowerCase().includes(q) ||
-          comp.companyName?.toLowerCase().includes(q);
+          b.email?.toLowerCase().includes(q) ||
+          b.mobile?.toLowerCase().includes(q) ||
+          b.state?.toLowerCase().includes(q) ||
+          b.address?.toLowerCase().includes(q) ||
+          comp.companyName?.toLowerCase().includes(q) ||
+          comp.companyId?.toLowerCase().includes(q);
 
         const matchesStatus =
           selectedStatus === 'ALL' ||
@@ -376,34 +410,31 @@ export const CompanyProfile = () => {
       return;
     }
 
-    // Ensure active subscription details are fully loaded for pre-flight check
+    // Always fetch latest real-time active subscription details for pre-flight check
     let subObj = activeSubscription;
-    if (!subObj) {
-      try {
-        const subRes = await SubscriptionApi.getCurrentSubscription();
-        if (subRes && subRes.success && subRes.data) {
-          subObj = subRes.data;
+    try {
+      const subRes = await SubscriptionApi.getCurrentSubscription();
+      if (subRes && subRes.success && subRes.data) {
+        subObj = subRes.data;
+        setActiveSubscription(subObj);
+      } else {
+        const listRes = await SubscriptionApi.getSubscriptions({ limit: 1 });
+        if (listRes && listRes.success && listRes.data?.subscriptions?.length > 0) {
+          subObj = listRes.data.subscriptions[0];
           setActiveSubscription(subObj);
-        } else {
-          const listRes = await SubscriptionApi.getSubscriptions({ limit: 1 });
-          if (listRes && listRes.success && listRes.data?.subscriptions?.length > 0) {
-            subObj = listRes.data.subscriptions[0];
-            setActiveSubscription(subObj);
-          }
         }
-      } catch (err) {
-        console.warn('Subscription pre-flight load error:', err);
       }
+    } catch (err) {
+      console.warn('Subscription pre-flight load error:', err);
     }
 
     // ── SENIOR DEV PRE-FLIGHT CHECK: Verify Branch Limit Before Entering Form ────────
-    const activeBranches = Array.isArray(mainComp.branches)
-      ? mainComp.branches.filter((b) => !b.isDelete && b.status !== 'Closed')
-      : allBranchesList.filter((b) => !b.isDelete && b.status !== 'Closed');
-
-    const currentCount =
-      activeBranches.length ||
-      (Array.isArray(mainComp.branches) ? mainComp.branches.length : (allBranchesList.length || mainComp.branchCount || 0));
+    // Strictly count active, non-deleted branches (deleted branches immediately free up slots)
+    const branchSource = Array.isArray(mainComp.branches)
+      ? mainComp.branches
+      : (Array.isArray(allBranchesList) ? allBranchesList : []);
+    const activeBranches = branchSource.filter((b) => !b.isDelete && b.status !== 'Closed');
+    const currentCount = activeBranches.length;
 
     const { maxBranches, isUnlimited, planName } = getPlanBranchLimit(
       subObj?.currentPlan || mainComp.subscriptionPlan,
@@ -430,6 +461,7 @@ export const CompanyProfile = () => {
     setSelectedCompany(mainComp);
     setSelectedBranch(null);
     setShowPassword(false);
+    setShowConfirmPassword(false);
 
     setBranchFormData({
       parentCompanyId: mainComp.companyId || '',
@@ -461,6 +493,7 @@ export const CompanyProfile = () => {
     setSelectedCompany(parent);
     setSelectedBranch(branch);
     setShowPassword(false);
+    setShowConfirmPassword(false);
 
     setBranchFormData({
       parentCompanyId: parent?.companyId || branch.companyId || '',
@@ -524,6 +557,42 @@ export const CompanyProfile = () => {
     setCurrentView('view-company');
   };
 
+  const handleOpenChangeBranchPassword = (branch) => {
+    setChangePasswordModal({
+      isOpen: true,
+      target: branch,
+      title: branch.branchName ? `${branch.branchName} (${branch.branchCode || 'Branch'})` : 'Branch Account',
+      isLoading: false,
+    });
+  };
+
+  const handleSaveChangePassword = async ({ newPassword }) => {
+    const { target } = changePasswordModal;
+    if (!target) return;
+
+    setChangePasswordModal((prev) => ({ ...prev, isLoading: true }));
+    try {
+      const parentId =
+        target.parentCompanyObj?._id ||
+        target.parentCompanyObj?.companyId ||
+        target.companyId ||
+        'CMP-1001';
+      const branchId = target._id || target.id;
+      const res = await CompanyApi.updateBranch(parentId, branchId, { adminPassword: newPassword });
+      if (res && (res.success || res.status === 'success')) {
+        showToast(`Password updated successfully for branch "${target.branchName}".`, 'success');
+        setChangePasswordModal({ isOpen: false, target: null, title: '', isLoading: false });
+      } else {
+        showToast(res?.message || 'Failed to update branch password.', 'error');
+        setChangePasswordModal((prev) => ({ ...prev, isLoading: false }));
+      }
+    } catch (err) {
+      console.error('Password change error:', err);
+      showToast('An unexpected error occurred while updating password.', 'error');
+      setChangePasswordModal((prev) => ({ ...prev, isLoading: false }));
+    }
+  };
+
   // ─────────────────────────────────────────────────────────────
   // 4. BRANCH SUBMISSION & VALIDATION
   // ─────────────────────────────────────────────────────────────
@@ -540,6 +609,32 @@ export const CompanyProfile = () => {
     setBranchFormData((prev) => ({ ...prev, [name]: sanitizedVal }));
     if (branchFormErrors[name]) {
       setBranchFormErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleBranchBlur = (e) => {
+    const { name, value } = e.target;
+    if (currentView === 'view-branch') return;
+
+    let err = null;
+    if (name === 'email') err = validateEmail(value, 'Branch Email Address');
+    else if (name === 'mobile') err = validatePhone(value, 'Branch Mobile Number');
+    else if (name === 'contactPerson') err = validateName(value, 'Contact Person Name');
+    else if (name === 'branchName') err = validateRequired(value, 'Branch Name');
+    else if (name === 'branchCode') err = validateRequired(value, 'Branch Code');
+    else if (name === 'adminUsername' && currentView === 'add-branch') {
+      if (!value || value.trim().length < 3) err = 'Username must be at least 3 characters.';
+    } else if (name === 'adminPassword' && currentView === 'add-branch') {
+      if (!value || value.length < 6) err = 'Password must be at least 6 characters.';
+    } else if (name === 'confirmPassword' && currentView === 'add-branch') {
+      if (value !== branchFormData.adminPassword) err = 'Passwords do not match.';
+    } else if (name === 'address') err = validateRequired(value, 'Branch Address');
+    else if (name === 'city') err = validateRequired(value, 'City');
+    else if (name === 'state') err = validateRequired(value, 'State');
+    else if (name === 'pincode') err = validateNumber(value, 'Pincode', 6, 6);
+
+    if (err) {
+      setBranchFormErrors((prev) => ({ ...prev, [name]: err }));
     }
   };
 
@@ -566,16 +661,16 @@ export const CompanyProfile = () => {
       }
     }
 
-    const personErr = validateName(branchFormData.contactPerson, 'Contact Person');
+    const personErr = validateName(branchFormData.contactPerson, 'Contact Person Name');
     if (personErr) errors.contactPerson = personErr;
 
-    const emailErr = validateEmail(branchFormData.email, 'Email Address');
+    const emailErr = validateEmail(branchFormData.email, 'Branch Email Address');
     if (emailErr) errors.email = emailErr;
 
-    const mobileErr = validatePhone(branchFormData.mobile, 'Mobile Number');
+    const mobileErr = validatePhone(branchFormData.mobile, 'Branch Mobile Number');
     if (mobileErr) errors.mobile = mobileErr;
 
-    const addrErr = validateRequired(branchFormData.address, 'Address');
+    const addrErr = validateRequired(branchFormData.address, 'Branch Address');
     if (addrErr) errors.address = addrErr;
 
     const cityErr = validateRequired(branchFormData.city, 'City');
@@ -616,12 +711,11 @@ export const CompanyProfile = () => {
       } else {
         // Defensive Pre-Flight Check: Verify branch limit before creating branch
         const targetParent = selectedCompany || companies.find((c) => c.companyId === parentId) || companies[0];
-        const activeBranches = Array.isArray(targetParent?.branches)
-          ? targetParent.branches.filter((b) => !b.isDelete && b.status !== 'Closed')
-          : allBranchesList.filter((b) => !b.isDelete && b.status !== 'Closed');
-        const currentCount =
-          activeBranches.length ||
-          (Array.isArray(targetParent?.branches) ? targetParent.branches.length : (allBranchesList.length || targetParent?.branchCount || 0));
+        const branchSource = Array.isArray(targetParent?.branches)
+          ? targetParent.branches
+          : (Array.isArray(allBranchesList) ? allBranchesList : []);
+        const activeBranches = branchSource.filter((b) => !b.isDelete && b.status !== 'Closed');
+        const currentCount = activeBranches.length;
 
         const { maxBranches, isUnlimited, planName } = getPlanBranchLimit(
           activeSubscription?.currentPlan || targetParent?.subscriptionPlan,
@@ -725,7 +819,7 @@ export const CompanyProfile = () => {
     const { name, value } = e.target;
     let sanitizedVal = value;
     if (name === 'contactPerson') sanitizedVal = sanitizeNameInput(value);
-    if (name === 'companyMobile') sanitizedVal = sanitizePhoneInput(value);
+    if (name === 'companyMobile') sanitizedVal = sanitizePhoneInput(value).slice(0, 10);
     if (name === 'pincode') sanitizedVal = sanitizeNumberInput(value).slice(0, 6);
 
     setCompanyFormData((prev) => ({ ...prev, [name]: sanitizedVal }));
@@ -734,22 +828,121 @@ export const CompanyProfile = () => {
     }
   };
 
+  const handleCompanyBlur = (e) => {
+    const { name, value } = e.target;
+    if (currentView === 'view-company') return;
+
+    let err = null;
+    if (name === 'companyEmail') err = validateEmail(value, 'Company Email');
+    else if (name === 'companyMobile') err = validatePhone(value, 'Company Mobile');
+    else if (name === 'contactPerson') err = validateName(value, 'Contact Person');
+    else if (name === 'registeredAddress') err = validateRequired(value, 'Registered Address');
+    else if (name === 'city') err = validateRequired(value, 'City');
+    else if (name === 'state') err = validateRequired(value, 'State');
+    else if (name === 'pincode') err = validateNumber(value, 'Pincode', 6, 6);
+
+    if (err) {
+      setCompanyFormErrors((prev) => ({ ...prev, [name]: err }));
+    }
+  };
+
+  const validateCompanyForm = () => {
+    const errors = {};
+
+    const emailToTest = (companyFormData.companyEmail || companyFormData.email || '').trim();
+    const emailErr = validateEmail(emailToTest, 'Company Email');
+    if (emailErr) errors.companyEmail = emailErr;
+
+    const phoneToTest = (companyFormData.companyMobile || companyFormData.mobile || '').trim();
+    const mobileErr = validatePhone(phoneToTest, 'Company Mobile');
+    if (mobileErr) errors.companyMobile = mobileErr;
+
+    const personErr = validateName(companyFormData.contactPerson, 'Contact Person');
+    if (personErr) errors.contactPerson = personErr;
+
+    const addrErr = validateRequired(companyFormData.registeredAddress, 'Registered Address');
+    if (addrErr) errors.registeredAddress = addrErr;
+
+    const cityErr = validateRequired(companyFormData.city, 'City');
+    if (cityErr) errors.city = cityErr;
+
+    const stateErr = validateRequired(companyFormData.state, 'State');
+    if (stateErr) errors.state = stateErr;
+
+    const pinErr = validateNumber(companyFormData.pincode, 'Pincode', 6, 6);
+    if (pinErr) errors.pincode = pinErr;
+
+    setCompanyFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSaveCompany = async (e) => {
     e.preventDefault();
+    if (!validateCompanyForm()) {
+      showToast('Please correct the validation errors in the form.', 'error');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const companyId = companyFormData.companyId || companyFormData._id;
-      const res = await CompanyApi.updateCompany(companyId, companyFormData);
-      if (res && (res.success || res.companyId)) {
-        showToast(`Company "${companyFormData.companyName}" updated successfully.`, 'success');
+      const companyId =
+        companyFormData.companyId ||
+        selectedCompany?.companyId ||
+        companyFormData._id ||
+        selectedCompany?._id;
+
+      // Construct a clean, sanitized payload for updating permitted fields only
+      const cleanPayload = {
+        name: companyFormData.companyName || selectedCompany?.name || selectedCompany?.companyName,
+        companyName: companyFormData.companyName || selectedCompany?.companyName || selectedCompany?.name,
+        aboutCompany: companyFormData.aboutCompany?.trim() || '',
+        industry: companyFormData.industry?.trim() || 'Information Technology',
+        size: companyFormData.companySize || '500-1000 Employees',
+        companySize: companyFormData.companySize || '500-1000 Employees',
+        website: companyFormData.website?.trim() || '',
+        email: (companyFormData.companyEmail || companyFormData.email || '').trim().toLowerCase(),
+        companyEmail: (companyFormData.companyEmail || companyFormData.email || '').trim().toLowerCase(),
+        mobile: (companyFormData.companyMobile || companyFormData.mobile || '').replace(/\D/g, '').slice(-10),
+        companyMobile: (companyFormData.companyMobile || companyFormData.mobile || '').replace(/\D/g, '').slice(-10),
+        contactPerson: companyFormData.contactPerson?.trim() || '',
+        contactDesignation: companyFormData.contactDesignation?.trim() || 'Director',
+        registeredAddress: companyFormData.registeredAddress?.trim() || '',
+        city: companyFormData.city?.trim() || '',
+        state: companyFormData.state?.trim() || 'Tamil Nadu',
+        pincode: companyFormData.pincode?.trim() || '',
+        status: companyFormData.status || selectedCompany?.status || 'Active',
+      };
+
+      // Retain existing GST and business type so backend doesn't overwrite with empty string
+      if (selectedCompany?.gstNumber) {
+        cleanPayload.gstNumber = selectedCompany.gstNumber;
+      } else if (companyFormData.gstNumber?.trim()) {
+        cleanPayload.gstNumber = companyFormData.gstNumber.trim();
+      }
+
+      if (selectedCompany?.businessType) {
+        cleanPayload.businessType = selectedCompany.businessType;
+        cleanPayload.companyType = selectedCompany.businessType;
+      } else {
+        cleanPayload.businessType = 'Private Limited';
+        cleanPayload.companyType = 'Private Limited';
+      }
+
+      const res = await CompanyApi.updateCompany(companyId, cleanPayload);
+      if (res && (res.success || res.companyId || res._id || res.id)) {
+        showToast(`Company "${companyFormData.companyName || 'Details'}" updated successfully.`, 'success');
         await loadCompanies();
         setCurrentView('list');
       } else {
-        showToast(res?.message || 'Failed to update company.', 'error');
+        const errorMsg =
+          res?.message ||
+          (res?.errors && typeof res.errors === 'object' ? Object.values(res.errors)[0] : null) ||
+          'Failed to update company.';
+        showToast(errorMsg, 'error');
       }
     } catch (err) {
       console.error('Update company error:', err);
-      showToast('Error saving company.', 'error');
+      showToast(err.response?.data?.message || err.message || 'Error saving company.', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -793,6 +986,16 @@ export const CompanyProfile = () => {
         }}
       />
 
+      {/* Modern Change / Edit Branch Password Modal */}
+      <ChangePasswordModal
+        isOpen={changePasswordModal.isOpen}
+        targetTitle={changePasswordModal.title}
+        targetType="Sub-Branch"
+        isLoading={changePasswordModal.isLoading}
+        onClose={() => setChangePasswordModal((prev) => ({ ...prev, isOpen: false, isLoading: false }))}
+        onSubmit={handleSaveChangePassword}
+      />
+
       {/* ══════════════════════════════════════════════════════════
           VIEW 1: DUAL TABLES (Company List & Branch List)
           ══════════════════════════════════════════════════════════ */}
@@ -810,46 +1013,6 @@ export const CompanyProfile = () => {
               <Plus size={16} />
               <span>Add Branch</span>
             </button>
-          </div>
-
-          {/* Search and Status Filter Toolbar */}
-          <div className="companies-main-card" style={{ padding: '0.85rem 1.25rem', marginBottom: '0.5rem' }}>
-            <div className="companies-toolbar" style={{ margin: 0 }}>
-              <div className="toolbar-left-group">
-                <div style={{ position: 'relative', width: '320px' }}>
-                  <Search
-                    size={16}
-                    style={{
-                      position: 'absolute',
-                      left: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: 'var(--text-muted)',
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="company-search-input"
-                    style={{ paddingLeft: '36px' }}
-                  />
-                </div>
-              </div>
-
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="toolbar-filter-select"
-              >
-                <option value="ALL">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                <option value="Blocked">Blocked</option>
-                <option value="Suspended">Suspended</option>
-              </select>
-            </div>
           </div>
 
           {/* ═══════════════════════════════════════════════════════
@@ -881,14 +1044,14 @@ export const CompanyProfile = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCompanies.length === 0 ? (
+                  {companies.length === 0 ? (
                     <tr>
                       <td colSpan="8" className="empty-table-cell">
-                        {isLoading ? 'Loading company records...' : 'No companies found matching criteria.'}
+                        {isLoading ? 'Loading company records...' : 'No main company registered yet.'}
                       </td>
                     </tr>
                   ) : (
-                    filteredCompanies.map((company, index) => {
+                    companies.map((company, index) => {
                       const branchCount = (company.branches || []).length;
                       return (
                         <tr key={company.companyId || company._id}>
@@ -898,15 +1061,6 @@ export const CompanyProfile = () => {
                           {/* COMPANY NAME */}
                           <td style={{ textAlign: 'left' }}>
                             <div className="company-info-cell" style={{ justifyContent: 'flex-start' }}>
-                              <div className="company-logo-mini">
-                                {company.companyLogo ? (
-                                  <img src={company.companyLogo} alt={company.companyName} />
-                                ) : (
-                                  <span className="company-logo-letter">
-                                    {company.companyName ? company.companyName.trim().charAt(0).toUpperCase() : 'O'}
-                                  </span>
-                                )}
-                              </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                                 <span className="company-name-title" style={{ fontSize: '0.94rem', fontWeight: 800 }}>
                                   {company.companyName}
@@ -961,7 +1115,6 @@ export const CompanyProfile = () => {
                           {/* TOTAL BRANCHES */}
                           <td style={{ textAlign: 'center' }}>
                             <span className="company-branch-count-btn">
-                              <GitBranch size={13} />
                               <span>{branchCount} {branchCount === 1 ? 'Branch' : 'Branches'}</span>
                             </span>
                           </td>
@@ -1004,6 +1157,46 @@ export const CompanyProfile = () => {
           </div>
 
           {/* ═══════════════════════════════════════════════════════
+              SEARCH & STATUS FILTER TOOLBAR (Branch List)
+              ═══════════════════════════════════════════════════════ */}
+          <div className="companies-main-card" style={{ padding: '0.85rem 1.25rem'}}>
+            <div className="companies-toolbar" style={{ margin: 0 }}>
+              <div className="toolbar-left-group">
+                <div style={{ position: 'relative', width: '320px' }}>
+                  <Search
+                    size={16}
+                    style={{
+                      position: 'absolute',
+                      left: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: 'var(--text-muted)',
+                    }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search branches..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="company-search-input"
+                    style={{ paddingLeft: '36px' }}
+                  />
+                </div>
+              </div>
+
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="toolbar-filter-select"
+              >
+                <option value="ALL">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════
               SECTION 2: BRANCH LIST TABLE
               ═══════════════════════════════════════════════════════ */}
           <div className="section-table-box">
@@ -1029,14 +1222,14 @@ export const CompanyProfile = () => {
                     <th style={{ textAlign: 'left' }}>LOCATION / ADDRESS</th>
                     <th style={{ textAlign: 'left' }}>CONTACT PERSON</th>
                     <th style={{ textAlign: 'center' }}>STATUS</th>
-                    <th style={{ textAlign: 'center', width: '110px' }}>ACTIONS</th>
+                    <th style={{ textAlign: 'center', width: '135px' }}>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {allBranchesList.length === 0 ? (
                     <tr>
                       <td colSpan="8" className="empty-table-cell">
-                        No sub-branches registered yet. Click "+ Add Branch" to create one.
+                        No sub-branches registered yet.
                       </td>
                     </tr>
                   ) : (
@@ -1114,6 +1307,14 @@ export const CompanyProfile = () => {
                             </button>
                             <button
                               type="button"
+                              className="action-icon-button password"
+                              title="Change Password"
+                              onClick={() => handleOpenChangeBranchPassword(branch)}
+                            >
+                              <KeyRound size={15} />
+                            </button>
+                            <button
+                              type="button"
                               className="action-icon-button delete"
                               title="Delete Branch"
                               onClick={() => handleDeleteBranch(branch, branch.parentCompanyObj)}
@@ -1159,7 +1360,7 @@ export const CompanyProfile = () => {
             </button>
           </div>
 
-          <form onSubmit={handleSaveBranch} className="inpage-company-form">
+          <form onSubmit={handleSaveBranch} className="inpage-company-form" noValidate>
             {/* SECTION 1: PARENT COMPANY (READ-ONLY) */}
             <div className="inpage-section-box">
               <div className="inpage-section-header">
@@ -1203,8 +1404,9 @@ export const CompanyProfile = () => {
                     placeholder="e.g. Central Branch"
                     value={branchFormData.branchName}
                     onChange={handleBranchInputChange}
+                    onBlur={handleBranchBlur}
                     readOnly={currentView === 'view-branch'}
-                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                    className={`form-control-input ${branchFormErrors.branchName ? 'has-error' : ''} ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
                   <FieldError error={branchFormErrors.branchName} />
                 </div>
@@ -1222,8 +1424,9 @@ export const CompanyProfile = () => {
                     placeholder="e.g. BR-001"
                     value={branchFormData.branchCode}
                     onChange={handleBranchInputChange}
+                    onBlur={handleBranchBlur}
                     readOnly={currentView === 'view-branch'}
-                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                    className={`form-control-input ${branchFormErrors.branchCode ? 'has-error' : ''} ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
                   <FieldError error={branchFormErrors.branchCode} />
                 </div>
@@ -1318,7 +1521,8 @@ export const CompanyProfile = () => {
                       placeholder="e.g. branch_tambaram"
                       value={branchFormData.adminUsername}
                       onChange={handleBranchInputChange}
-                      className="form-control-input"
+                      onBlur={handleBranchBlur}
+                      className={`form-control-input ${branchFormErrors.adminUsername ? 'has-error' : ''}`}
                     />
                     <FieldError error={branchFormErrors.adminUsername} />
                   </div>
@@ -1334,7 +1538,8 @@ export const CompanyProfile = () => {
                         placeholder="Enter password (min 6 chars)"
                         value={branchFormData.adminPassword}
                         onChange={handleBranchInputChange}
-                        className="form-control-input"
+                        onBlur={handleBranchBlur}
+                        className={`form-control-input ${branchFormErrors.adminPassword ? 'has-error' : ''}`}
                         style={{ paddingRight: '36px' }}
                       />
                       <button
@@ -1361,14 +1566,35 @@ export const CompanyProfile = () => {
                     <label>
                       Confirm Password <span style={{ color: '#dc2626' }}>*</span>
                     </label>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="confirmPassword"
-                      placeholder="Re-enter password"
-                      value={branchFormData.confirmPassword}
-                      onChange={handleBranchInputChange}
-                      className="form-control-input"
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        placeholder="Re-enter password"
+                        value={branchFormData.confirmPassword}
+                        onChange={handleBranchInputChange}
+                        onBlur={handleBranchBlur}
+                        className={`form-control-input ${branchFormErrors.confirmPassword ? 'has-error' : ''}`}
+                        style={{ paddingRight: '36px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((p) => !p)}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#64748b',
+                          cursor: 'pointer',
+                        }}
+                        title={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                     <FieldError error={branchFormErrors.confirmPassword} />
                   </div>
                 </div>
@@ -1392,8 +1618,9 @@ export const CompanyProfile = () => {
                     placeholder="e.g. Kavitha R"
                     value={branchFormData.contactPerson}
                     onChange={handleBranchInputChange}
+                    onBlur={handleBranchBlur}
                     readOnly={currentView === 'view-branch'}
-                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                    className={`form-control-input ${branchFormErrors.contactPerson ? 'has-error' : ''} ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
                   <FieldError error={branchFormErrors.contactPerson} />
                 </div>
@@ -1423,8 +1650,9 @@ export const CompanyProfile = () => {
                     placeholder="e.g. branch@company.com"
                     value={branchFormData.email}
                     onChange={handleBranchInputChange}
+                    onBlur={handleBranchBlur}
                     readOnly={currentView === 'view-branch'}
-                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                    className={`form-control-input ${branchFormErrors.email ? 'has-error' : ''} ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
                   <FieldError error={branchFormErrors.email} />
                 </div>
@@ -1439,9 +1667,10 @@ export const CompanyProfile = () => {
                     placeholder="e.g. 9840112233"
                     value={branchFormData.mobile}
                     onChange={handleBranchInputChange}
+                    onBlur={handleBranchBlur}
                     maxLength={10}
                     readOnly={currentView === 'view-branch'}
-                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                    className={`form-control-input ${branchFormErrors.mobile ? 'has-error' : ''} ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
                   <FieldError error={branchFormErrors.mobile} />
                 </div>
@@ -1463,8 +1692,9 @@ export const CompanyProfile = () => {
                   placeholder="e.g. GST Road, Near Sanatorium Railway Station"
                   value={branchFormData.address}
                   onChange={handleBranchInputChange}
+                  onBlur={handleBranchBlur}
                   readOnly={currentView === 'view-branch'}
-                  className={`form-control-textarea ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                  className={`form-control-textarea ${branchFormErrors.address ? 'has-error' : ''} ${currentView === 'view-branch' ? 'readonly' : ''}`}
                 />
                 <FieldError error={branchFormErrors.address} />
               </div>
@@ -1480,8 +1710,9 @@ export const CompanyProfile = () => {
                     placeholder="e.g. Chennai / Coimbatore / Trichy / Puducherry"
                     value={branchFormData.city}
                     onChange={handleBranchInputChange}
+                    onBlur={handleBranchBlur}
                     readOnly={currentView === 'view-branch'}
-                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                    className={`form-control-input ${branchFormErrors.city ? 'has-error' : ''} ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
                   <FieldError error={branchFormErrors.city} />
                 </div>
@@ -1496,8 +1727,9 @@ export const CompanyProfile = () => {
                     placeholder="e.g. Tamil Nadu"
                     value={branchFormData.state}
                     onChange={handleBranchInputChange}
+                    onBlur={handleBranchBlur}
                     readOnly={currentView === 'view-branch'}
-                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                    className={`form-control-input ${branchFormErrors.state ? 'has-error' : ''} ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
                   <FieldError error={branchFormErrors.state} />
                 </div>
@@ -1512,9 +1744,10 @@ export const CompanyProfile = () => {
                     placeholder="e.g. 600045"
                     value={branchFormData.pincode}
                     onChange={handleBranchInputChange}
+                    onBlur={handleBranchBlur}
                     maxLength={6}
                     readOnly={currentView === 'view-branch'}
-                    className={`form-control-input ${currentView === 'view-branch' ? 'readonly' : ''}`}
+                    className={`form-control-input ${branchFormErrors.pincode ? 'has-error' : ''} ${currentView === 'view-branch' ? 'readonly' : ''}`}
                   />
                   <FieldError error={branchFormErrors.pincode} />
                 </div>
@@ -1570,7 +1803,7 @@ export const CompanyProfile = () => {
             </button>
           </div>
 
-          <form onSubmit={handleSaveCompany} className="inpage-company-form">
+          <form onSubmit={handleSaveCompany} className="inpage-company-form" noValidate>
             {/* SECTION 1: SUPER ADMIN CONTROLLED REGISTRATION & GST (STRICTLY READ-ONLY) */}
             <div className="inpage-section-box">
               <div className="inpage-section-header">
@@ -1715,41 +1948,57 @@ export const CompanyProfile = () => {
 
               <div className="inpage-grid-2col">
                 <div className="form-field-group">
-                  <label>Company Email</label>
+                  <label>
+                    Company Email <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="email"
                     name="companyEmail"
                     value={companyFormData.companyEmail}
                     onChange={handleCompanyInputChange}
+                    onBlur={handleCompanyBlur}
                     readOnly={currentView === 'view-company'}
-                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                    className={`form-control-input ${companyFormErrors.companyEmail ? 'has-error' : ''} ${currentView === 'view-company' ? 'readonly' : ''}`}
+                    placeholder="company@domain.com"
                   />
+                  <FieldError error={companyFormErrors.companyEmail} />
                 </div>
 
                 <div className="form-field-group">
-                  <label>Company Mobile</label>
+                  <label>
+                    Company Mobile <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="tel"
                     name="companyMobile"
                     value={companyFormData.companyMobile}
                     onChange={handleCompanyInputChange}
+                    onBlur={handleCompanyBlur}
+                    maxLength={10}
+                    placeholder="10-digit mobile number"
                     readOnly={currentView === 'view-company'}
-                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                    className={`form-control-input ${companyFormErrors.companyMobile ? 'has-error' : ''} ${currentView === 'view-company' ? 'readonly' : ''}`}
                   />
+                  <FieldError error={companyFormErrors.companyMobile} />
                 </div>
               </div>
 
               <div className="inpage-grid-2col">
                 <div className="form-field-group">
-                  <label>Contact Person</label>
+                  <label>
+                    Contact Person <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="text"
                     name="contactPerson"
                     value={companyFormData.contactPerson}
                     onChange={handleCompanyInputChange}
+                    onBlur={handleCompanyBlur}
+                    placeholder="Contact person name"
                     readOnly={currentView === 'view-company'}
-                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                    className={`form-control-input ${companyFormErrors.contactPerson ? 'has-error' : ''} ${currentView === 'view-company' ? 'readonly' : ''}`}
                   />
+                  <FieldError error={companyFormErrors.contactPerson} />
                 </div>
 
                 <div className="form-field-group">
@@ -1759,6 +2008,7 @@ export const CompanyProfile = () => {
                     name="contactDesignation"
                     value={companyFormData.contactDesignation}
                     onChange={handleCompanyInputChange}
+                    placeholder="e.g. Director / Head of HR"
                     readOnly={currentView === 'view-company'}
                     className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
                   />
@@ -1773,52 +2023,72 @@ export const CompanyProfile = () => {
               </div>
 
               <div className="form-field-group">
-                <label>Registered Address</label>
+                <label>
+                  Registered Address <span style={{ color: '#dc2626' }}>*</span>
+                </label>
                 <textarea
                   name="registeredAddress"
                   value={companyFormData.registeredAddress}
                   onChange={handleCompanyInputChange}
+                  onBlur={handleCompanyBlur}
+                  placeholder="Official office street address..."
                   readOnly={currentView === 'view-company'}
-                  className={`form-control-textarea ${currentView === 'view-company' ? 'readonly' : ''}`}
+                  className={`form-control-textarea ${companyFormErrors.registeredAddress ? 'has-error' : ''} ${currentView === 'view-company' ? 'readonly' : ''}`}
                 />
+                <FieldError error={companyFormErrors.registeredAddress} />
               </div>
 
               <div className="inpage-grid-3col">
                 <div className="form-field-group">
-                  <label>City</label>
+                  <label>
+                    City <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="text"
                     name="city"
                     value={companyFormData.city}
                     onChange={handleCompanyInputChange}
+                    onBlur={handleCompanyBlur}
+                    placeholder="City name"
                     readOnly={currentView === 'view-company'}
-                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                    className={`form-control-input ${companyFormErrors.city ? 'has-error' : ''} ${currentView === 'view-company' ? 'readonly' : ''}`}
                   />
+                  <FieldError error={companyFormErrors.city} />
                 </div>
 
                 <div className="form-field-group">
-                  <label>State</label>
+                  <label>
+                    State <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="text"
                     name="state"
                     value={companyFormData.state}
                     onChange={handleCompanyInputChange}
+                    onBlur={handleCompanyBlur}
+                    placeholder="State name"
                     readOnly={currentView === 'view-company'}
-                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                    className={`form-control-input ${companyFormErrors.state ? 'has-error' : ''} ${currentView === 'view-company' ? 'readonly' : ''}`}
                   />
+                  <FieldError error={companyFormErrors.state} />
                 </div>
 
                 <div className="form-field-group">
-                  <label>Pincode</label>
+                  <label>
+                    Pincode (6 Digits) <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
                   <input
                     type="text"
                     name="pincode"
                     value={companyFormData.pincode}
                     onChange={handleCompanyInputChange}
+                    onBlur={handleCompanyBlur}
                     maxLength={6}
+                    placeholder="e.g. 600001"
                     readOnly={currentView === 'view-company'}
-                    className={`form-control-input ${currentView === 'view-company' ? 'readonly' : ''}`}
+                    className={`form-control-input ${companyFormErrors.pincode ? 'has-error' : ''} ${currentView === 'view-company' ? 'readonly' : ''}`}
                   />
+                  <FieldError error={companyFormErrors.pincode} />
                 </div>
               </div>
             </div>

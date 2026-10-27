@@ -96,6 +96,33 @@ export const SubscriptionApi = {
       return err.response?.data || { success: false, message: 'Failed to fetch invoices' };
     }
   },
+
+  /**
+   * Fetch all available plans in real-time for subscription selection
+   */
+  getAvailablePlans: async () => {
+    try {
+      const response = await api.get('/subscriptions/plans');
+      return response.data;
+    } catch (err) {
+      console.error('Failed to fetch available plans:', err);
+      return err.response?.data || { success: false, message: 'Failed to fetch plans' };
+    }
+  },
+
+  /**
+   * Activate or select initial plan for newly registered company
+   * @param {Object} planData - { planId, planName, companyId }
+   */
+  chooseInitialPlan: async (planData) => {
+    try {
+      const response = await api.post('/subscriptions/choose-plan', planData);
+      return response.data;
+    } catch (err) {
+      console.error('Failed to activate plan:', err);
+      return err.response?.data || { success: false, message: 'Failed to activate plan' };
+    }
+  },
 };
 
 export default SubscriptionApi;
