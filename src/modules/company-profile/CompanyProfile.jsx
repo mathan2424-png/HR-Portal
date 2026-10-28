@@ -1018,28 +1018,26 @@ export const CompanyProfile = () => {
           {/* ═══════════════════════════════════════════════════════
               SECTION 1: COMPANY LIST TABLE
               ═══════════════════════════════════════════════════════ */}
-          <div className="section-table-box main-company-table-box" style={{ overflow: 'visible', maxHeight: 'none' }}>
+          <div className="section-table-box main-company-table-box">
             <div className="module-section-header">
               <div className="module-section-title-wrap">
                 <h2 className="module-section-title">
-
                   <span>Main Company</span>
                 </h2>
-
               </div>
             </div>
 
-            <div className="companies-table-container main-company-table-container" style={{ overflow: 'visible', maxHeight: 'none' }}>
+            <div className="companies-table-container main-company-table-container">
               <table className="companies-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '60px', textAlign: 'center' }}>S.NO</th>
+                    <th style={{ width: '50px', textAlign: 'center' }}>S.NO</th>
                     <th style={{ textAlign: 'left' }}>COMPANY NAME</th>
                     <th style={{ textAlign: 'left' }}>COMPANY CODE</th>
                     <th style={{ textAlign: 'left' }}>REGISTERED ADDRESS</th>
                     <th style={{ textAlign: 'left' }}>CONTACT PERSON</th>
                     <th style={{ textAlign: 'center' }}>TOTAL BRANCHES</th>
-                    <th style={{ textAlign: 'center' }}>STATUS</th>
+                    <th style={{ textAlign: 'center', width: '90px' }}>STATUS</th>
                     <th style={{ textAlign: 'center', width: '110px' }}>ACTIONS</th>
                   </tr>
                 </thead>

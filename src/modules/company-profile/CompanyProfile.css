@@ -186,7 +186,7 @@
 .companies-table-container {
   width: 100%;
   border-radius: 8px;
-  overflow: visible;
+  overflow-x: auto;
   border: 1px solid var(--border-color);
 }
 
@@ -201,15 +201,15 @@
   background-color: var(--primary) !important;
   color: #ffffff !important;
   font-weight: 700;
-  font-size: 13px !important;
+  font-size: 12.5px !important;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.85rem 1rem;
+  letter-spacing: 0.04em;
+  padding: 0.85rem 0.75rem;
   white-space: nowrap;
 }
 
 .companies-table td {
-  padding: 0.95rem 1rem;
+  padding: 0.85rem 0.75rem;
   border-bottom: 1px solid var(--border-light);
   color: var(--text-main);
   background: #ffffff;
@@ -1232,7 +1232,7 @@
   background: #ffffff;
   border: 1px solid var(--border-color, #e2e8f0);
   border-radius: 10px;
-  overflow: visible;
+  overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   margin-bottom: 1.5rem;
 }
@@ -1290,29 +1290,18 @@
 }
 
 /* ==========================================================================
-   MAIN COMPANY LIST: REMOVE TOP-DOWN (VERTICAL) SCROLL
+   MAIN COMPANY LIST: PROPER CONTAINMENT AND CLEAN SIZING
    ========================================================================== */
 .main-company-table-box {
-  overflow: visible !important;
-  max-height: none !important;
-  height: auto !important;
+  overflow: hidden;
+  max-height: none;
+  height: auto;
 }
 
 .main-company-table-container {
-  overflow: visible !important;
-  max-height: none !important;
-  height: auto !important;
-  border: none !important;
-}
-
-.main-company-table-container::-webkit-scrollbar {
-  height: 6px;
-  width: 0px !important;
-  display: none !important;
-}
-
-.main-company-table-container::-webkit-scrollbar:vertical {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-height: none;
+  height: auto;
+  border: none;
 }

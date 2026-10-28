@@ -35,6 +35,22 @@ const JOB_STATUS_OPTIONS = [
   { value: 'Expired', label: 'Expired' },
 ];
 
+// Pre-configured standard Job Categories fallback
+const DEFAULT_JOB_CATEGORIES = [
+  'Software Engineering / IT',
+  'Design & UX',
+  'Product & UX Design',
+  'Healthcare',
+  'Customer Success & Support',
+  'Finance & Accounting',
+  'Marketing & Growth',
+  'Sales & Business Development',
+  'Human Resources & Talent',
+  'Operations & Logistics',
+  'Quality Assurance & Testing',
+  'Data & Analytics',
+];
+
 export const JobsModule = () => {
   const [jobErrors, setJobErrors] = useState({});
   // STRICTLY and ONLY the 21 user-requested fields:
@@ -106,6 +122,39 @@ export const JobsModule = () => {
     job: null,
     isLoading: false,
   });
+
+  // Dynamic Job Categories loaded from Backend /job-categories
+  const [categoryOptions, setCategoryOptions] = useState(DEFAULT_JOB_CATEGORIES);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCategories = async () => {
+      try {
+        const response = await api.get('/job-categories');
+        if (response.data?.success && isMounted) {
+          const raw =
+            response.data.data?.categories ||
+            response.data.data?.records ||
+            response.data.data?.items ||
+            (Array.isArray(response.data.data) ? response.data.data : []);
+          const activeList = raw
+            .filter((c) => !c.status || c.status.toLowerCase() === 'active')
+            .map((c) => (c.name || c.title || '').trim())
+            .filter(Boolean);
+
+          if (activeList.length > 0) {
+            setCategoryOptions((prev) => Array.from(new Set([...activeList, ...prev])));
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load dynamic job categories from server:', err);
+      }
+    };
+    fetchCategories();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -222,6 +271,9 @@ export const JobsModule = () => {
 
     const deptErr = validateRequired(formData.department, 'Department');
     if (deptErr) errors.department = deptErr;
+
+    const catErr = validateRequired(formData.jobCategory, 'Job category');
+    if (catErr) errors.jobCategory = catErr;
 
     if (formData.hiringManager) {
       const hmErr = validateName(formData.hiringManager, 'Hiring manager', true);
@@ -585,9 +637,14 @@ export const JobsModule = () => {
                             </div>
                           </td>
 
-                          {/* Department */}
+                          {/* Department & Job Category */}
                           <td>
                             <span className="job-dept-text">{job.department}</span>
+                            {job.jobCategory && (
+                              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                {job.jobCategory}
+                              </span>
+                            )}
                           </td>
 
                           {/* Hiring Team */}
@@ -777,18 +834,31 @@ export const JobsModule = () => {
                   <FieldError error={jobErrors.jobTitle} />
                 </div>
 
-                {/* 7. Job Category */}
+                {/* 7. Job Category Dropdown */}
                 <div className="form-field-group">
-                  <label>Job Category *</label>
-                  <input
-                    type="text"
+                  <label htmlFor="jobCategorySelect">Job Category *</label>
+                  <select
+                    id="jobCategorySelect"
                     value={formData.jobCategory}
-                    onChange={(e) =>
-                      setFormData({ ...formData, jobCategory: e.target.value })
-                    }
-                    placeholder="e.g. Software Engineering / IT"
-                    className="form-control-input"
-                  />
+                    onChange={(e) => {
+                      setFormData({ ...formData, jobCategory: e.target.value });
+                      if (jobErrors.jobCategory) {
+                        setJobErrors((prev) => ({ ...prev, jobCategory: null }));
+                      }
+                    }}
+                    className={`form-control-select ${jobErrors.jobCategory ? 'has-error' : ''}`}
+                  >
+                    <option value="">Select Job Category</option>
+                    {categoryOptions.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                    {formData.jobCategory && !categoryOptions.includes(formData.jobCategory) && (
+                      <option value={formData.jobCategory}>{formData.jobCategory}</option>
+                    )}
+                  </select>
+                  <FieldError error={jobErrors.jobCategory} />
                 </div>
               </div>
             </div>

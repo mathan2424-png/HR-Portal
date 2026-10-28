@@ -348,18 +348,18 @@ const parseRolePermissions = (roleObj) => {
   };
   const [newRoleForm, setNewRoleForm] = useState(initialNewRoleState);
 
-  // Add / Edit User Form State
+  // Add / Edit User Form State - ensure all fields are blank for new user creation
   const initialUserFormData = {
     userId: '',
     employeeName: '',
     email: '',
     mobile: '',
     employeeId: '',
-    designation: 'Recruiter',
-    department: 'Talent Acquisition',
-    branch: 'Chennai HQ',
-    role: 'Super Admin',
-    assignedJobs: 'All Company Jobs',
+    designation: '',
+    department: '',
+    branch: '',
+    role: '',
+    assignedJobs: '',
     status: 'Active',
     lastLogin: 'Pending First Login',
   };
@@ -562,20 +562,30 @@ const parseRolePermissions = (roleObj) => {
     }
   };
 
-  // User In-Page Form Handlers
+  // User In-Page Form Handlers - ensure no user details are auto-filled
   const handleOpenAddUser = (presetRole = null) => {
-    const nextIdNumber = users.length + 1;
+    // Only pre-assign the specific role if requested (e.g. adding a user under a role)
+    const roleToAssign =
+      typeof presetRole === 'string' && presetRole.trim()
+        ? presetRole.trim()
+        : (presetRole && !presetRole.nativeEvent && (presetRole.name || presetRole.roleName))
+          ? (presetRole.name || presetRole.roleName)
+          : (systemRoles[0]?.name || '');
+
     setUserFormData({
       ...initialUserFormData,
-      userId: `USR-00${nextIdNumber}`,
-      employeeId: `EMP-${4000 + nextIdNumber}`,
+      userId: '',
       employeeName: '',
-      email: 'newuser@company.com',
-      mobile: '+91 98401 23456',
-      role: (typeof presetRole === 'string' && presetRole) ? presetRole : (systemRoles[0]?.name || 'Super Admin'),
-      designation: 'HR Specialist',
-      department: 'Talent Acquisition',
-      branch: 'Chennai HQ',
+      email: '',
+      mobile: '',
+      employeeId: '',
+      designation: '',
+      department: '',
+      branch: '',
+      role: roleToAssign,
+      assignedJobs: '',
+      status: 'Active',
+      lastLogin: 'Pending First Login',
     });
     setUserErrors({});
     setEditingUserId(null);
@@ -586,7 +596,8 @@ const parseRolePermissions = (roleObj) => {
   const handleRoleMenuAddUser = (e, role) => {
     if (e && e.stopPropagation) e.stopPropagation();
     setOpenMenuRoleId(null);
-    handleOpenAddUser(role.name);
+    const roleName = role?.name || role?.roleName || (typeof role === 'string' ? role : '');
+    handleOpenAddUser(roleName);
   };
 
   const handleOpenEditUser = (user) => {
@@ -618,12 +629,16 @@ const parseRolePermissions = (roleObj) => {
     const nameErr = validateName(userFormData.employeeName, 'Full name', true);
     if (nameErr) errors.employeeName = nameErr;
 
-    const emailErr = validateEmail(userFormData.email, 'Work email', true);
+    const emailErr = validateEmail(userFormData.email, 'Email', true);
     if (emailErr) errors.email = emailErr;
 
     if (userFormData.mobile && userFormData.mobile.trim()) {
       const mobileErr = validatePhone(userFormData.mobile, 'Work mobile', false);
       if (mobileErr) errors.mobile = mobileErr;
+    }
+
+    if (!userFormData.role || !userFormData.role.trim()) {
+      errors.role = 'Please select a role for this user';
     }
 
     if (Object.keys(errors).length > 0) {
@@ -840,7 +855,7 @@ const parseRolePermissions = (roleObj) => {
             <button
               type="button"
               className="btn-add-user-header"
-              onClick={handleOpenAddUser}
+              onClick={() => handleOpenAddUser(null)}
               id="btn-add-user"
             >
               <Plus size={16} />
@@ -1444,7 +1459,7 @@ const parseRolePermissions = (roleObj) => {
                 : `VIEW USER PROFILE: ${userFormData.employeeName} (${userFormData.userId})`}
           </div>
 
-          <form onSubmit={handleSaveUser} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <form onSubmit={handleSaveUser} noValidate autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div className="inpage-user-grid-3col">
               {/* User ID */}
               <div className="role-form-group">
@@ -1454,6 +1469,7 @@ const parseRolePermissions = (roleObj) => {
                   className="role-input-control"
                   style={{ background: '#f8fafc' }}
                   value={userFormData.userId}
+                  placeholder={currentView === 'add-user' ? 'Auto-generated on save' : ''}
                   readOnly
                 />
               </div>
@@ -1463,6 +1479,8 @@ const parseRolePermissions = (roleObj) => {
                 <label>Full Name *</label>
                 <input
                   type="text"
+                  name="fullName"
+                  autoComplete="off"
                   className={`role-input-control ${userErrors.employeeName ? 'has-error' : ''}`}
                   placeholder="e.g. Saravanan S (letters only)"
                   value={userFormData.employeeName}
@@ -1478,9 +1496,11 @@ const parseRolePermissions = (roleObj) => {
 
               {/* Email */}
               <div className="role-form-group">
-                <label>Work Email *</label>
+                <label>Email *</label>
                 <input
                   type="email"
+                  name="email"
+                  autoComplete="off"
                   className={`role-input-control ${userErrors.email ? 'has-error' : ''}`}
                   placeholder="e.g. saravanan.admin@company.com"
                   value={userFormData.email}
@@ -1500,6 +1520,8 @@ const parseRolePermissions = (roleObj) => {
                 <label>Work Mobile</label>
                 <input
                   type="text"
+                  name="mobile"
+                  autoComplete="off"
                   className={`role-input-control ${userErrors.mobile ? 'has-error' : ''}`}
                   placeholder="e.g. +91 98401 23456 (digits only)"
                   value={userFormData.mobile}
@@ -1518,6 +1540,8 @@ const parseRolePermissions = (roleObj) => {
                 <label>Employee ID</label>
                 <input
                   type="text"
+                  name="employeeId"
+                  autoComplete="off"
                   className="role-input-control"
                   placeholder="e.g. EMP-1042"
                   value={userFormData.employeeId}
@@ -1531,6 +1555,8 @@ const parseRolePermissions = (roleObj) => {
                 <label>Designation</label>
                 <input
                   type="text"
+                  name="designation"
+                  autoComplete="off"
                   className="role-input-control"
                   placeholder="e.g. Lead Technical Recruiter"
                   value={userFormData.designation}
@@ -1546,6 +1572,8 @@ const parseRolePermissions = (roleObj) => {
                 <label>Department</label>
                 <input
                   type="text"
+                  name="department"
+                  autoComplete="off"
                   className="role-input-control"
                   placeholder="e.g. Talent Acquisition"
                   value={userFormData.department}
@@ -1559,6 +1587,8 @@ const parseRolePermissions = (roleObj) => {
                 <label>Branch / Location</label>
                 <input
                   type="text"
+                  name="branch"
+                  autoComplete="off"
                   className="role-input-control"
                   placeholder="e.g. Chennai HQ"
                   value={userFormData.branch}
@@ -1567,21 +1597,26 @@ const parseRolePermissions = (roleObj) => {
                 />
               </div>
 
-              {/* ASSIGNED ROLE: Chosen from defined system roles! */}
+              {/* ROLE: Chosen from defined system roles! */}
               <div className="role-form-group">
-                <label>Assigned System Role *</label>
+                <label>Role *</label>
                 <select
-                  className="role-input-control"
+                  className={`role-input-control ${userErrors.role ? 'has-error' : ''}`}
                   value={userFormData.role}
-                  onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
+                  onChange={(e) => {
+                    setUserFormData({ ...userFormData, role: e.target.value });
+                    if (userErrors.role) setUserErrors((prev) => ({ ...prev, role: null }));
+                  }}
                   disabled={currentView === 'view-user'}
                 >
+                  {!userFormData.role && <option value="">Select a role</option>}
                   {systemRoles.map((r) => (
-                    <option key={r.id} value={r.name}>
-                      {r.name} ({r.id})
+                    <option key={r.id || r._id || r.name} value={r.name}>
+                      {r.name}
                     </option>
                   ))}
                 </select>
+                <FieldError error={userErrors.role} />
               </div>
             </div>
 
@@ -1591,6 +1626,8 @@ const parseRolePermissions = (roleObj) => {
                 <label>Assigned Jobs Scope</label>
                 <input
                   type="text"
+                  name="assignedJobs"
+                  autoComplete="off"
                   className="role-input-control"
                   placeholder="e.g. All Company Jobs or Specific Roles"
                   value={userFormData.assignedJobs}
