@@ -139,23 +139,32 @@ const parseRolePermissions = (roleObj) => {
         usersList = res;
       }
 
-      const normalized = usersList.map((u) => ({
-        userId: u.userId || u.employeeId || u._id || u.id,
-        _id: u._id || u.id,
-        employeeName: u.employeeName || u.name || u.fullName || '',
-        email: u.email || u.workEmail || '',
-        mobile: u.mobile || u.workMobile || u.phoneNumber || '',
-        employeeId: u.employeeId || '',
-        designation: u.designation || '',
-        department: u.department || '',
-        branch: u.branch || u.branchName || '',
-        role: typeof u.role === 'object' ? (u.role?.name || u.role?.roleName || 'Super Admin') : (u.role || u.roleName || 'Super Admin'),
-        roleName: u.roleName || (typeof u.role === 'object' ? u.role?.name : u.role) || '',
-        roleId: u.roleId || (typeof u.role === 'object' ? u.role?._id : '') || '',
-        assignedJobs: u.assignedJobs || u.assignedJobsScope || '',
-        status: u.status || (u.isActive ? 'Active' : 'Inactive'),
-        lastLogin: u.lastLogin || 'Pending First Login',
-      }));
+      const normalized = usersList.map((u) => {
+        const roleNameFromObj = typeof u.role === 'object' ? (u.role?.roleName || u.role?.name) : null;
+        const resolvedRoleName =
+          u.roleName ||
+          roleNameFromObj ||
+          (typeof u.role === 'string' && !/^[0-9a-fA-F]{24}$/.test(u.role) ? u.role : '') ||
+          'Super Admin';
+
+        return {
+          userId: u.userId || u.employeeId || u._id || u.id,
+          _id: u._id || u.id,
+          employeeName: u.employeeName || u.name || u.fullName || '',
+          email: u.email || u.workEmail || '',
+          mobile: u.mobile || u.workMobile || u.phoneNumber || '',
+          employeeId: u.employeeId || '',
+          designation: u.designation || '',
+          department: u.department || '',
+          branch: u.branch || u.branchName || '',
+          role: resolvedRoleName,
+          roleName: resolvedRoleName,
+          roleId: u.roleId || (typeof u.role === 'object' ? u.role?._id : '') || '',
+          assignedJobs: u.assignedJobs || u.assignedJobsScope || '',
+          status: u.status || (u.isActive ? 'Active' : 'Inactive'),
+          lastLogin: u.lastLogin || 'Pending First Login',
+        };
+      });
       setUsers(normalized);
 
       // Pagination metadata from backend response
@@ -185,7 +194,14 @@ const parseRolePermissions = (roleObj) => {
         const mappedRoles = rolesList.map((r, idx) => {
           const perms = parseRolePermissions(r);
           Object.keys(perms).forEach((m) => modSet.add(m));
-          const rName = r.roleName || r.name || 'Custom Role';
+          const rawName = r.roleName || r.name || 'Custom Role';
+          const rName =
+            typeof rawName === 'string'
+              ? rawName
+                  .replace(/^\[?ROLE[_-]?\d+\]?[\s:-]+/i, '')
+                  .replace(/[\s:-]+\(?ROLE[_-]?\d+\)?$/i, '')
+                  .trim() || rawName
+              : 'Custom Role';
           return {
             id: r.code || `ROLE-0${idx + 1}`,
             code: r.code || getRoleCode(r),

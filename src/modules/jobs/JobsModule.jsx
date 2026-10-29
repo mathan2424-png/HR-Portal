@@ -290,6 +290,60 @@ export const JobsModule = () => {
       if (vacErr) errors.vacancies = vacErr;
     }
 
+    if (formData.minExperience !== '' && formData.minExperience !== null && formData.minExperience !== undefined) {
+      const minExpNum = Number(formData.minExperience);
+      if (isNaN(minExpNum) || String(formData.minExperience).includes('-') || minExpNum < 0) {
+        errors.minExperience = 'Minimum experience cannot be negative';
+      }
+    }
+
+    if (formData.maxExperience !== '' && formData.maxExperience !== null && formData.maxExperience !== undefined) {
+      const maxExpNum = Number(formData.maxExperience);
+      if (isNaN(maxExpNum) || String(formData.maxExperience).includes('-') || maxExpNum < 0) {
+        errors.maxExperience = 'Maximum experience cannot be negative';
+      }
+    }
+
+    if (
+      formData.minExperience !== '' &&
+      formData.maxExperience !== '' &&
+      formData.minExperience !== null &&
+      formData.maxExperience !== null &&
+      !errors.minExperience &&
+      !errors.maxExperience &&
+      Number(formData.minExperience) > Number(formData.maxExperience)
+    ) {
+      errors.maxExperience = 'Maximum experience cannot be less than minimum experience';
+    }
+
+    if (formData.minSalary) {
+      const minErr = validateNumber(formData.minSalary, 'Minimum salary', false);
+      if (minErr) {
+        errors.minSalary = minErr;
+      } else if (Number(formData.minSalary) < 0) {
+        errors.minSalary = 'Minimum salary cannot be negative';
+      }
+    }
+
+    if (formData.maxSalary) {
+      const maxErr = validateNumber(formData.maxSalary, 'Maximum salary', false);
+      if (maxErr) {
+        errors.maxSalary = maxErr;
+      } else if (Number(formData.maxSalary) < 0) {
+        errors.maxSalary = 'Maximum salary cannot be negative';
+      }
+    }
+
+    if (
+      formData.minSalary &&
+      formData.maxSalary &&
+      !errors.minSalary &&
+      !errors.maxSalary &&
+      Number(formData.minSalary) > Number(formData.maxSalary)
+    ) {
+      errors.maxSalary = 'Maximum salary cannot be less than minimum salary';
+    }
+
     if (Object.keys(errors).length > 0) {
       setJobErrors(errors);
       window.scrollTo({ top: 120, behavior: 'smooth' });
@@ -678,7 +732,9 @@ export const JobsModule = () => {
                             <div className="job-comp-cell">
                               <span className="job-salary-text">
                                 {job.minSalary && job.maxSalary
-                                  ? `${job.minSalary} - ${job.maxSalary}`
+                                  ? !isNaN(Number(job.minSalary)) && !isNaN(Number(job.maxSalary))
+                                    ? `₹${Number(job.minSalary).toLocaleString('en-IN')} - ₹${Number(job.maxSalary).toLocaleString('en-IN')}`
+                                    : `${job.minSalary} - ${job.maxSalary}`
                                   : 'Competitive'}
                               </span>
                               <span className="job-exp-text">
@@ -1053,31 +1109,66 @@ export const JobsModule = () => {
                       type="number"
                       min="0"
                       value={formData.minExperience}
-                      onChange={(e) =>
+                      onKeyDown={(e) => {
+                        if (['-', '+', 'e', 'E'].includes(e.key)) e.preventDefault();
+                      }}
+                      onPaste={(e) => {
+                        const pasteData = e.clipboardData.getData('text');
+                        if (pasteData.includes('-') || /[^0-9]/.test(pasteData)) {
+                          e.preventDefault();
+                          const clean = pasteData.replace(/\D/g, '');
+                          const val = clean === '' ? '' : Math.max(0, parseInt(clean, 10));
+                          setFormData((prev) => ({ ...prev, minExperience: val }));
+                        }
+                      }}
+                      onChange={(e) => {
+                        const clean = sanitizeNumberInput(e.target.value);
+                        const val = clean === '' ? '' : Math.max(0, parseInt(clean, 10));
                         setFormData({
                           ...formData,
-                          minExperience: e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0,
-                        })
-                      }
+                          minExperience: val,
+                        });
+                        if (jobErrors.minExperience) {
+                          setJobErrors((prev) => ({ ...prev, minExperience: null }));
+                        }
+                      }}
                       placeholder="Min"
-                      className="form-control-input"
+                      className={`form-control-input ${jobErrors.minExperience ? 'has-error' : ''}`}
                     />
                     <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>to</span>
                     <input
                       type="number"
                       min="0"
                       value={formData.maxExperience}
-                      onChange={(e) =>
+                      onKeyDown={(e) => {
+                        if (['-', '+', 'e', 'E'].includes(e.key)) e.preventDefault();
+                      }}
+                      onPaste={(e) => {
+                        const pasteData = e.clipboardData.getData('text');
+                        if (pasteData.includes('-') || /[^0-9]/.test(pasteData)) {
+                          e.preventDefault();
+                          const clean = pasteData.replace(/\D/g, '');
+                          const val = clean === '' ? '' : Math.max(0, parseInt(clean, 10));
+                          setFormData((prev) => ({ ...prev, maxExperience: val }));
+                        }
+                      }}
+                      onChange={(e) => {
+                        const clean = sanitizeNumberInput(e.target.value);
+                        const val = clean === '' ? '' : Math.max(0, parseInt(clean, 10));
                         setFormData({
                           ...formData,
-                          maxExperience: e.target.value === '' ? '' : parseInt(e.target.value, 10) || 0,
-                        })
-                      }
+                          maxExperience: val,
+                        });
+                        if (jobErrors.maxExperience) {
+                          setJobErrors((prev) => ({ ...prev, maxExperience: null }));
+                        }
+                      }}
                       placeholder="Max"
-                      className="form-control-input"
+                      className={`form-control-input ${jobErrors.maxExperience ? 'has-error' : ''}`}
                     />
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Years</span>
                   </div>
+                  <FieldError error={jobErrors.minExperience || jobErrors.maxExperience} />
                 </div>
 
                 {/* 11. Qualification */}
@@ -1132,26 +1223,40 @@ export const JobsModule = () => {
                   <label>Minimum Salary (Annual)</label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     value={formData.minSalary}
-                    onChange={(e) =>
-                      setFormData({ ...formData, minSalary: e.target.value })
-                    }
-                    placeholder="e.g. ₹18,00,000"
-                    className="form-control-input"
+                    onKeyDown={(e) => {
+                      if (['-', '+', 'e', 'E'].includes(e.key)) e.preventDefault();
+                    }}
+                    onChange={(e) => {
+                      const clean = sanitizeNumberInput(e.target.value);
+                      setFormData({ ...formData, minSalary: clean });
+                      if (jobErrors.minSalary) setJobErrors((prev) => ({ ...prev, minSalary: null }));
+                    }}
+                    placeholder="e.g. 1800000"
+                    className={`form-control-input ${jobErrors.minSalary ? 'has-error' : ''}`}
                   />
+                  <FieldError error={jobErrors.minSalary} />
                 </div>
 
                 <div className="form-field-group">
                   <label>Maximum Salary (Annual)</label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     value={formData.maxSalary}
-                    onChange={(e) =>
-                      setFormData({ ...formData, maxSalary: e.target.value })
-                    }
-                    placeholder="e.g. ₹28,00,000"
-                    className="form-control-input"
+                    onKeyDown={(e) => {
+                      if (['-', '+', 'e', 'E'].includes(e.key)) e.preventDefault();
+                    }}
+                    onChange={(e) => {
+                      const clean = sanitizeNumberInput(e.target.value);
+                      setFormData({ ...formData, maxSalary: clean });
+                      if (jobErrors.maxSalary) setJobErrors((prev) => ({ ...prev, maxSalary: null }));
+                    }}
+                    placeholder="e.g. 2800000"
+                    className={`form-control-input ${jobErrors.maxSalary ? 'has-error' : ''}`}
                   />
+                  <FieldError error={jobErrors.maxSalary} />
                 </div>
 
                 <div className="form-field-group">

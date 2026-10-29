@@ -35,7 +35,7 @@ export const RecruitmentModule = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <StatCard
           title="Open Jobs"
           value="8"
@@ -52,14 +52,14 @@ export const RecruitmentModule = () => {
           iconBg="var(--color-info-bg)"
           iconColor="var(--color-info)"
         />
-        <StatCard
+        {/* <StatCard
           title="Offers Accepted"
           value="5"
           icon={UserCheck}
           subtitle="this month"
           iconBg="var(--color-success-bg)"
           iconColor="var(--color-success)"
-        />
+        /> */}
       </div>
 
       <div className="surface-card">

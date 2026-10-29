@@ -44,7 +44,7 @@ export const RecruitmentReportsModule = () => {
   // 4. Interviews & Hiring Report: Interview outcomes, offers and joining
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get('tab');
-  const validTabs = ['overview', 'matching', 'screening', 'interviews'];
+  const validTabs = ['overview', 'matching', 'screening']; // 'interviews' commented out
   const [activeTab, setActiveTab] = useState(
     urlTab && validTabs.includes(urlTab) ? urlTab : 'overview'
   );
@@ -499,9 +499,9 @@ export const RecruitmentReportsModule = () => {
     let filename = `Recruitment_Report_${activeTab}_${Date.now()}.csv`;
 
     if (activeTab === 'overview') {
-      csvContent += 'S.No,Job ID,Job Title,Department,Published Date,Interested,Screened,Interviewed,Offers Released,Hired,Conversion Rate\n';
+      csvContent += 'S.No,Job ID,Job Title,Department,Published Date,Interested,Screened,Hired,Conversion Rate\n';
       recruitmentOverviewData.forEach((row, i) => {
-        csvContent += `${i + 1},${row.id},"${row.title}","${row.department}",${row.publishedDate},${row.interested},${row.screened},${row.interviewed},${row.offersSent},${row.hired},${row.conversionRate}\n`;
+        csvContent += `${i + 1},${row.id},"${row.title}","${row.department}",${row.publishedDate},${row.interested},${row.screened},${row.hired},${row.conversionRate}\n`;
       });
     } else if (activeTab === 'matching') {
       csvContent += 'S.No,Job ID,Job Title,Department,Total Notified,Matched,Interested,Not Interested,Maybe Later,No Response,Avg Match Score\n';
@@ -513,12 +513,12 @@ export const RecruitmentReportsModule = () => {
       screeningReportData.forEach((row, i) => {
         csvContent += `${i + 1},${row.screeningId},"${row.screeningName}","${row.jobTitle}",${row.candidatesAssigned},${row.completedCount},${row.pendingCount},${row.qualifiedCount},${row.notQualifiedCount},${row.reviewRequiredCount},${row.averageScore}\n`;
       });
-    } else if (activeTab === 'interviews') {
+    } /* else if (activeTab === 'interviews') {
       csvContent += 'S.No,Job Title,Candidates Interviewed,Scheduled,Completed,Hire Rec,Hold,Reject,Offers Sent,Offers Accepted,Offers Declined,Joining Pending,Candidates Joined\n';
       interviewsHiringReportData.forEach((row, i) => {
         csvContent += `${i + 1},"${row.jobTitle}",${row.candidatesInterviewed},${row.interviewsScheduled},${row.interviewsCompleted},${row.hireRecommendation},${row.holdCount},${row.rejectCount},${row.offersSent},${row.offersAccepted},${row.offersDeclined},${row.joiningPending},${row.candidatesJoined}\n`;
       });
-    }
+    } */
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
@@ -706,21 +706,21 @@ export const RecruitmentReportsModule = () => {
               </div>
             </div>
 
-            <div className="rep-kpi-card">
+            {/* <div className="rep-kpi-card">
               <div className="kpi-icon-wrap green"><CalendarCheck size={16} /></div>
               <div className="kpi-info">
                 <span className="kpi-num">48</span>
                 <span className="kpi-title">Interviews Completed</span>
               </div>
-            </div>
+            </div> */}
 
-            <div className="rep-kpi-card">
+            {/* <div className="rep-kpi-card">
               <div className="kpi-icon-wrap purple"><FileCheck size={16} /></div>
               <div className="kpi-info">
                 <span className="kpi-num">14</span>
                 <span className="kpi-title">Offers Sent</span>
               </div>
-            </div>
+            </div> */}
 
             <div className="rep-kpi-card hired-card">
               <div className="kpi-icon-wrap emerald"><Award size={16} /></div>
@@ -772,8 +772,8 @@ export const RecruitmentReportsModule = () => {
                     <th>Published Date</th>
                     <th style={{ textAlign: 'center' }}>Interested</th>
                     <th style={{ textAlign: 'center' }}>Screened</th>
-                    <th style={{ textAlign: 'center' }}>Interviewed</th>
-                    <th style={{ textAlign: 'center' }}>Offers Released</th>
+                    {/* <th style={{ textAlign: 'center' }}>Interviewed</th> */}
+                    {/* <th style={{ textAlign: 'center' }}>Offers Released</th> */}
                     <th style={{ textAlign: 'center' }}>Candidates Hired</th>
                     <th style={{ textAlign: 'center' }}>Conversion Rate</th>
                     <th style={{ textAlign: 'center' }}>Actions</th>
@@ -782,7 +782,7 @@ export const RecruitmentReportsModule = () => {
                 <tbody>
                   {filteredOverviewData.length === 0 ? (
                     <tr>
-                      <td colSpan="12" className="table-empty-cell">
+                      <td colSpan="10" className="table-empty-cell">
                         No recruitment overview records found matching your filter criteria.
                       </td>
                     </tr>
@@ -798,8 +798,8 @@ export const RecruitmentReportsModule = () => {
                         <td><span className="date-sub">{item.publishedDate}</span></td>
                         <td style={{ textAlign: 'center' }}><span className="count-pill purple">{item.interested}</span></td>
                         <td style={{ textAlign: 'center' }}><span className="count-pill amber">{item.screened}</span></td>
-                        <td style={{ textAlign: 'center' }}><span className="count-pill blue">{item.interviewed}</span></td>
-                        <td style={{ textAlign: 'center' }}><span className="count-pill purple">{item.offersSent}</span></td>
+                        {/* <td style={{ textAlign: 'center' }}><span className="count-pill blue">{item.interviewed}</span></td> */}
+                        {/* <td style={{ textAlign: 'center' }}><span className="count-pill purple">{item.offersSent}</span></td> */}
                         <td style={{ textAlign: 'center' }}><span className="count-pill emerald">{item.hired}</span></td>
                         <td style={{ textAlign: 'center' }}><span className="rate-badge">{item.conversionRate}</span></td>
                         <td style={{ textAlign: 'center' }}>
@@ -1213,9 +1213,14 @@ export const RecruitmentReportsModule = () => {
       )}
 
       {/* =========================================================================
-          REPORT TAB 4: INTERVIEWS & HIRING REPORT (14 requested columns)
+          REPORT TAB 4: INTERVIEWS & HIRING REPORT (Commented out)
           ========================================================================= */}
-      {activeTab === 'interviews' && (
+      {/* activeTab === 'interviews' && (
+        <div className="report-submodule-container animate-fade-in">
+          ...
+        </div>
+      ) */}
+      {false && activeTab === 'interviews' && (
         <div className="report-submodule-container animate-fade-in">
           {/* Summary Section KPI Cards */}
           <div className="reports-kpi-quad-grid">
@@ -1472,6 +1477,7 @@ export const RecruitmentReportsModule = () => {
                     <span className="funnel-num">{selectedReportRow.qualified}</span>
                     <span className="funnel-step-lbl">Qualified</span>
                   </div>
+                  {/*
                   <ArrowRight size={16} className="funnel-arrow" />
                   <div className="funnel-step-box">
                     <span className="funnel-num">{selectedReportRow.interviewed}</span>
@@ -1482,6 +1488,7 @@ export const RecruitmentReportsModule = () => {
                     <span className="funnel-num">{selectedReportRow.offersSent}</span>
                     <span className="funnel-step-lbl">Offer Sent</span>
                   </div>
+                  */}
                   <ArrowRight size={16} className="funnel-arrow" />
                   <div className="funnel-step-box hired">
                     <span className="funnel-num">{selectedReportRow.hired}</span>
@@ -1612,8 +1619,8 @@ export const RecruitmentReportsModule = () => {
               </div>
             )}
 
-            {/* Type 4: Interviews & Hiring Drilldown Modal */}
-            {modalType === 'interviews' && (
+            {/* Type 4: Interviews & Hiring Drilldown Modal (Commented out) */}
+            {false && modalType === 'interviews' && (
               <div className="drilldown-table-wrap">
                 <p className="drilldown-intro-note">
                   Interview rounds, panel evaluations, offer release, and joining records for <strong>{selectedReportRow.jobTitle}</strong>.

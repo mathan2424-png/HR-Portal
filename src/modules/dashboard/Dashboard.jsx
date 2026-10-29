@@ -60,8 +60,8 @@ const CountUpNumber = ({ value = 0, duration = 1400, animationKey = 0 }) => {
 const SummaryDonutChart = ({
   total,
   slices,
-  size = 146,
-  strokeWidth = 19,
+  size = 120,
+  strokeWidth = 16,
   animationKey = 0,
   chartId = 'donut-0',
   glowColor = 'rgba(37, 99, 235, 0.35)',
@@ -223,17 +223,17 @@ const SummaryFunnelChart = ({ steps, chartId = 'candidate' }) => {
   ];
 
   return (
-    <div className="summary-funnel-container">
+    <div className="summary-funnel-container" style={{ width: 122, height: 90 }}>
       {/* Ambient Halo Behind Funnel */}
       <div
         className="summary-donut-aura-halo"
         style={{
           background: 'radial-gradient(circle, rgba(16, 185, 129, 0.32) 0%, rgba(255, 255, 255, 0) 72%)',
-          width: 176,
-          height: 130,
+          width: 122,
+          height: 90,
         }}
       />
-      <svg width="180" height="126" viewBox="0 0 180 126" className="summary-funnel-svg">
+      <svg width="122" height="90" viewBox="0 0 180 126" className="summary-funnel-svg">
         <defs>
           <filter id={`funnelGlow-${chartId}`} x="-15%" y="-15%" width="130%" height="135%">
             <feDropShadow dx="0" dy="3" stdDeviation="3.5" floodColor="rgba(15, 23, 42, 0.16)" />
@@ -561,7 +561,9 @@ export const Dashboard = () => {
     },
   ];
 
-  const alertCards = (importantAlerts || []).map((alert) => ({
+  const alertCards = (importantAlerts || [])
+    .filter((alert) => alert.type !== 'interview')
+    .map((alert) => ({
     id: alert.id,
     badge: (alert.badge || 'ALERT').toUpperCase(),
     count: alert.count || 1,
@@ -880,7 +882,8 @@ export const Dashboard = () => {
           </div>
         </div>
 
-        {/* Card 4: Interview Summary */}
+        {/* Card 4: Interview Summary - Commented out */}
+        {/*
         <div className="summary-quad-card card-interview-summary">
           <div className="summary-quad-header">
             <div className="summary-header-left">
@@ -949,6 +952,7 @@ export const Dashboard = () => {
             </div>
           </div>
         </div>
+        */}
       </div>
 
       {/* 4. Plan Usage Quota: Used and remaining jobs, alerts, resume access, screening and user seats */}
@@ -1037,7 +1041,8 @@ export const Dashboard = () => {
 
       {/* 5. Live Activity Tables: Upcoming Interviews Schedule & Active Jobs */}
       <div className="dashboard-activity-dual-grid">
-        {/* Left: Upcoming Interviews Schedule */}
+        {/* Left: Upcoming Interviews Schedule - Commented out */}
+        {/*
         <div className="activity-container-card">
           <div className="activity-header-bar">
             <div>
@@ -1081,9 +1086,10 @@ export const Dashboard = () => {
             )}
           </div>
         </div>
+        */}
 
         {/* Right: Active Jobs Pipeline */}
-        <div className="activity-container-card">
+        <div className="activity-container-card" style={{ gridColumn: '1 / -1' }}>
           <div className="activity-header-bar">
             <div>
               <h3 className="activity-heading">Active Jobs Recruitment Pipeline</h3>
