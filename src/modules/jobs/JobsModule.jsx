@@ -664,7 +664,6 @@ export const JobsModule = () => {
                   {filteredJobs.length === 0 ? (
                     <tr>
                       <td colSpan={11} className="jobs-empty-state">
-                        <div className="jobs-empty-icon">💼</div>
                         <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>
                           No job openings found
                         </p>

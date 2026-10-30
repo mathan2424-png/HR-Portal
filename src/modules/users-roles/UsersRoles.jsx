@@ -1530,7 +1530,7 @@ const parseRolePermissions = (roleObj) => {
               </div>
             </div>
 
-            <div className="inpage-user-grid-3col">
+            <div className="inpage-user-grid-2col">
               {/* Mobile */}
               <div className="role-form-group">
                 <label>Work Mobile</label>
@@ -1549,21 +1549,6 @@ const parseRolePermissions = (roleObj) => {
                   disabled={currentView === 'view-user'}
                 />
                 <FieldError error={userErrors.mobile} />
-              </div>
-
-              {/* Employee ID */}
-              <div className="role-form-group">
-                <label>Employee ID</label>
-                <input
-                  type="text"
-                  name="employeeId"
-                  autoComplete="off"
-                  className="role-input-control"
-                  placeholder="e.g. EMP-1042"
-                  value={userFormData.employeeId}
-                  onChange={(e) => setUserFormData({ ...userFormData, employeeId: e.target.value })}
-                  disabled={currentView === 'view-user'}
-                />
               </div>
 
               {/* Designation */}
@@ -1683,7 +1668,6 @@ const parseRolePermissions = (roleObj) => {
                   type="submit"
                   className="btn-save-user"
                 >
-                  <Save size={16} />
                   <span>Save User Details</span>
                 </button>
               )}

@@ -6,7 +6,6 @@ import {
   RotateCw,
   CheckCircle2,
   AlertTriangle,
-  ShieldCheck,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -305,7 +304,6 @@ export const CompanySettingsModule = () => {
               {paginatedLogs.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
-                    <ShieldCheck size={36} color="#94a3b8" style={{ margin: '0 auto 0.5rem auto', display: 'block' }} />
                     <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>No Login Records Found</div>
                     <div style={{ fontSize: '0.8rem', marginTop: '0.2rem' }}>Try modifying your search or status filter.</div>
                   </td>

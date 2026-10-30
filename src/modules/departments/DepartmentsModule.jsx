@@ -457,7 +457,6 @@ export const DepartmentsModule = () => {
                   ) : filteredRecords.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="dept-empty-state">
-                        <div className="dept-empty-icon">🏢</div>
                         <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>
                           No departments found
                         </p>
